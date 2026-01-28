@@ -24,7 +24,6 @@ describe("LoginForm", () => {
       render(<LoginForm onSwitch={mockOnSwitch} />);
 
       expect(screen.getByText("Sign in")).toBeInTheDocument();
-      expect(screen.getByText("Sign in to your account")).toBeInTheDocument();
       expect(screen.getByPlaceholderText("Username or email")).toBeInTheDocument();
       expect(screen.getByPlaceholderText("Password")).toBeInTheDocument();
       expect(screen.getByRole("button", { name: "Sign In" })).toBeInTheDocument();

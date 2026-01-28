@@ -139,8 +139,7 @@ export default function SignUpForm({ onSwitch, onSuccess }: { onSwitch: () => vo
           </div>
 
           <div className="bg-white/10 backdrop-blur-sm rounded-2xl border border-white/20 p-8">
-            <h2 className="text-2xl font-bold text-white mb-2">Create account</h2>
-            <p className="text-white/70 mb-6">Join the prediction league</p>
+            <h2 className="text-2xl font-bold text-white mb-6">Create account</h2>
 
             <form onSubmit={handleSubmit} className="space-y-4">
               {serverError && (

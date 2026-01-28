@@ -25,7 +25,6 @@ describe("SignUpForm", () => {
       render(<SignUpForm onSwitch={mockOnSwitch} onSuccess={mockOnSuccess} />);
 
       expect(screen.getByText("Create account")).toBeInTheDocument();
-      expect(screen.getByText("Join the prediction league")).toBeInTheDocument();
       expect(screen.getByPlaceholderText("First name")).toBeInTheDocument();
       expect(screen.getByPlaceholderText("Last name")).toBeInTheDocument();
       expect(screen.getByPlaceholderText("Username")).toBeInTheDocument();
