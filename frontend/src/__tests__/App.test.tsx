@@ -56,7 +56,7 @@ describe("App", () => {
     it("should show login form by default", () => {
       render(<App />);
 
-      expect(screen.getByText("Welcome back")).toBeInTheDocument();
+      expect(screen.getByText("Sign in")).toBeInTheDocument();
       expect(screen.getByPlaceholderText("Username or email")).toBeInTheDocument();
     });
 
@@ -80,7 +80,7 @@ describe("App", () => {
 
       // Go back to login
       await user.click(screen.getByRole("button", { name: "Sign In" }));
-      expect(screen.getByText("Welcome back")).toBeInTheDocument();
+      expect(screen.getByText("Sign in")).toBeInTheDocument();
     });
 
     it.skip("should show verified message when URL has verified param", () => {
@@ -230,7 +230,7 @@ describe("App", () => {
       render(<App />);
 
       // Background component wraps the login form
-      expect(screen.getByText("Welcome back")).toBeInTheDocument();
+      expect(screen.getByText("Sign in")).toBeInTheDocument();
     });
   });
 
@@ -263,7 +263,7 @@ describe("App", () => {
       rerender(<App />);
 
       // Should show login form
-      expect(screen.getByText("Welcome back")).toBeInTheDocument();
+      expect(screen.getByText("Sign in")).toBeInTheDocument();
     });
   });
 });

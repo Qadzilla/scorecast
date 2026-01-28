@@ -23,7 +23,7 @@ describe("LoginForm", () => {
     it("should render login form", () => {
       render(<LoginForm onSwitch={mockOnSwitch} />);
 
-      expect(screen.getByText("Welcome back")).toBeInTheDocument();
+      expect(screen.getByText("Sign in")).toBeInTheDocument();
       expect(screen.getByText("Sign in to your account")).toBeInTheDocument();
       expect(screen.getByPlaceholderText("Username or email")).toBeInTheDocument();
       expect(screen.getByPlaceholderText("Password")).toBeInTheDocument();
