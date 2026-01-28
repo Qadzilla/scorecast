@@ -15,6 +15,8 @@ describe("Predictions API", () => {
     email: `predictions-${Date.now()}@example.com`,
     password: "TestPassword123!",
     username: `predictions_${Date.now()}`,
+    firstName: "Predictions",
+    lastName: "Test",
   };
 
   beforeAll(async () => {

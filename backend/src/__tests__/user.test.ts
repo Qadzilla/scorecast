@@ -13,6 +13,8 @@ describe("User API", () => {
     email: `user-api-${Date.now()}@example.com`,
     password: "TestPassword123!",
     username: `userapi_${Date.now()}`,
+    firstName: "User",
+    lastName: "API",
   };
 
   beforeAll(async () => {
@@ -147,7 +149,8 @@ describe("User API", () => {
 
   describe("PUT /api/user/username", () => {
     it("should update username", async () => {
-      const newUsername = `updated_${Date.now()}`;
+      // Use shorter username to stay within 20 char limit
+      const newUsername = `upd_${Date.now().toString().slice(-10)}`;
 
       const response = await request(app)
         .put("/api/user/username")
@@ -194,12 +197,14 @@ describe("User API", () => {
     });
 
     it("should reject duplicate username", async () => {
-      // Create another user first
+      // Create another user first (username must be <=20 chars)
       const otherUser = {
         name: "Other User",
         email: `other-${Date.now()}@example.com`,
         password: "TestPassword123!",
-        username: `taken_username_${Date.now()}`,
+        username: `taken_${Date.now().toString().slice(-10)}`,
+        firstName: "Other",
+        lastName: "User",
       };
 
       await request(app)
@@ -219,8 +224,13 @@ describe("User API", () => {
       expect(response.status).toBe(409);
       expect(response.body.error).toContain("already taken");
 
-      // Cleanup
-      db.prepare("DELETE FROM user WHERE email = ?").run(otherUser.email);
+      // Cleanup - delete related records first due to foreign keys
+      const otherUserId = db.prepare("SELECT id FROM user WHERE email = ?").get(otherUser.email) as { id: string } | undefined;
+      if (otherUserId) {
+        db.prepare("DELETE FROM session WHERE userId = ?").run(otherUserId.id);
+        db.prepare("DELETE FROM account WHERE userId = ?").run(otherUserId.id);
+        db.prepare("DELETE FROM user WHERE id = ?").run(otherUserId.id);
+      }
     });
 
     it("should require authentication", async () => {

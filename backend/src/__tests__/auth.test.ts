@@ -172,14 +172,18 @@ describe("Auth API", () => {
     });
   });
 
-  describe("GET /api/auth/session", () => {
+  describe("GET /api/auth/get-session", () => {
     it("should return no session when not logged in", async () => {
       const response = await request(app)
-        .get("/api/auth/session")
+        .get("/api/auth/get-session")
         .set("Content-Type", "application/json");
 
-      // better-auth returns 200 with null session or user object
-      expect([200, 401, 404]).toContain(response.status);
+      // better-auth returns 200 with null body or object with null session
+      expect(response.status).toBe(200);
+      // Body is either null or has session property
+      if (response.body !== null) {
+        expect(response.body.session).toBeFalsy();
+      }
     });
 
     it("should return session when logged in", async () => {
@@ -195,15 +199,22 @@ describe("Auth API", () => {
         })
         .set("Content-Type", "application/json");
 
-      const cookie = loginResponse.headers["set-cookie"]?.[0] || "";
+      // Check login succeeded
+      expect([200, 201]).toContain(loginResponse.status);
 
-      if (cookie) {
-        const sessionResponse = await request(app)
-          .get("/api/auth/session")
-          .set("Cookie", cookie);
-
-        expect(sessionResponse.status).toBe(200);
+      const cookies = loginResponse.headers["set-cookie"];
+      if (!cookies || cookies.length === 0) {
+        // If no cookies returned, skip session check (might be a config issue)
+        return;
       }
+
+      const sessionResponse = await request(app)
+        .get("/api/auth/get-session")
+        .set("Cookie", cookies);
+
+      // Session endpoint should return 200
+      expect(sessionResponse.status).toBe(200);
+      expect(sessionResponse.body.user).toBeDefined();
     });
   });
 });

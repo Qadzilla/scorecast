@@ -8,5 +8,9 @@ export default defineConfig({
     globalSetup: "src/__tests__/globalSetup.ts",
     testTimeout: 30000,
     fileParallelism: false,
+    env: {
+      NODE_ENV: "test",
+      ADMIN_EMAIL: "test-admin@example.com",
+    },
   },
 });

@@ -15,6 +15,8 @@ describe("Leaderboard API", () => {
     email: `leaderboard-${Date.now()}@example.com`,
     password: "TestPassword123!",
     username: `leaderboard_${Date.now()}`,
+    firstName: "Leaderboard",
+    lastName: "Test",
   };
 
   const testUser2 = {
@@ -22,6 +24,8 @@ describe("Leaderboard API", () => {
     email: `leaderboard2-${Date.now()}@example.com`,
     password: "TestPassword123!",
     username: `leaderboard2_${Date.now()}`,
+    firstName: "Leaderboard",
+    lastName: "Test2",
   };
 
   beforeAll(async () => {
@@ -134,6 +138,9 @@ describe("Leaderboard API", () => {
         name: "Outside User",
         email: `outside-${Date.now()}@example.com`,
         password: "TestPassword123!",
+        username: `outside_${Date.now()}`,
+        firstName: "Outside",
+        lastName: "User",
       };
 
       await request(app)
@@ -156,8 +163,13 @@ describe("Leaderboard API", () => {
 
       expect(response.status).toBe(403);
 
-      // Cleanup
-      db.prepare("DELETE FROM user WHERE email = ?").run(outsideUser.email);
+      // Cleanup - delete related records first due to foreign keys
+      const outsideUserId = db.prepare("SELECT id FROM user WHERE email = ?").get(outsideUser.email) as { id: string } | undefined;
+      if (outsideUserId) {
+        db.prepare("DELETE FROM session WHERE userId = ?").run(outsideUserId.id);
+        db.prepare("DELETE FROM account WHERE userId = ?").run(outsideUserId.id);
+        db.prepare("DELETE FROM user WHERE id = ?").run(outsideUserId.id);
+      }
     });
 
     it("should return 403 for non-existent league", async () => {

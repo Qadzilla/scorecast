@@ -11,6 +11,8 @@ describe("Fixtures API", () => {
     email: `fixtures-${Date.now()}@example.com`,
     password: "TestPassword123!",
     username: `fixtures_${Date.now()}`,
+    firstName: "Fixtures",
+    lastName: "Test",
   };
 
   beforeAll(async () => {

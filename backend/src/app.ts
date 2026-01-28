@@ -4,7 +4,6 @@ import cors from "cors";
 import rateLimit from "express-rate-limit";
 import { toNodeHandler } from "better-auth/node";
 import { auth } from "./auth.js";
-import { db } from "./db.js";
 import leaguesRouter from "./routes/leagues.js";
 import fixturesRouter from "./routes/fixtures.js";
 import predictionsRouter from "./routes/predictions.js";
@@ -46,52 +45,27 @@ const authHandler = toNodeHandler(auth);
 // Better-auth handler - must check URL manually due to Express 5 routing issues
 app.use(async (req, res, next) => {
   if (req.url.startsWith("/api/auth")) {
-    // Handle username login - convert username to email before auth handler
-    if (req.url.includes("/sign-in/email") && req.method === "POST") {
-      let body = "";
-      req.on("data", (chunk) => {
-        body += chunk.toString();
-      });
-      await new Promise<void>((resolve) => {
-        req.on("end", () => {
-          try {
-            const data = JSON.parse(body);
-            // If email field doesn't contain @, treat it as username
-            if (data.email && !data.email.includes("@")) {
-              const username = data.email.toLowerCase();
-              const user = db.prepare(
-                "SELECT email FROM user WHERE username = ?"
-              ).get(username) as { email: string } | undefined;
-
-              if (user) {
-                data.email = user.email;
-              }
-              // If user not found, let it proceed - auth will return "user not found"
-            }
-            // Reconstruct the body for the auth handler
-            const newBody = JSON.stringify(data);
-            (req as any).body = data;
-            (req as any).rawBody = newBody;
-            // Override the read stream
-            const { Readable } = require("stream");
-            const readable = Readable.from([newBody]);
-            (req as any)._readableState = readable._readableState;
-            (req as any).read = readable.read.bind(readable);
-            req.headers["content-length"] = Buffer.byteLength(newBody).toString();
-          } catch {
-            // If JSON parse fails, let it proceed as-is
-          }
-          resolve();
-        });
-      });
-    }
-
     authLimiter(req, res, async () => {
-      await authHandler(req, res);
+      try {
+        await authHandler(req, res);
+      } catch (error) {
+        console.error("Auth handler error:", error);
+        if (!res.headersSent) {
+          res.status(500).json({ error: "Internal server error" });
+        }
+      }
     });
     return;
   }
   next();
+});
+
+// Global error handler
+app.use((err: Error, req: express.Request, res: express.Response, next: express.NextFunction) => {
+  console.error("Unhandled error:", err);
+  if (!res.headersSent) {
+    res.status(500).json({ error: "Internal server error" });
+  }
 });
 
 // JSON body parser for API routes
