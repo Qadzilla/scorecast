@@ -4,11 +4,16 @@ import { sendEmail } from "./email.js";
 
 const isProduction = process.env.NODE_ENV === "production";
 
+// Parse CORS origins (comma-separated for multiple origins)
+const corsOrigins = (process.env.CORS_ORIGIN || "http://localhost:5173,http://localhost:5174")
+  .split(",")
+  .map(o => o.trim());
+
 export const auth: ReturnType<typeof betterAuth> = betterAuth({
   database: pool,
   secret: process.env.BETTER_AUTH_SECRET,
   basePath: "/api/auth",
-  trustedOrigins: [process.env.CORS_ORIGIN || "http://localhost:5174"],
+  trustedOrigins: corsOrigins,
   user: {
     additionalFields: {
       username: {
