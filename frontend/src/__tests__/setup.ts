@@ -11,6 +11,20 @@ export const handlers = [
     return HttpResponse.json({ session: null, user: null });
   }),
 
+  http.post("http://localhost:3000/api/auth/lookup-email", async ({ request }) => {
+    const body = await request.json() as { identifier: string };
+    const identifier = body.identifier?.trim().toLowerCase();
+    // If it looks like an email, return it directly
+    if (identifier?.includes("@")) {
+      return HttpResponse.json({ email: identifier });
+    }
+    // For testing, map username "testuser" to test@example.com
+    if (identifier === "testuser") {
+      return HttpResponse.json({ email: "test@example.com" });
+    }
+    return HttpResponse.json({ error: "Invalid credentials" }, { status: 401 });
+  }),
+
   http.post("http://localhost:3000/api/auth/sign-in/email", async ({ request }) => {
     const body = await request.json() as { email: string; password: string };
     if (body.email === "test@example.com" && body.password === "password123") {

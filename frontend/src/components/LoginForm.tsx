@@ -38,8 +38,28 @@ export default function LoginForm({ onSwitch, verified }: { onSwitch: () => void
     setLoading(true);
 
     try {
+      // First, resolve the identifier to an email (handles both username and email)
+      const lookupRes = await fetch("http://localhost:3000/api/auth/lookup-email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ identifier: identifier.trim() }),
+      });
+
+      if (!lookupRes.ok) {
+        if (lookupRes.status === 429) {
+          setServerError("RATE_LIMITED");
+        } else {
+          setServerError("Invalid username or password");
+        }
+        return;
+      }
+
+      const { email } = await lookupRes.json();
+
+      // Now sign in with the resolved email
       const result = await signIn.email({
-        email: identifier.trim(),
+        email,
         password,
       });
 
