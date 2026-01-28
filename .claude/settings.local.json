@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(curl:*)",
+      "Bash(pkill:*)",
+      "Bash(lsof:*)",
+      "Bash(kill:*)",
+      "Bash(npm run dev:*)",
+      "Bash(npx @better-auth/cli migrate:*)",
+      "Bash(source ~/.nvm/nvm.sh)",
+      "Bash(nvm use:*)",
+      "Bash(npm install:*)",
+      "Bash(npm test)"
+    ]
+  }
+}
