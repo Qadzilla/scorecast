@@ -9,6 +9,9 @@ const corsOrigins = (process.env.CORS_ORIGIN || "http://localhost:5173,http://lo
   .split(",")
   .map(o => o.trim());
 
+// Use the first origin as the primary frontend URL
+const frontendURL = corsOrigins[0];
+
 export const auth: ReturnType<typeof betterAuth> = betterAuth({
   database: pool,
   secret: process.env.BETTER_AUTH_SECRET,
@@ -58,10 +61,9 @@ export const auth: ReturnType<typeof betterAuth> = betterAuth({
   emailVerification: {
     sendOnSignUp: true,
     autoSignInAfterVerification: false,
-    callbackURL: process.env.CORS_ORIGIN || "http://localhost:5173",
+    callbackURL: frontendURL,
     sendVerificationEmail: async ({ user, url }: { user: User & { firstName?: string }; url: string }) => {
       const firstName = user.firstName || "there";
-      const frontendURL = process.env.CORS_ORIGIN || "http://localhost:5173";
       // Replace or add callbackURL to redirect to frontend after verification (with verified flag)
       const urlObj = new URL(url);
       urlObj.searchParams.set("callbackURL", `${frontendURL}?verified=true`);
