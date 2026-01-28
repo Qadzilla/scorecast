@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from "vitest";
 import request from "supertest";
 import { app } from "../app.js";
-import { db } from "../db.js";
+import { query, initializeDatabase } from "../db.js";
 
 // Admin user credentials (set via ADMIN_EMAIL env var in test setup)
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || "test-admin@example.com";
@@ -32,6 +32,7 @@ describe("Leagues API", () => {
 
   beforeAll(async () => {
     process.env.NODE_ENV = "test";
+    await initializeDatabase();
 
     // Create admin user
     const adminSignup = await request(app)
@@ -40,7 +41,7 @@ describe("Leagues API", () => {
       .set("Content-Type", "application/json");
 
     // Manually verify admin email for testing
-    db.prepare("UPDATE user SET emailVerified = 1 WHERE email = ?").run(adminUser.email);
+    await query(`UPDATE "user" SET "emailVerified" = true WHERE email = $1`, [adminUser.email]);
 
     // Login as admin
     const adminLogin = await request(app)
@@ -57,7 +58,7 @@ describe("Leagues API", () => {
       .set("Content-Type", "application/json");
 
     // Manually verify regular user email
-    db.prepare("UPDATE user SET emailVerified = 1 WHERE email = ?").run(regularUser.email);
+    await query(`UPDATE "user" SET "emailVerified" = true WHERE email = $1`, [regularUser.email]);
 
     // Login as regular user
     const regularLogin = await request(app)
@@ -68,12 +69,12 @@ describe("Leagues API", () => {
     regularCookie = regularLogin.headers["set-cookie"]?.[0] || "";
   });
 
-  afterAll(() => {
+  afterAll(async () => {
     // Cleanup
     try {
-      db.prepare("DELETE FROM league_member WHERE leagueId = ?").run(testLeagueId);
-      db.prepare("DELETE FROM league WHERE id = ?").run(testLeagueId);
-      db.prepare("DELETE FROM user WHERE email IN (?, ?)").run(adminUser.email, regularUser.email);
+      await query(`DELETE FROM league_member WHERE "leagueId" = $1`, [testLeagueId]);
+      await query(`DELETE FROM league WHERE id = $1`, [testLeagueId]);
+      await query(`DELETE FROM "user" WHERE email IN ($1, $2)`, [adminUser.email, regularUser.email]);
     } catch (e) {
       // Ignore cleanup errors
     }

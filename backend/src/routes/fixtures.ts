@@ -1,12 +1,11 @@
 import { Router } from "express";
-import { db } from "../db.js";
+import { queryAll, queryOne } from "../db.js";
 import { requireAuth } from "../middleware/auth.js";
-import type { AuthenticatedRequest } from "../middleware/auth.js";
 
 const router = Router();
 
 // Get current gameweek for a competition
-router.get("/gameweek/current/:competition", requireAuth, (req, res) => {
+router.get("/gameweek/current/:competition", requireAuth, async (req, res) => {
   const { competition } = req.params;
 
   if (competition !== "premier_league" && competition !== "champions_league") {
@@ -16,9 +15,10 @@ router.get("/gameweek/current/:competition", requireAuth, (req, res) => {
 
   try {
     // Get current season
-    const season = db.prepare(`
-      SELECT id FROM season WHERE competition = ? AND isCurrent = 1
-    `).get(competition) as { id: string } | undefined;
+    const season = await queryOne<{ id: string }>(
+      `SELECT id FROM season WHERE competition = $1 AND "isCurrent" = true`,
+      [competition]
+    );
 
     if (!season) {
       res.status(404).json({ error: "No active season found" });
@@ -29,39 +29,59 @@ router.get("/gameweek/current/:competition", requireAuth, (req, res) => {
     // If no open deadline, get the currently active or most recent gameweek
     const now = new Date().toISOString();
 
-    let gameweek = db.prepare(`
-      SELECT
+    let gameweek = await queryOne<{
+      id: string;
+      seasonId: string;
+      number: number;
+      name: string;
+      deadline: string;
+      startsAt: string;
+      endsAt: string;
+      status: string;
+    }>(
+      `SELECT
         g.id,
-        g.seasonId,
+        g."seasonId",
         g.number,
         g.name,
         g.deadline,
-        g.startsAt,
-        g.endsAt,
+        g."startsAt",
+        g."endsAt",
         g.status
       FROM gameweek g
-      WHERE g.seasonId = ? AND g.deadline > ?
+      WHERE g."seasonId" = $1 AND g.deadline > $2
       ORDER BY g.number ASC
-      LIMIT 1
-    `).get(season.id, now) as any;
+      LIMIT 1`,
+      [season.id, now]
+    );
 
     // If no gameweek with open deadline, get the active one
     if (!gameweek) {
-      gameweek = db.prepare(`
-        SELECT
+      gameweek = await queryOne<{
+        id: string;
+        seasonId: string;
+        number: number;
+        name: string;
+        deadline: string;
+        startsAt: string;
+        endsAt: string;
+        status: string;
+      }>(
+        `SELECT
           g.id,
-          g.seasonId,
+          g."seasonId",
           g.number,
           g.name,
           g.deadline,
-          g.startsAt,
-          g.endsAt,
+          g."startsAt",
+          g."endsAt",
           g.status
         FROM gameweek g
-        WHERE g.seasonId = ? AND g.status = 'active'
+        WHERE g."seasonId" = $1 AND g.status = 'active'
         ORDER BY g.number DESC
-        LIMIT 1
-      `).get(season.id) as any;
+        LIMIT 1`,
+        [season.id]
+      );
     }
 
     if (!gameweek) {
@@ -77,26 +97,38 @@ router.get("/gameweek/current/:competition", requireAuth, (req, res) => {
 });
 
 // Get gameweek by ID with matches
-router.get("/gameweek/:gameweekId", requireAuth, (req, res) => {
+router.get("/gameweek/:gameweekId", requireAuth, async (req, res) => {
   const { gameweekId } = req.params;
 
   try {
-    const gameweek = db.prepare(`
-      SELECT
+    const gameweek = await queryOne<{
+      id: string;
+      seasonId: string;
+      number: number;
+      name: string;
+      deadline: string;
+      startsAt: string;
+      endsAt: string;
+      status: string;
+      seasonName: string;
+      competition: string;
+    }>(
+      `SELECT
         g.id,
-        g.seasonId,
+        g."seasonId",
         g.number,
         g.name,
         g.deadline,
-        g.startsAt,
-        g.endsAt,
+        g."startsAt",
+        g."endsAt",
         g.status,
-        s.name as seasonName,
+        s.name as "seasonName",
         s.competition
       FROM gameweek g
-      JOIN season s ON g.seasonId = s.id
-      WHERE g.id = ?
-    `).get(gameweekId) as any;
+      JOIN season s ON g."seasonId" = s.id
+      WHERE g.id = $1`,
+      [gameweekId]
+    );
 
     if (!gameweek) {
       res.status(404).json({ error: "Gameweek not found" });
@@ -104,45 +136,68 @@ router.get("/gameweek/:gameweekId", requireAuth, (req, res) => {
     }
 
     // Get matchdays and matches
-    const matchdays = db.prepare(`
-      SELECT
+    const matchdays = await queryAll<{
+      id: string;
+      date: string;
+      dayNumber: number;
+    }>(
+      `SELECT
         md.id,
         md.date,
-        md.dayNumber
+        md."dayNumber"
       FROM matchday md
-      WHERE md.gameweekId = ?
-      ORDER BY md.dayNumber ASC
-    `).all(gameweekId) as any[];
+      WHERE md."gameweekId" = $1
+      ORDER BY md."dayNumber" ASC`,
+      [gameweekId]
+    );
 
-    const matchdaysWithMatches = matchdays.map((md: any) => {
-      const matches = db.prepare(`
-        SELECT
+    const matchdaysWithMatches = await Promise.all(matchdays.map(async (md) => {
+      const matches = await queryAll<{
+        id: string;
+        kickoffTime: string;
+        homeScore: number | null;
+        awayScore: number | null;
+        status: string;
+        venue: string | null;
+        homeTeamId: string;
+        homeTeamName: string;
+        homeTeamShortName: string;
+        homeTeamCode: string;
+        homeTeamLogo: string | null;
+        awayTeamId: string;
+        awayTeamName: string;
+        awayTeamShortName: string;
+        awayTeamCode: string;
+        awayTeamLogo: string | null;
+      }>(
+        `SELECT
           m.id,
-          m.kickoffTime,
-          m.homeScore,
-          m.awayScore,
+          m."kickoffTime",
+          m."homeScore",
+          m."awayScore",
           m.status,
           m.venue,
-          ht.id as homeTeamId,
-          ht.name as homeTeamName,
-          ht.shortName as homeTeamShortName,
-          ht.code as homeTeamCode,
-          ht.logo as homeTeamLogo,
-          at.id as awayTeamId,
-          at.name as awayTeamName,
-          at.shortName as awayTeamShortName,
-          at.code as awayTeamCode,
-          at.logo as awayTeamLogo
+          ht.id as "homeTeamId",
+          ht.name as "homeTeamName",
+          ht."shortName" as "homeTeamShortName",
+          ht.code as "homeTeamCode",
+          ht.logo as "homeTeamLogo",
+          at.id as "awayTeamId",
+          at.name as "awayTeamName",
+          at."shortName" as "awayTeamShortName",
+          at.code as "awayTeamCode",
+          at.logo as "awayTeamLogo"
         FROM match m
-        JOIN team ht ON m.homeTeamId = ht.id
-        JOIN team at ON m.awayTeamId = at.id
-        WHERE m.matchdayId = ?
-        ORDER BY m.kickoffTime ASC
-      `).all(md.id) as any[];
+        JOIN team ht ON m."homeTeamId" = ht.id
+        JOIN team at ON m."awayTeamId" = at.id
+        WHERE m."matchdayId" = $1
+        ORDER BY m."kickoffTime" ASC`,
+        [md.id]
+      );
 
       return {
         ...md,
-        matches: matches.map((m: any) => ({
+        matches: matches.map((m) => ({
           id: m.id,
           kickoffTime: m.kickoffTime,
           homeScore: m.homeScore,
@@ -165,7 +220,7 @@ router.get("/gameweek/:gameweekId", requireAuth, (req, res) => {
           },
         })),
       };
-    });
+    }));
 
     res.json({
       ...gameweek,
@@ -178,26 +233,27 @@ router.get("/gameweek/:gameweekId", requireAuth, (req, res) => {
 });
 
 // Get all gameweeks for a season
-router.get("/season/:seasonId/gameweeks", requireAuth, (req, res) => {
+router.get("/season/:seasonId/gameweeks", requireAuth, async (req, res) => {
   const { seasonId } = req.params;
 
   try {
-    const gameweeks = db.prepare(`
-      SELECT
+    const gameweeks = await queryAll(
+      `SELECT
         g.id,
         g.number,
         g.name,
         g.deadline,
-        g.startsAt,
-        g.endsAt,
+        g."startsAt",
+        g."endsAt",
         g.status,
         (SELECT COUNT(*) FROM matchday md
-         JOIN match m ON m.matchdayId = md.id
-         WHERE md.gameweekId = g.id) as matchCount
+         JOIN match m ON m."matchdayId" = md.id
+         WHERE md."gameweekId" = g.id) as "matchCount"
       FROM gameweek g
-      WHERE g.seasonId = ?
-      ORDER BY g.number ASC
-    `).all(seasonId);
+      WHERE g."seasonId" = $1
+      ORDER BY g.number ASC`,
+      [seasonId]
+    );
 
     res.json(gameweeks);
   } catch (err) {
@@ -207,7 +263,7 @@ router.get("/season/:seasonId/gameweeks", requireAuth, (req, res) => {
 });
 
 // Get current season for a competition
-router.get("/season/current/:competition", requireAuth, (req, res) => {
+router.get("/season/current/:competition", requireAuth, async (req, res) => {
   const { competition } = req.params;
 
   if (competition !== "premier_league" && competition !== "champions_league") {
@@ -216,10 +272,11 @@ router.get("/season/current/:competition", requireAuth, (req, res) => {
   }
 
   try {
-    const season = db.prepare(`
-      SELECT id, name, competition, startDate, endDate, isCurrent
-      FROM season WHERE competition = ? AND isCurrent = 1
-    `).get(competition);
+    const season = await queryOne(
+      `SELECT id, name, competition, "startDate", "endDate", "isCurrent"
+      FROM season WHERE competition = $1 AND "isCurrent" = true`,
+      [competition]
+    );
 
     if (!season) {
       res.status(404).json({ error: "No active season found" });
@@ -234,7 +291,7 @@ router.get("/season/current/:competition", requireAuth, (req, res) => {
 });
 
 // Get season status (including completion info)
-router.get("/season/:competition/status", requireAuth, (req, res) => {
+router.get("/season/:competition/status", requireAuth, async (req, res) => {
   const { competition } = req.params;
 
   if (competition !== "premier_league" && competition !== "champions_league") {
@@ -244,10 +301,18 @@ router.get("/season/:competition/status", requireAuth, (req, res) => {
 
   try {
     // Get current season
-    const season = db.prepare(`
-      SELECT id, name, competition, startDate, endDate, isCurrent
-      FROM season WHERE competition = ? AND isCurrent = 1
-    `).get(competition) as any;
+    const season = await queryOne<{
+      id: string;
+      name: string;
+      competition: string;
+      startDate: string;
+      endDate: string;
+      isCurrent: boolean;
+    }>(
+      `SELECT id, name, competition, "startDate", "endDate", "isCurrent"
+      FROM season WHERE competition = $1 AND "isCurrent" = true`,
+      [competition]
+    );
 
     if (!season) {
       res.status(404).json({ error: "No active season found" });
@@ -255,20 +320,23 @@ router.get("/season/:competition/status", requireAuth, (req, res) => {
     }
 
     // Count total gameweeks and completed gameweeks
-    const gameweekStats = db.prepare(`
-      SELECT
+    const gameweekStats = await queryOne<{ total: string; completed: string }>(
+      `SELECT
         COUNT(*) as total,
         SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as completed
       FROM gameweek
-      WHERE seasonId = ?
-    `).get(season.id) as { total: number; completed: number };
+      WHERE "seasonId" = $1`,
+      [season.id]
+    );
 
-    const isSeasonComplete = gameweekStats.total > 0 && gameweekStats.total === gameweekStats.completed;
+    const total = parseInt(gameweekStats?.total ?? "0", 10);
+    const completed = parseInt(gameweekStats?.completed ?? "0", 10);
+    const isSeasonComplete = total > 0 && total === completed;
 
     res.json({
       ...season,
-      totalGameweeks: gameweekStats.total,
-      completedGameweeks: gameweekStats.completed,
+      totalGameweeks: total,
+      completedGameweeks: completed,
       isSeasonComplete,
     });
   } catch (err) {
@@ -278,7 +346,7 @@ router.get("/season/:competition/status", requireAuth, (req, res) => {
 });
 
 // Get all teams for a competition
-router.get("/teams/:competition", requireAuth, (req, res) => {
+router.get("/teams/:competition", requireAuth, async (req, res) => {
   const { competition } = req.params;
 
   if (competition !== "premier_league" && competition !== "champions_league") {
@@ -287,11 +355,12 @@ router.get("/teams/:competition", requireAuth, (req, res) => {
   }
 
   try {
-    const teams = db.prepare(`
-      SELECT id, name, shortName, code, logo, competition
-      FROM team WHERE competition = ?
-      ORDER BY name ASC
-    `).all(competition);
+    const teams = await queryAll(
+      `SELECT id, name, "shortName", code, logo, competition
+      FROM team WHERE competition = $1
+      ORDER BY name ASC`,
+      [competition]
+    );
 
     res.json(teams);
   } catch (err) {

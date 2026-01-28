@@ -4,7 +4,7 @@ import cors from "cors";
 import rateLimit from "express-rate-limit";
 import { toNodeHandler } from "better-auth/node";
 import { auth } from "./auth.js";
-import { db } from "./db.js";
+import { queryOne } from "./db.js";
 import leaguesRouter from "./routes/leagues.js";
 import fixturesRouter from "./routes/fixtures.js";
 import predictionsRouter from "./routes/predictions.js";
@@ -44,7 +44,7 @@ app.use(generalLimiter);
 // Custom endpoint to lookup email by username for login
 app.use(express.json({ limit: "10kb" }));
 
-app.post("/api/auth/lookup-email", authLimiter, (req, res) => {
+app.post("/api/auth/lookup-email", authLimiter, async (req, res) => {
   const { identifier } = req.body;
 
   if (!identifier || typeof identifier !== "string") {
@@ -60,16 +60,24 @@ app.post("/api/auth/lookup-email", authLimiter, (req, res) => {
     return;
   }
 
-  // Otherwise, look up the user by username
-  const user = db.prepare("SELECT email FROM user WHERE LOWER(username) = ?").get(trimmedIdentifier) as { email: string } | undefined;
+  try {
+    // Otherwise, look up the user by username
+    const user = await queryOne<{ email: string }>(
+      `SELECT email FROM "user" WHERE LOWER(username) = $1`,
+      [trimmedIdentifier]
+    );
 
-  if (!user) {
-    // Don't reveal whether username exists - return generic error
-    res.status(401).json({ error: "Invalid credentials" });
-    return;
+    if (!user) {
+      // Don't reveal whether username exists - return generic error
+      res.status(401).json({ error: "Invalid credentials" });
+      return;
+    }
+
+    res.json({ email: user.email });
+  } catch (err) {
+    console.error("Failed to lookup email:", err);
+    res.status(500).json({ error: "Internal server error" });
   }
-
-  res.json({ email: user.email });
 });
 
 const authHandler = toNodeHandler(auth);

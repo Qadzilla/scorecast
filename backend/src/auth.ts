@@ -1,11 +1,11 @@
 import { betterAuth, type User } from "better-auth";
-import { db } from "./db.js";
+import { pool } from "./db.js";
 import { sendEmail } from "./email.js";
 
 const isProduction = process.env.NODE_ENV === "production";
 
 export const auth: ReturnType<typeof betterAuth> = betterAuth({
-  database: db,
+  database: pool,
   secret: process.env.BETTER_AUTH_SECRET,
   basePath: "/api/auth",
   trustedOrigins: [process.env.CORS_ORIGIN || "http://localhost:5174"],
@@ -39,7 +39,9 @@ export const auth: ReturnType<typeof betterAuth> = betterAuth({
         attributes: {
           httpOnly: true,
           secure: isProduction,
-          sameSite: "lax",
+          // Use "none" for cross-origin (Vercel frontend + Railway backend)
+          // "none" requires secure: true
+          sameSite: isProduction ? "none" : "lax",
         },
       },
     },

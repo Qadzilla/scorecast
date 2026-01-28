@@ -37,3 +37,6 @@ coverage/
 # Misc
 .cache/
 tmp/
+
+# Claude Code
+.claude/

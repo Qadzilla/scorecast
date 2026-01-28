@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import request from "supertest";
 import { app } from "../app.js";
-import { db } from "../db.js";
+import { query, queryOne, initializeDatabase } from "../db.js";
 
 // Admin email must match ADMIN_EMAILS env var
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || "test-admin@example.com";
@@ -32,6 +32,7 @@ describe("Admin API", () => {
     process.env.NODE_ENV = "test";
     // Set admin emails for admin middleware
     process.env.ADMIN_EMAILS = ADMIN_EMAIL;
+    await initializeDatabase();
 
     // Create admin user
     await request(app)
@@ -39,7 +40,7 @@ describe("Admin API", () => {
       .send(adminUser)
       .set("Content-Type", "application/json");
 
-    db.prepare("UPDATE user SET emailVerified = 1 WHERE email = ?").run(adminUser.email);
+    await query(`UPDATE "user" SET "emailVerified" = true WHERE email = $1`, [adminUser.email]);
 
     const adminLogin = await request(app)
       .post("/api/auth/sign-in/email")
@@ -54,7 +55,7 @@ describe("Admin API", () => {
       .send(regularUser)
       .set("Content-Type", "application/json");
 
-    db.prepare("UPDATE user SET emailVerified = 1 WHERE email = ?").run(regularUser.email);
+    await query(`UPDATE "user" SET "emailVerified" = true WHERE email = $1`, [regularUser.email]);
 
     const regularLogin = await request(app)
       .post("/api/auth/sign-in/email")
@@ -64,22 +65,22 @@ describe("Admin API", () => {
     regularCookie = regularLogin.headers["set-cookie"]?.[0] || "";
   });
 
-  afterAll(() => {
+  afterAll(async () => {
     try {
       // Clean up sessions and accounts first
-      const adminUserId = db.prepare("SELECT id FROM user WHERE email = ?").get(adminUser.email) as { id: string } | undefined;
-      const regularUserId = db.prepare("SELECT id FROM user WHERE email = ?").get(regularUser.email) as { id: string } | undefined;
+      const adminUserId = await queryOne<{ id: string }>(`SELECT id FROM "user" WHERE email = $1`, [adminUser.email]);
+      const regularUserId = await queryOne<{ id: string }>(`SELECT id FROM "user" WHERE email = $1`, [regularUser.email]);
 
       if (adminUserId) {
-        db.prepare("DELETE FROM session WHERE userId = ?").run(adminUserId.id);
-        db.prepare("DELETE FROM account WHERE userId = ?").run(adminUserId.id);
+        await query(`DELETE FROM session WHERE "userId" = $1`, [adminUserId.id]);
+        await query(`DELETE FROM account WHERE "userId" = $1`, [adminUserId.id]);
       }
       if (regularUserId) {
-        db.prepare("DELETE FROM session WHERE userId = ?").run(regularUserId.id);
-        db.prepare("DELETE FROM account WHERE userId = ?").run(regularUserId.id);
+        await query(`DELETE FROM session WHERE "userId" = $1`, [regularUserId.id]);
+        await query(`DELETE FROM account WHERE "userId" = $1`, [regularUserId.id]);
       }
 
-      db.prepare("DELETE FROM user WHERE email IN (?, ?)").run(adminUser.email, regularUser.email);
+      await query(`DELETE FROM "user" WHERE email IN ($1, $2)`, [adminUser.email, regularUser.email]);
     } catch (e) {
       // Ignore cleanup errors
     }

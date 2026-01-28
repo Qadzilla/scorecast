@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import request from "supertest";
 import { app } from "../app.js";
-import { db } from "../db.js";
+import { query, initializeDatabase } from "../db.js";
 
 // Test user credentials with all required fields
 const testUser = {
@@ -14,13 +14,14 @@ const testUser = {
 };
 
 describe("Auth API", () => {
-  beforeAll(() => {
+  beforeAll(async () => {
     process.env.NODE_ENV = "test";
+    await initializeDatabase();
   });
 
-  afterAll(() => {
+  afterAll(async () => {
     try {
-      db.prepare("DELETE FROM user WHERE email = ?").run(testUser.email);
+      await query(`DELETE FROM "user" WHERE email = $1`, [testUser.email]);
     } catch (e) {
       // Ignore cleanup errors
     }
@@ -131,7 +132,7 @@ describe("Auth API", () => {
 
     it("should reject login with wrong password", async () => {
       // First verify the user
-      db.prepare("UPDATE user SET emailVerified = 1 WHERE email = ?").run(testUser.email);
+      await query(`UPDATE "user" SET "emailVerified" = true WHERE email = $1`, [testUser.email]);
 
       const response = await request(app)
         .post("/api/auth/sign-in/email")
@@ -158,7 +159,7 @@ describe("Auth API", () => {
 
     it("should allow login with correct credentials", async () => {
       // Ensure user is verified
-      db.prepare("UPDATE user SET emailVerified = 1 WHERE email = ?").run(testUser.email);
+      await query(`UPDATE "user" SET "emailVerified" = true WHERE email = $1`, [testUser.email]);
 
       const response = await request(app)
         .post("/api/auth/sign-in/email")
@@ -188,7 +189,7 @@ describe("Auth API", () => {
 
     it("should return session when logged in", async () => {
       // Ensure user is verified
-      db.prepare("UPDATE user SET emailVerified = 1 WHERE email = ?").run(testUser.email);
+      await query(`UPDATE "user" SET "emailVerified" = true WHERE email = $1`, [testUser.email]);
 
       // Login first
       const loginResponse = await request(app)

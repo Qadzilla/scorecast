@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { db } from "../db.js";
+import { queryAll, queryOne, query } from "../db.js";
 import { requireAuth } from "../middleware/auth.js";
 import type { AuthenticatedRequest } from "../middleware/auth.js";
 import crypto from "crypto";
@@ -19,7 +19,7 @@ function generateInviteCode(): string {
 }
 
 // Create a new league
-router.post("/", requireAuth, (req, res) => {
+router.post("/", requireAuth, async (req, res) => {
   const { user } = req as AuthenticatedRequest;
   const { name, description, type } = req.body;
 
@@ -55,17 +55,19 @@ router.post("/", requireAuth, (req, res) => {
 
   try {
     // Create the league
-    db.prepare(`
-      INSERT INTO league (id, name, description, type, inviteCode, createdBy, createdAt, updatedAt)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-    `).run(leagueId, name.trim(), description?.trim() || null, type, inviteCode, user.id, now, now);
+    await query(
+      `INSERT INTO league (id, name, description, type, "inviteCode", "createdBy", "createdAt", "updatedAt")
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+      [leagueId, name.trim(), description?.trim() || null, type, inviteCode, user.id, now, now]
+    );
 
     // Add creator as admin member
     const memberId = crypto.randomUUID();
-    db.prepare(`
-      INSERT INTO league_member (id, leagueId, userId, role, joinedAt)
-      VALUES (?, ?, ?, ?, ?)
-    `).run(memberId, leagueId, user.id, "admin", now);
+    await query(
+      `INSERT INTO league_member (id, "leagueId", "userId", role, "joinedAt")
+      VALUES ($1, $2, $3, $4, $5)`,
+      [memberId, leagueId, user.id, "admin", now]
+    );
 
     res.status(201).json({
       id: leagueId,
@@ -84,7 +86,7 @@ router.post("/", requireAuth, (req, res) => {
 });
 
 // Join a league via invite code
-router.post("/join", requireAuth, (req, res) => {
+router.post("/join", requireAuth, async (req, res) => {
   const { user } = req as AuthenticatedRequest;
   const { inviteCode } = req.body;
 
@@ -95,10 +97,18 @@ router.post("/join", requireAuth, (req, res) => {
 
   try {
     // Find league by invite code
-    const league = db.prepare(`
-      SELECT id, name, description, inviteCode, createdBy, createdAt
-      FROM league WHERE inviteCode = ?
-    `).get(inviteCode.toUpperCase()) as { id: string; name: string; description: string; inviteCode: string; createdBy: string; createdAt: string } | undefined;
+    const league = await queryOne<{
+      id: string;
+      name: string;
+      description: string;
+      inviteCode: string;
+      createdBy: string;
+      createdAt: string;
+    }>(
+      `SELECT id, name, description, "inviteCode", "createdBy", "createdAt"
+      FROM league WHERE "inviteCode" = $1`,
+      [inviteCode.toUpperCase()]
+    );
 
     if (!league) {
       res.status(404).json({ error: "Invalid invite code" });
@@ -106,9 +116,10 @@ router.post("/join", requireAuth, (req, res) => {
     }
 
     // Check if already a member
-    const existingMember = db.prepare(`
-      SELECT id FROM league_member WHERE leagueId = ? AND userId = ?
-    `).get(league.id, user.id);
+    const existingMember = await queryOne(
+      `SELECT id FROM league_member WHERE "leagueId" = $1 AND "userId" = $2`,
+      [league.id, user.id]
+    );
 
     if (existingMember) {
       res.status(400).json({ error: "You are already a member of this league" });
@@ -118,10 +129,11 @@ router.post("/join", requireAuth, (req, res) => {
     // Add user as member
     const memberId = crypto.randomUUID();
     const now = new Date().toISOString();
-    db.prepare(`
-      INSERT INTO league_member (id, leagueId, userId, role, joinedAt)
-      VALUES (?, ?, ?, ?, ?)
-    `).run(memberId, league.id, user.id, "member", now);
+    await query(
+      `INSERT INTO league_member (id, "leagueId", "userId", role, "joinedAt")
+      VALUES ($1, $2, $3, $4, $5)`,
+      [memberId, league.id, user.id, "member", now]
+    );
 
     res.status(200).json({
       id: league.id,
@@ -137,27 +149,28 @@ router.post("/join", requireAuth, (req, res) => {
 });
 
 // Get user's leagues
-router.get("/", requireAuth, (req, res) => {
+router.get("/", requireAuth, async (req, res) => {
   const { user } = req as AuthenticatedRequest;
 
   try {
-    const leagues = db.prepare(`
-      SELECT
+    const leagues = await queryAll(
+      `SELECT
         l.id,
         l.name,
         l.description,
         l.type,
-        l.inviteCode,
-        l.createdBy,
-        l.createdAt,
+        l."inviteCode",
+        l."createdBy",
+        l."createdAt",
         lm.role,
-        lm.joinedAt,
-        (SELECT COUNT(*) FROM league_member WHERE leagueId = l.id) as memberCount
+        lm."joinedAt",
+        (SELECT COUNT(*) FROM league_member WHERE "leagueId" = l.id) as "memberCount"
       FROM league l
-      JOIN league_member lm ON l.id = lm.leagueId
-      WHERE lm.userId = ?
-      ORDER BY lm.joinedAt DESC
-    `).all(user.id);
+      JOIN league_member lm ON l.id = lm."leagueId"
+      WHERE lm."userId" = $1
+      ORDER BY lm."joinedAt" DESC`,
+      [user.id]
+    );
 
     res.json(leagues);
   } catch (err) {

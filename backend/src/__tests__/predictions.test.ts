@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import request from "supertest";
 import { app } from "../app.js";
-import { db } from "../db.js";
+import { query, queryOne, initializeDatabase } from "../db.js";
 
 describe("Predictions API", () => {
   let userCookie: string;
@@ -21,6 +21,7 @@ describe("Predictions API", () => {
 
   beforeAll(async () => {
     process.env.NODE_ENV = "test";
+    await initializeDatabase();
 
     // Create and verify user
     const signup = await request(app)
@@ -30,7 +31,7 @@ describe("Predictions API", () => {
 
     testUserId = signup.body.user?.id;
 
-    db.prepare("UPDATE user SET emailVerified = 1 WHERE email = ?").run(testUser.email);
+    await query(`UPDATE "user" SET "emailVerified" = true WHERE email = $1`, [testUser.email]);
 
     // Login
     const login = await request(app)
@@ -42,38 +43,44 @@ describe("Predictions API", () => {
 
     // Create test league
     testLeagueId = `test-league-${Date.now()}`;
-    db.prepare(`
-      INSERT INTO league (id, name, type, inviteCode, createdBy, createdAt, updatedAt)
-      VALUES (?, 'Test League', 'premier_league', 'TEST1234', ?, datetime('now'), datetime('now'))
-    `).run(testLeagueId, testUserId);
+    const now = new Date().toISOString();
+    await query(
+      `INSERT INTO league (id, name, type, "inviteCode", "createdBy", "createdAt", "updatedAt")
+      VALUES ($1, 'Test League', 'premier_league', 'TEST1234', $2, $3, $4)`,
+      [testLeagueId, testUserId, now, now]
+    );
 
     // Add user as member
-    db.prepare(`
-      INSERT INTO league_member (id, leagueId, userId, role, joinedAt)
-      VALUES (?, ?, ?, 'admin', datetime('now'))
-    `).run(`member-${Date.now()}`, testLeagueId, testUserId);
+    await query(
+      `INSERT INTO league_member (id, "leagueId", "userId", role, "joinedAt")
+      VALUES ($1, $2, $3, 'admin', $4)`,
+      [`member-${Date.now()}`, testLeagueId, testUserId, now]
+    );
 
     // Get a real gameweek and match from the database
-    const season = db.prepare(`
-      SELECT id FROM season WHERE competition = 'premier_league' AND isCurrent = 1
-    `).get() as { id: string } | undefined;
+    const season = await queryOne<{ id: string }>(
+      `SELECT id FROM season WHERE competition = 'premier_league' AND "isCurrent" = true`
+    );
 
     if (season) {
-      const gameweek = db.prepare(`
-        SELECT id FROM gameweek WHERE seasonId = ? AND deadline > datetime('now') LIMIT 1
-      `).get(season.id) as { id: string } | undefined;
+      const gameweek = await queryOne<{ id: string }>(
+        `SELECT id FROM gameweek WHERE "seasonId" = $1 AND deadline > NOW() LIMIT 1`,
+        [season.id]
+      );
 
       if (gameweek) {
         testGameweekId = gameweek.id;
 
-        const matchday = db.prepare(`
-          SELECT id FROM matchday WHERE gameweekId = ? LIMIT 1
-        `).get(gameweek.id) as { id: string } | undefined;
+        const matchday = await queryOne<{ id: string }>(
+          `SELECT id FROM matchday WHERE "gameweekId" = $1 LIMIT 1`,
+          [gameweek.id]
+        );
 
         if (matchday) {
-          const match = db.prepare(`
-            SELECT id FROM match WHERE matchdayId = ? LIMIT 1
-          `).get(matchday.id) as { id: string } | undefined;
+          const match = await queryOne<{ id: string }>(
+            `SELECT id FROM match WHERE "matchdayId" = $1 LIMIT 1`,
+            [matchday.id]
+          );
 
           if (match) {
             testMatchId = match.id;
@@ -83,12 +90,12 @@ describe("Predictions API", () => {
     }
   });
 
-  afterAll(() => {
+  afterAll(async () => {
     try {
-      db.prepare("DELETE FROM prediction WHERE leagueId = ?").run(testLeagueId);
-      db.prepare("DELETE FROM league_member WHERE leagueId = ?").run(testLeagueId);
-      db.prepare("DELETE FROM league WHERE id = ?").run(testLeagueId);
-      db.prepare("DELETE FROM user WHERE email = ?").run(testUser.email);
+      await query(`DELETE FROM prediction WHERE "leagueId" = $1`, [testLeagueId]);
+      await query(`DELETE FROM league_member WHERE "leagueId" = $1`, [testLeagueId]);
+      await query(`DELETE FROM league WHERE id = $1`, [testLeagueId]);
+      await query(`DELETE FROM "user" WHERE email = $1`, [testUser.email]);
     } catch (e) {
       // Ignore cleanup errors
     }

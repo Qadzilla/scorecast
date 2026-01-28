@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import request from "supertest";
 import { app } from "../app.js";
-import { db } from "../db.js";
+import { query, queryOne, initializeDatabase } from "../db.js";
 
 describe("Fixtures API", () => {
   let userCookie: string;
@@ -17,6 +17,7 @@ describe("Fixtures API", () => {
 
   beforeAll(async () => {
     process.env.NODE_ENV = "test";
+    await initializeDatabase();
 
     // Create and verify user
     await request(app)
@@ -24,7 +25,7 @@ describe("Fixtures API", () => {
       .send(testUser)
       .set("Content-Type", "application/json");
 
-    db.prepare("UPDATE user SET emailVerified = 1 WHERE email = ?").run(testUser.email);
+    await query(`UPDATE "user" SET "emailVerified" = true WHERE email = $1`, [testUser.email]);
 
     // Login
     const login = await request(app)
@@ -35,9 +36,9 @@ describe("Fixtures API", () => {
     userCookie = login.headers["set-cookie"]?.[0] || "";
   });
 
-  afterAll(() => {
+  afterAll(async () => {
     try {
-      db.prepare("DELETE FROM user WHERE email = ?").run(testUser.email);
+      await query(`DELETE FROM "user" WHERE email = $1`, [testUser.email]);
     } catch (e) {
       // Ignore cleanup errors
     }
@@ -88,15 +89,16 @@ describe("Fixtures API", () => {
   describe("GET /api/fixtures/gameweek/:gameweekId", () => {
     it("should return gameweek with matches", async () => {
       // First get a valid gameweek ID
-      const season = db.prepare(
-        "SELECT id FROM season WHERE competition = 'premier_league' AND isCurrent = 1"
-      ).get() as { id: string } | undefined;
+      const season = await queryOne<{ id: string }>(
+        `SELECT id FROM season WHERE competition = 'premier_league' AND "isCurrent" = true`
+      );
 
       if (!season) return;
 
-      const gameweek = db.prepare(
-        "SELECT id FROM gameweek WHERE seasonId = ? LIMIT 1"
-      ).get(season.id) as { id: string } | undefined;
+      const gameweek = await queryOne<{ id: string }>(
+        `SELECT id FROM gameweek WHERE "seasonId" = $1 LIMIT 1`,
+        [season.id]
+      );
 
       if (!gameweek) return;
 

@@ -11,6 +11,7 @@ export default defineConfig({
     env: {
       NODE_ENV: "test",
       ADMIN_EMAIL: "test-admin@example.com",
+      DATABASE_URL: process.env.DATABASE_URL || "postgresql://postgres:postgres@localhost:5432/scorecast_test",
     },
   },
 });

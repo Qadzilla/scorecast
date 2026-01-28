@@ -1,17 +1,17 @@
 import { Router } from "express";
-import { db } from "../db.js";
+import { queryAll, queryOne, query } from "../db.js";
 import { requireAuth } from "../middleware/auth.js";
 import type { AuthenticatedRequest } from "../middleware/auth.js";
 
 const router = Router();
 
 // Get all teams (for team selection) - deduplicated by name
-router.get("/teams", requireAuth, (_req, res) => {
+router.get("/teams", requireAuth, async (_req, res) => {
   try {
-    // Use GROUP BY to deduplicate teams that appear in both PL and UCL
+    // Use a subquery to deduplicate teams that appear in both PL and UCL
     // Prefer premier_league version over champions_league
-    const teams = db.prepare(`
-      SELECT id, name, shortName, code, logo, competition
+    const teams = await queryAll(
+      `SELECT id, name, "shortName", code, logo, competition
       FROM team
       WHERE id IN (
         SELECT id FROM team t1
@@ -22,8 +22,8 @@ router.get("/teams", requireAuth, (_req, res) => {
           AND t1.competition = 'champions_league'
         )
       )
-      ORDER BY name ASC
-    `).all();
+      ORDER BY name ASC`
+    );
 
     res.json(teams);
   } catch (err) {
@@ -33,14 +33,15 @@ router.get("/teams", requireAuth, (_req, res) => {
 });
 
 // Get current user's favorite team
-router.get("/favorite-team", requireAuth, (req, res) => {
+router.get("/favorite-team", requireAuth, async (req, res) => {
   const authReq = req as AuthenticatedRequest;
   const userId = authReq.user.id;
 
   try {
-    const user = db.prepare(`
-      SELECT favoriteTeamId FROM user WHERE id = ?
-    `).get(userId) as { favoriteTeamId: string | null } | undefined;
+    const user = await queryOne<{ favoriteTeamId: string | null }>(
+      `SELECT "favoriteTeamId" FROM "user" WHERE id = $1`,
+      [userId]
+    );
 
     if (!user) {
       res.status(404).json({ error: "User not found" });
@@ -52,10 +53,11 @@ router.get("/favorite-team", requireAuth, (req, res) => {
       return;
     }
 
-    const team = db.prepare(`
-      SELECT id, name, shortName, code, logo, competition
-      FROM team WHERE id = ?
-    `).get(user.favoriteTeamId);
+    const team = await queryOne(
+      `SELECT id, name, "shortName", code, logo, competition
+      FROM team WHERE id = $1`,
+      [user.favoriteTeamId]
+    );
 
     res.json({ favoriteTeamId: user.favoriteTeamId, team });
   } catch (err) {
@@ -65,7 +67,7 @@ router.get("/favorite-team", requireAuth, (req, res) => {
 });
 
 // Update username
-router.put("/username", requireAuth, (req, res) => {
+router.put("/username", requireAuth, async (req, res) => {
   const authReq = req as AuthenticatedRequest;
   const userId = authReq.user.id;
   const { username } = req.body;
@@ -89,9 +91,10 @@ router.put("/username", requireAuth, (req, res) => {
 
   try {
     // Check if username is already taken by another user
-    const existing = db.prepare(`
-      SELECT id FROM user WHERE username = ? AND id != ?
-    `).get(trimmedUsername, userId);
+    const existing = await queryOne(
+      `SELECT id FROM "user" WHERE username = $1 AND id != $2`,
+      [trimmedUsername, userId]
+    );
 
     if (existing) {
       res.status(409).json({ error: "Username is already taken" });
@@ -99,9 +102,10 @@ router.put("/username", requireAuth, (req, res) => {
     }
 
     // Update username
-    db.prepare(`
-      UPDATE user SET username = ? WHERE id = ?
-    `).run(trimmedUsername, userId);
+    await query(
+      `UPDATE "user" SET username = $1 WHERE id = $2`,
+      [trimmedUsername, userId]
+    );
 
     res.json({ success: true, username: trimmedUsername });
   } catch (err) {
@@ -111,7 +115,7 @@ router.put("/username", requireAuth, (req, res) => {
 });
 
 // Set favorite team
-router.post("/favorite-team", requireAuth, (req, res) => {
+router.post("/favorite-team", requireAuth, async (req, res) => {
   const authReq = req as AuthenticatedRequest;
   const userId = authReq.user.id;
   const { teamId } = req.body;
@@ -123,10 +127,11 @@ router.post("/favorite-team", requireAuth, (req, res) => {
 
   try {
     // Verify team exists
-    const team = db.prepare(`
-      SELECT id, name, shortName, code, logo, competition
-      FROM team WHERE id = ?
-    `).get(teamId);
+    const team = await queryOne(
+      `SELECT id, name, "shortName", code, logo, competition
+      FROM team WHERE id = $1`,
+      [teamId]
+    );
 
     if (!team) {
       res.status(404).json({ error: "Team not found" });
@@ -134,9 +139,10 @@ router.post("/favorite-team", requireAuth, (req, res) => {
     }
 
     // Update user's favorite team
-    db.prepare(`
-      UPDATE user SET favoriteTeamId = ? WHERE id = ?
-    `).run(teamId, userId);
+    await query(
+      `UPDATE "user" SET "favoriteTeamId" = $1 WHERE id = $2`,
+      [teamId, userId]
+    );
 
     res.json({ success: true, team });
   } catch (err) {

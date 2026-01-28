@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import request from "supertest";
 import { app } from "../app.js";
-import { db } from "../db.js";
+import { query, queryOne, initializeDatabase } from "../db.js";
 
 describe("Leaderboard API", () => {
   let userCookie: string;
@@ -30,6 +30,7 @@ describe("Leaderboard API", () => {
 
   beforeAll(async () => {
     process.env.NODE_ENV = "test";
+    await initializeDatabase();
 
     // Create and verify user 1
     const signup = await request(app)
@@ -37,7 +38,7 @@ describe("Leaderboard API", () => {
       .send(testUser)
       .set("Content-Type", "application/json");
     testUserId = signup.body.user?.id;
-    db.prepare("UPDATE user SET emailVerified = 1 WHERE email = ?").run(testUser.email);
+    await query(`UPDATE "user" SET "emailVerified" = true WHERE email = $1`, [testUser.email]);
 
     const login = await request(app)
       .post("/api/auth/sign-in/email")
@@ -51,7 +52,7 @@ describe("Leaderboard API", () => {
       .send(testUser2)
       .set("Content-Type", "application/json");
     testUser2Id = signup2.body.user?.id;
-    db.prepare("UPDATE user SET emailVerified = 1 WHERE email = ?").run(testUser2.email);
+    await query(`UPDATE "user" SET "emailVerified" = true WHERE email = $1`, [testUser2.email]);
 
     const login2 = await request(app)
       .post("/api/auth/sign-in/email")
@@ -61,29 +62,33 @@ describe("Leaderboard API", () => {
 
     // Create test league
     testLeagueId = `leaderboard-league-${Date.now()}`;
-    db.prepare(`
-      INSERT INTO league (id, name, type, inviteCode, createdBy, createdAt, updatedAt)
-      VALUES (?, 'Leaderboard Test League', 'premier_league', 'LBTEST12', ?, datetime('now'), datetime('now'))
-    `).run(testLeagueId, testUserId);
+    const now = new Date().toISOString();
+    await query(
+      `INSERT INTO league (id, name, type, "inviteCode", "createdBy", "createdAt", "updatedAt")
+      VALUES ($1, 'Leaderboard Test League', 'premier_league', 'LBTEST12', $2, $3, $4)`,
+      [testLeagueId, testUserId, now, now]
+    );
 
     // Add users as members
-    db.prepare(`
-      INSERT INTO league_member (id, leagueId, userId, role, joinedAt)
-      VALUES (?, ?, ?, 'admin', datetime('now'))
-    `).run(`member1-${Date.now()}`, testLeagueId, testUserId);
+    await query(
+      `INSERT INTO league_member (id, "leagueId", "userId", role, "joinedAt")
+      VALUES ($1, $2, $3, 'admin', $4)`,
+      [`member1-${Date.now()}`, testLeagueId, testUserId, now]
+    );
 
-    db.prepare(`
-      INSERT INTO league_member (id, leagueId, userId, role, joinedAt)
-      VALUES (?, ?, ?, 'member', datetime('now'))
-    `).run(`member2-${Date.now()}`, testLeagueId, testUser2Id);
+    await query(
+      `INSERT INTO league_member (id, "leagueId", "userId", role, "joinedAt")
+      VALUES ($1, $2, $3, 'member', $4)`,
+      [`member2-${Date.now()}`, testLeagueId, testUser2Id, now]
+    );
   });
 
-  afterAll(() => {
+  afterAll(async () => {
     try {
-      db.prepare("DELETE FROM prediction WHERE leagueId = ?").run(testLeagueId);
-      db.prepare("DELETE FROM league_member WHERE leagueId = ?").run(testLeagueId);
-      db.prepare("DELETE FROM league WHERE id = ?").run(testLeagueId);
-      db.prepare("DELETE FROM user WHERE email IN (?, ?)").run(testUser.email, testUser2.email);
+      await query(`DELETE FROM prediction WHERE "leagueId" = $1`, [testLeagueId]);
+      await query(`DELETE FROM league_member WHERE "leagueId" = $1`, [testLeagueId]);
+      await query(`DELETE FROM league WHERE id = $1`, [testLeagueId]);
+      await query(`DELETE FROM "user" WHERE email IN ($1, $2)`, [testUser.email, testUser2.email]);
     } catch (e) {
       // Ignore cleanup errors
     }
@@ -148,7 +153,7 @@ describe("Leaderboard API", () => {
         .send(outsideUser)
         .set("Content-Type", "application/json");
 
-      db.prepare("UPDATE user SET emailVerified = 1 WHERE email = ?").run(outsideUser.email);
+      await query(`UPDATE "user" SET "emailVerified" = true WHERE email = $1`, [outsideUser.email]);
 
       const login = await request(app)
         .post("/api/auth/sign-in/email")
@@ -164,11 +169,11 @@ describe("Leaderboard API", () => {
       expect(response.status).toBe(403);
 
       // Cleanup - delete related records first due to foreign keys
-      const outsideUserId = db.prepare("SELECT id FROM user WHERE email = ?").get(outsideUser.email) as { id: string } | undefined;
+      const outsideUserId = await queryOne<{ id: string }>(`SELECT id FROM "user" WHERE email = $1`, [outsideUser.email]);
       if (outsideUserId) {
-        db.prepare("DELETE FROM session WHERE userId = ?").run(outsideUserId.id);
-        db.prepare("DELETE FROM account WHERE userId = ?").run(outsideUserId.id);
-        db.prepare("DELETE FROM user WHERE id = ?").run(outsideUserId.id);
+        await query(`DELETE FROM session WHERE "userId" = $1`, [outsideUserId.id]);
+        await query(`DELETE FROM account WHERE "userId" = $1`, [outsideUserId.id]);
+        await query(`DELETE FROM "user" WHERE id = $1`, [outsideUserId.id]);
       }
     });
 

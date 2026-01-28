@@ -1,4 +1,4 @@
-import { db } from "../db.js";
+import { query, withTransaction } from "../db.js";
 import crypto from "crypto";
 
 // football-data.org API
@@ -98,35 +98,34 @@ export async function syncTeams(competition: "premier_league" | "champions_leagu
   );
 
   const now = new Date().toISOString();
-  const insertStmt = db.prepare(`
-    INSERT INTO team (id, name, shortName, code, logo, competition, createdAt, updatedAt)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-    ON CONFLICT(id) DO UPDATE SET
-      name = excluded.name,
-      shortName = excluded.shortName,
-      code = excluded.code,
-      logo = excluded.logo,
-      updatedAt = excluded.updatedAt
-  `);
 
   let count = 0;
-  const transaction = db.transaction(() => {
+  await withTransaction(async (client) => {
     for (const team of data.teams) {
-      insertStmt.run(
-        `${competition}-${team.id}`,
-        team.name,
-        team.shortName || team.name,
-        team.tla || team.shortName?.substring(0, 3).toUpperCase() || "???",
-        team.crest,
-        competition,
-        now,
-        now
+      await client.query(
+        `INSERT INTO team (id, name, "shortName", code, logo, competition, "createdAt", "updatedAt")
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+        ON CONFLICT(id) DO UPDATE SET
+          name = EXCLUDED.name,
+          "shortName" = EXCLUDED."shortName",
+          code = EXCLUDED.code,
+          logo = EXCLUDED.logo,
+          "updatedAt" = EXCLUDED."updatedAt"`,
+        [
+          `${competition}-${team.id}`,
+          team.name,
+          team.shortName || team.name,
+          team.tla || team.shortName?.substring(0, 3).toUpperCase() || "???",
+          team.crest,
+          competition,
+          now,
+          now
+        ]
       );
       count++;
     }
   });
 
-  transaction();
   console.log(`Synced ${count} teams for ${competition}`);
   return count;
 }
@@ -149,19 +148,23 @@ export async function syncSeason(competition: "premier_league" | "champions_leag
   const seasonName = `${startYear}-${String(endYear).slice(-2)}`;
 
   // Mark all other seasons as not current
-  db.prepare(`UPDATE season SET isCurrent = 0, updatedAt = ? WHERE competition = ?`).run(now, competition);
+  await query(
+    `UPDATE season SET "isCurrent" = false, "updatedAt" = $1 WHERE competition = $2`,
+    [now, competition]
+  );
 
   // Insert/update current season
-  db.prepare(`
-    INSERT INTO season (id, name, competition, startDate, endDate, isCurrent, createdAt, updatedAt)
-    VALUES (?, ?, ?, ?, ?, 1, ?, ?)
+  await query(
+    `INSERT INTO season (id, name, competition, "startDate", "endDate", "isCurrent", "createdAt", "updatedAt")
+    VALUES ($1, $2, $3, $4, $5, true, $6, $7)
     ON CONFLICT(id) DO UPDATE SET
-      name = excluded.name,
-      startDate = excluded.startDate,
-      endDate = excluded.endDate,
-      isCurrent = 1,
-      updatedAt = excluded.updatedAt
-  `).run(seasonId, seasonName, competition, season.startDate, season.endDate, now, now);
+      name = EXCLUDED.name,
+      "startDate" = EXCLUDED."startDate",
+      "endDate" = EXCLUDED."endDate",
+      "isCurrent" = true,
+      "updatedAt" = EXCLUDED."updatedAt"`,
+    [seasonId, seasonName, competition, season.startDate, season.endDate, now, now]
+  );
 
   console.log(`Synced season ${seasonName} for ${competition}`);
   return seasonId;
@@ -196,7 +199,7 @@ export async function syncMatches(
   let matchCount = 0;
   const timestamp = new Date().toISOString();
 
-  const transaction = db.transaction(() => {
+  await withTransaction(async (client) => {
     for (const [gameweekNum, matches] of matchesByGameweek) {
       // Sort matches by date to find first and last
       matches.sort((a, b) => new Date(a.utcDate).getTime() - new Date(b.utcDate).getTime());
@@ -205,11 +208,11 @@ export async function syncMatches(
       const lastMatch = matches[matches.length - 1];
 
       // Calculate deadline (1 hour before first match)
-      const firstKickoff = new Date(firstMatch.utcDate);
+      const firstKickoff = new Date(firstMatch!.utcDate);
       const deadline = new Date(firstKickoff.getTime() - 60 * 60 * 1000);
 
       // Estimate end time (last match + 2 hours)
-      const lastKickoff = new Date(lastMatch.utcDate);
+      const lastKickoff = new Date(lastMatch!.utcDate);
       const endsAt = new Date(lastKickoff.getTime() + 2 * 60 * 60 * 1000);
 
       // Determine gameweek status
@@ -225,32 +228,33 @@ export async function syncMatches(
 
       // Create gameweek
       const gameweekId = `${seasonId}-gw${gameweekNum}`;
-      db.prepare(`
-        INSERT INTO gameweek (id, seasonId, number, name, deadline, startsAt, endsAt, status, createdAt, updatedAt)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      await client.query(
+        `INSERT INTO gameweek (id, "seasonId", number, name, deadline, "startsAt", "endsAt", status, "createdAt", "updatedAt")
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
         ON CONFLICT(id) DO UPDATE SET
-          deadline = excluded.deadline,
-          startsAt = excluded.startsAt,
-          endsAt = excluded.endsAt,
-          status = excluded.status,
-          updatedAt = excluded.updatedAt
-      `).run(
-        gameweekId,
-        seasonId,
-        gameweekNum,
-        `Gameweek ${gameweekNum}`,
-        deadline.toISOString(),
-        firstKickoff.toISOString(),
-        endsAt.toISOString(),
-        status,
-        timestamp,
-        timestamp
+          deadline = EXCLUDED.deadline,
+          "startsAt" = EXCLUDED."startsAt",
+          "endsAt" = EXCLUDED."endsAt",
+          status = EXCLUDED.status,
+          "updatedAt" = EXCLUDED."updatedAt"`,
+        [
+          gameweekId,
+          seasonId,
+          gameweekNum,
+          `Gameweek ${gameweekNum}`,
+          deadline.toISOString(),
+          firstKickoff.toISOString(),
+          endsAt.toISOString(),
+          status,
+          timestamp,
+          timestamp
+        ]
       );
 
       // Group matches by date for matchdays
       const matchesByDate = new Map<string, ApiMatch[]>();
       for (const match of matches) {
-        const date = match.utcDate.split("T")[0];
+        const date = match.utcDate.split("T")[0]!;
         if (!matchesByDate.has(date)) {
           matchesByDate.set(date, []);
         }
@@ -265,14 +269,15 @@ export async function syncMatches(
         const dayMatches = matchesByDate.get(date)!;
         const matchdayId = `${gameweekId}-day${dayNumber}`;
 
-        db.prepare(`
-          INSERT INTO matchday (id, gameweekId, date, dayNumber, createdAt, updatedAt)
-          VALUES (?, ?, ?, ?, ?, ?)
+        await client.query(
+          `INSERT INTO matchday (id, "gameweekId", date, "dayNumber", "createdAt", "updatedAt")
+          VALUES ($1, $2, $3, $4, $5, $6)
           ON CONFLICT(id) DO UPDATE SET
-            date = excluded.date,
-            dayNumber = excluded.dayNumber,
-            updatedAt = excluded.updatedAt
-        `).run(matchdayId, gameweekId, date, dayNumber, timestamp, timestamp);
+            date = EXCLUDED.date,
+            "dayNumber" = EXCLUDED."dayNumber",
+            "updatedAt" = EXCLUDED."updatedAt"`,
+          [matchdayId, gameweekId, date, dayNumber, timestamp, timestamp]
+        );
 
         // Insert matches
         for (const match of dayMatches) {
@@ -287,56 +292,63 @@ export async function syncMatches(
             continue;
           }
 
-          const ensureTeamStmt = db.prepare(`
-            INSERT INTO team (id, name, shortName, code, logo, competition, createdAt, updatedAt)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-            ON CONFLICT(id) DO NOTHING
-          `);
-
-          ensureTeamStmt.run(
-            homeTeamId,
-            match.homeTeam.name,
-            match.homeTeam.shortName || match.homeTeam.name,
-            match.homeTeam.tla || "???",
-            match.homeTeam.crest || null,
-            competition,
-            timestamp,
-            timestamp
+          // Ensure home team exists
+          await client.query(
+            `INSERT INTO team (id, name, "shortName", code, logo, competition, "createdAt", "updatedAt")
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+            ON CONFLICT(id) DO NOTHING`,
+            [
+              homeTeamId,
+              match.homeTeam.name,
+              match.homeTeam.shortName || match.homeTeam.name,
+              match.homeTeam.tla || "???",
+              match.homeTeam.crest || null,
+              competition,
+              timestamp,
+              timestamp
+            ]
           );
 
-          ensureTeamStmt.run(
-            awayTeamId,
-            match.awayTeam.name,
-            match.awayTeam.shortName || match.awayTeam.name,
-            match.awayTeam.tla || "???",
-            match.awayTeam.crest || null,
-            competition,
-            timestamp,
-            timestamp
+          // Ensure away team exists
+          await client.query(
+            `INSERT INTO team (id, name, "shortName", code, logo, competition, "createdAt", "updatedAt")
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+            ON CONFLICT(id) DO NOTHING`,
+            [
+              awayTeamId,
+              match.awayTeam.name,
+              match.awayTeam.shortName || match.awayTeam.name,
+              match.awayTeam.tla || "???",
+              match.awayTeam.crest || null,
+              competition,
+              timestamp,
+              timestamp
+            ]
           );
 
-          db.prepare(`
-            INSERT INTO match (id, matchdayId, homeTeamId, awayTeamId, kickoffTime, homeScore, awayScore, status, venue, createdAt, updatedAt)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          await client.query(
+            `INSERT INTO match (id, "matchdayId", "homeTeamId", "awayTeamId", "kickoffTime", "homeScore", "awayScore", status, venue, "createdAt", "updatedAt")
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
             ON CONFLICT(id) DO UPDATE SET
-              kickoffTime = excluded.kickoffTime,
-              homeScore = excluded.homeScore,
-              awayScore = excluded.awayScore,
-              status = excluded.status,
-              venue = excluded.venue,
-              updatedAt = excluded.updatedAt
-          `).run(
-            matchId,
-            matchdayId,
-            homeTeamId,
-            awayTeamId,
-            match.utcDate,
-            match.score.fullTime.home,
-            match.score.fullTime.away,
-            mapMatchStatus(match.status),
-            match.venue,
-            timestamp,
-            timestamp
+              "kickoffTime" = EXCLUDED."kickoffTime",
+              "homeScore" = EXCLUDED."homeScore",
+              "awayScore" = EXCLUDED."awayScore",
+              status = EXCLUDED.status,
+              venue = EXCLUDED.venue,
+              "updatedAt" = EXCLUDED."updatedAt"`,
+            [
+              matchId,
+              matchdayId,
+              homeTeamId,
+              awayTeamId,
+              match.utcDate,
+              match.score.fullTime.home,
+              match.score.fullTime.away,
+              mapMatchStatus(match.status),
+              match.venue,
+              timestamp,
+              timestamp
+            ]
           );
           matchCount++;
         }
@@ -346,7 +358,6 @@ export async function syncMatches(
     }
   });
 
-  transaction();
   console.log(`Synced ${matchCount} matches for ${competition}`);
   return matchCount;
 }
@@ -395,28 +406,26 @@ export async function updateMatchResults(competition: "premier_league" | "champi
 
   let updated = 0;
 
-  const updateStmt = db.prepare(`
-    UPDATE match
-    SET homeScore = ?, awayScore = ?, status = ?
-    WHERE id = ? AND (homeScore IS NULL OR awayScore IS NULL OR status != 'finished')
-  `);
-
-  const transaction = db.transaction(() => {
+  await withTransaction(async (client) => {
     for (const match of data.matches) {
       const matchId = `${competition}-match-${match.id}`;
-      const result = updateStmt.run(
-        match.score.fullTime.home,
-        match.score.fullTime.away,
-        "finished",
-        matchId
+      const result = await client.query(
+        `UPDATE match
+        SET "homeScore" = $1, "awayScore" = $2, status = $3
+        WHERE id = $4 AND ("homeScore" IS NULL OR "awayScore" IS NULL OR status != 'finished')`,
+        [
+          match.score.fullTime.home,
+          match.score.fullTime.away,
+          "finished",
+          matchId
+        ]
       );
-      if (result.changes > 0) {
+      if ((result.rowCount ?? 0) > 0) {
         updated++;
       }
     }
   });
 
-  transaction();
   console.log(`Updated ${updated} match results for ${competition}`);
   return updated;
 }
@@ -424,5 +433,5 @@ export async function updateMatchResults(competition: "premier_league" | "champi
 function getDateString(daysOffset: number): string {
   const date = new Date();
   date.setDate(date.getDate() + daysOffset);
-  return date.toISOString().split("T")[0];
+  return date.toISOString().split("T")[0]!;
 }

@@ -1,12 +1,16 @@
-import type { Database } from "better-sqlite3";
+import type pg from "pg";
 
-export function up(db: Database): void {
-  // Add favoriteTeamId column to user table
-  const hasColumn = db.prepare(`
-    SELECT COUNT(*) as count FROM pragma_table_info('user') WHERE name = 'favoriteTeamId'
-  `).get() as { count: number };
+export async function up(client: pg.PoolClient): Promise<void> {
+  // Check if favoriteTeamId column exists using information_schema
+  const result = await client.query(`
+    SELECT COUNT(*) as count
+    FROM information_schema.columns
+    WHERE table_name = 'user' AND column_name = 'favoriteTeamId'
+  `);
 
-  if (hasColumn.count === 0) {
-    db.exec(`ALTER TABLE user ADD COLUMN favoriteTeamId TEXT`);
+  const hasColumn = parseInt(result.rows[0]?.count ?? "0", 10) > 0;
+
+  if (!hasColumn) {
+    await client.query(`ALTER TABLE "user" ADD COLUMN "favoriteTeamId" TEXT`);
   }
 }

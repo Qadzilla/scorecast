@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import request from "supertest";
 import { app } from "../app.js";
-import { db } from "../db.js";
+import { query, queryOne, initializeDatabase } from "../db.js";
 
 /**
  * Authorization Security Tests
@@ -36,6 +36,7 @@ describe("Authorization Security Tests", () => {
 
   beforeAll(async () => {
     process.env.NODE_ENV = "test";
+    await initializeDatabase();
 
     // Create user 1
     const signup1 = await request(app)
@@ -44,7 +45,7 @@ describe("Authorization Security Tests", () => {
       .set("Content-Type", "application/json");
 
     user1Id = signup1.body.user?.id;
-    db.prepare("UPDATE user SET emailVerified = 1 WHERE email = ?").run(user1.email);
+    await query(`UPDATE "user" SET "emailVerified" = true WHERE email = $1`, [user1.email]);
 
     const login1 = await request(app)
       .post("/api/auth/sign-in/email")
@@ -60,7 +61,7 @@ describe("Authorization Security Tests", () => {
       .set("Content-Type", "application/json");
 
     user2Id = signup2.body.user?.id;
-    db.prepare("UPDATE user SET emailVerified = 1 WHERE email = ?").run(user2.email);
+    await query(`UPDATE "user" SET "emailVerified" = true WHERE email = $1`, [user2.email]);
 
     const login2 = await request(app)
       .post("/api/auth/sign-in/email")
@@ -69,44 +70,52 @@ describe("Authorization Security Tests", () => {
 
     user2Cookie = login2.headers["set-cookie"]?.[0] || "";
 
+    const now = new Date().toISOString();
+
     // Create a league that user1 owns but user2 is NOT a member
     privateLeagueId = `private-league-${Date.now()}`;
-    db.prepare(`
-      INSERT INTO league (id, name, type, inviteCode, createdBy, createdAt, updatedAt)
-      VALUES (?, 'Private League', 'premier_league', 'PRIV1234', ?, datetime('now'), datetime('now'))
-    `).run(privateLeagueId, user1Id);
+    await query(
+      `INSERT INTO league (id, name, type, "inviteCode", "createdBy", "createdAt", "updatedAt")
+      VALUES ($1, 'Private League', 'premier_league', 'PRIV1234', $2, $3, $4)`,
+      [privateLeagueId, user1Id, now, now]
+    );
 
-    db.prepare(`
-      INSERT INTO league_member (id, leagueId, userId, role, joinedAt)
-      VALUES (?, ?, ?, 'admin', datetime('now'))
-    `).run(`priv-member-${Date.now()}`, privateLeagueId, user1Id);
+    await query(
+      `INSERT INTO league_member (id, "leagueId", "userId", role, "joinedAt")
+      VALUES ($1, $2, $3, 'admin', $4)`,
+      [`priv-member-${Date.now()}`, privateLeagueId, user1Id, now]
+    );
 
     // Create a shared league for other tests
     testLeagueId = `shared-league-${Date.now()}`;
-    db.prepare(`
-      INSERT INTO league (id, name, type, inviteCode, createdBy, createdAt, updatedAt)
-      VALUES (?, 'Shared League', 'premier_league', 'SHARE123', ?, datetime('now'), datetime('now'))
-    `).run(testLeagueId, user1Id);
+    await query(
+      `INSERT INTO league (id, name, type, "inviteCode", "createdBy", "createdAt", "updatedAt")
+      VALUES ($1, 'Shared League', 'premier_league', 'SHARE123', $2, $3, $4)`,
+      [testLeagueId, user1Id, now, now]
+    );
 
-    db.prepare(`
-      INSERT INTO league_member (id, leagueId, userId, role, joinedAt)
-      VALUES (?, ?, ?, 'admin', datetime('now'))
-    `).run(`share-member1-${Date.now()}`, testLeagueId, user1Id);
+    await query(
+      `INSERT INTO league_member (id, "leagueId", "userId", role, "joinedAt")
+      VALUES ($1, $2, $3, 'admin', $4)`,
+      [`share-member1-${Date.now()}`, testLeagueId, user1Id, now]
+    );
 
-    db.prepare(`
-      INSERT INTO league_member (id, leagueId, userId, role, joinedAt)
-      VALUES (?, ?, ?, 'member', datetime('now'))
-    `).run(`share-member2-${Date.now()}`, testLeagueId, user2Id);
+    await query(
+      `INSERT INTO league_member (id, "leagueId", "userId", role, "joinedAt")
+      VALUES ($1, $2, $3, 'member', $4)`,
+      [`share-member2-${Date.now()}`, testLeagueId, user2Id, now]
+    );
 
     // Get a gameweek for prediction tests
-    const season = db.prepare(
-      "SELECT id FROM season WHERE competition = 'premier_league' AND isCurrent = 1"
-    ).get() as { id: string } | undefined;
+    const season = await queryOne<{ id: string }>(
+      `SELECT id FROM season WHERE competition = 'premier_league' AND "isCurrent" = true`
+    );
 
     if (season) {
-      const gameweek = db.prepare(
-        "SELECT id FROM gameweek WHERE seasonId = ? LIMIT 1"
-      ).get(season.id) as { id: string } | undefined;
+      const gameweek = await queryOne<{ id: string }>(
+        `SELECT id FROM gameweek WHERE "seasonId" = $1 LIMIT 1`,
+        [season.id]
+      );
 
       if (gameweek) {
         testGameweekId = gameweek.id;
@@ -114,26 +123,26 @@ describe("Authorization Security Tests", () => {
     }
   });
 
-  afterAll(() => {
+  afterAll(async () => {
     try {
       // Clean up predictions
-      db.prepare("DELETE FROM prediction WHERE leagueId IN (?, ?)").run(testLeagueId, privateLeagueId);
+      await query(`DELETE FROM prediction WHERE "leagueId" IN ($1, $2)`, [testLeagueId, privateLeagueId]);
 
       // Clean up league members
-      db.prepare("DELETE FROM league_member WHERE leagueId IN (?, ?)").run(testLeagueId, privateLeagueId);
+      await query(`DELETE FROM league_member WHERE "leagueId" IN ($1, $2)`, [testLeagueId, privateLeagueId]);
 
       // Clean up leagues
-      db.prepare("DELETE FROM league WHERE id IN (?, ?)").run(testLeagueId, privateLeagueId);
+      await query(`DELETE FROM league WHERE id IN ($1, $2)`, [testLeagueId, privateLeagueId]);
 
       // Clean up users
-      [user1, user2].forEach(user => {
-        const userId = db.prepare("SELECT id FROM user WHERE email = ?").get(user.email) as { id: string } | undefined;
+      for (const user of [user1, user2]) {
+        const userId = await queryOne<{ id: string }>(`SELECT id FROM "user" WHERE email = $1`, [user.email]);
         if (userId) {
-          db.prepare("DELETE FROM session WHERE userId = ?").run(userId.id);
-          db.prepare("DELETE FROM account WHERE userId = ?").run(userId.id);
-          db.prepare("DELETE FROM user WHERE id = ?").run(userId.id);
+          await query(`DELETE FROM session WHERE "userId" = $1`, [userId.id]);
+          await query(`DELETE FROM account WHERE "userId" = $1`, [userId.id]);
+          await query(`DELETE FROM "user" WHERE id = $1`, [userId.id]);
         }
-      });
+      }
     } catch (e) {
       // Ignore cleanup errors
     }
@@ -273,7 +282,7 @@ describe("Authorization Security Tests", () => {
 
     it("should only allow user to set their own favorite team", async () => {
       // Get a team ID
-      const team = db.prepare("SELECT id FROM team LIMIT 1").get() as { id: string } | undefined;
+      const team = await queryOne<{ id: string }>(`SELECT id FROM team LIMIT 1`);
       if (!team) return;
 
       const response = await request(app)

@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import request from "supertest";
 import { app } from "../app.js";
-import { db } from "../db.js";
+import { query, queryOne, initializeDatabase } from "../db.js";
 
 describe("User API", () => {
   let userCookie: string;
@@ -19,6 +19,7 @@ describe("User API", () => {
 
   beforeAll(async () => {
     process.env.NODE_ENV = "test";
+    await initializeDatabase();
 
     // Create and verify user
     const signup = await request(app)
@@ -27,7 +28,7 @@ describe("User API", () => {
       .set("Content-Type", "application/json");
 
     testUserId = signup.body.user?.id;
-    db.prepare("UPDATE user SET emailVerified = 1 WHERE email = ?").run(testUser.email);
+    await query(`UPDATE "user" SET "emailVerified" = true WHERE email = $1`, [testUser.email]);
 
     // Login
     const login = await request(app)
@@ -38,15 +39,15 @@ describe("User API", () => {
     userCookie = login.headers["set-cookie"]?.[0] || "";
 
     // Get a team ID for testing
-    const team = db.prepare("SELECT id FROM team LIMIT 1").get() as { id: string } | undefined;
+    const team = await queryOne<{ id: string }>(`SELECT id FROM team LIMIT 1`);
     if (team) {
       testTeamId = team.id;
     }
   });
 
-  afterAll(() => {
+  afterAll(async () => {
     try {
-      db.prepare("DELETE FROM user WHERE email = ?").run(testUser.email);
+      await query(`DELETE FROM "user" WHERE email = $1`, [testUser.email]);
     } catch (e) {
       // Ignore cleanup errors
     }
@@ -212,7 +213,7 @@ describe("User API", () => {
         .send(otherUser)
         .set("Content-Type", "application/json");
 
-      db.prepare("UPDATE user SET emailVerified = 1 WHERE email = ?").run(otherUser.email);
+      await query(`UPDATE "user" SET "emailVerified" = true WHERE email = $1`, [otherUser.email]);
 
       // Try to take that username
       const response = await request(app)
@@ -225,11 +226,11 @@ describe("User API", () => {
       expect(response.body.error).toContain("already taken");
 
       // Cleanup - delete related records first due to foreign keys
-      const otherUserId = db.prepare("SELECT id FROM user WHERE email = ?").get(otherUser.email) as { id: string } | undefined;
+      const otherUserId = await queryOne<{ id: string }>(`SELECT id FROM "user" WHERE email = $1`, [otherUser.email]);
       if (otherUserId) {
-        db.prepare("DELETE FROM session WHERE userId = ?").run(otherUserId.id);
-        db.prepare("DELETE FROM account WHERE userId = ?").run(otherUserId.id);
-        db.prepare("DELETE FROM user WHERE id = ?").run(otherUserId.id);
+        await query(`DELETE FROM session WHERE "userId" = $1`, [otherUserId.id]);
+        await query(`DELETE FROM account WHERE "userId" = $1`, [otherUserId.id]);
+        await query(`DELETE FROM "user" WHERE id = $1`, [otherUserId.id]);
       }
     });
 

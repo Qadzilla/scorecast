@@ -5,12 +5,10 @@ import {
   syncCompetition,
   syncAll,
   syncTeams,
-  syncSeason,
-  syncMatches,
   updateMatchResults,
 } from "../services/footballData.js";
 import { scorePredictionsForMatch } from "./predictions.js";
-import { db } from "../db.js";
+import { queryAll, queryOne } from "../db.js";
 
 const router = Router();
 
@@ -98,15 +96,16 @@ router.post("/sync/:competition/results", requireAuth, requireAdmin, async (req,
     const updated = await updateMatchResults(competition);
 
     // Score predictions for finished matches
-    const finishedMatches = db.prepare(`
-      SELECT id FROM match
-      WHERE id LIKE ? AND status = 'finished'
-      AND id IN (SELECT matchId FROM prediction WHERE points IS NULL)
-    `).all(`${competition}-%`) as { id: string }[];
+    const finishedMatches = await queryAll<{ id: string }>(
+      `SELECT id FROM match
+       WHERE id LIKE $1 AND status = 'finished'
+       AND id IN (SELECT "matchId" FROM prediction WHERE points IS NULL)`,
+      [`${competition}-%`]
+    );
 
     let scored = 0;
     for (const match of finishedMatches) {
-      scorePredictionsForMatch(match.id);
+      await scorePredictionsForMatch(match.id);
       scored++;
     }
 
@@ -124,38 +123,56 @@ router.post("/sync/:competition/results", requireAuth, requireAdmin, async (req,
 // Get sync status
 router.get("/status", requireAuth, requireAdmin, async (req, res) => {
   try {
+    const plTeams = await queryOne<{ count: string }>(
+      `SELECT COUNT(*) as count FROM team WHERE competition = 'premier_league'`
+    );
+    const plSeasons = await queryOne<{ count: string }>(
+      `SELECT COUNT(*) as count FROM season WHERE competition = 'premier_league'`
+    );
+    const plGameweeks = await queryOne<{ count: string }>(
+      `SELECT COUNT(*) as count FROM gameweek g
+       JOIN season s ON g."seasonId" = s.id
+       WHERE s.competition = 'premier_league' AND s."isCurrent" = true`
+    );
+    const plMatches = await queryOne<{ count: string }>(
+      `SELECT COUNT(*) as count FROM match m
+       JOIN matchday md ON m."matchdayId" = md.id
+       JOIN gameweek g ON md."gameweekId" = g.id
+       JOIN season s ON g."seasonId" = s.id
+       WHERE s.competition = 'premier_league' AND s."isCurrent" = true`
+    );
+
+    const clTeams = await queryOne<{ count: string }>(
+      `SELECT COUNT(*) as count FROM team WHERE competition = 'champions_league'`
+    );
+    const clSeasons = await queryOne<{ count: string }>(
+      `SELECT COUNT(*) as count FROM season WHERE competition = 'champions_league'`
+    );
+    const clGameweeks = await queryOne<{ count: string }>(
+      `SELECT COUNT(*) as count FROM gameweek g
+       JOIN season s ON g."seasonId" = s.id
+       WHERE s.competition = 'champions_league' AND s."isCurrent" = true`
+    );
+    const clMatches = await queryOne<{ count: string }>(
+      `SELECT COUNT(*) as count FROM match m
+       JOIN matchday md ON m."matchdayId" = md.id
+       JOIN gameweek g ON md."gameweekId" = g.id
+       JOIN season s ON g."seasonId" = s.id
+       WHERE s.competition = 'champions_league' AND s."isCurrent" = true`
+    );
+
     const stats = {
       premier_league: {
-        teams: (db.prepare(`SELECT COUNT(*) as count FROM team WHERE competition = 'premier_league'`).get() as any).count,
-        seasons: (db.prepare(`SELECT COUNT(*) as count FROM season WHERE competition = 'premier_league'`).get() as any).count,
-        gameweeks: (db.prepare(`
-          SELECT COUNT(*) as count FROM gameweek g
-          JOIN season s ON g.seasonId = s.id
-          WHERE s.competition = 'premier_league' AND s.isCurrent = 1
-        `).get() as any).count,
-        matches: (db.prepare(`
-          SELECT COUNT(*) as count FROM match m
-          JOIN matchday md ON m.matchdayId = md.id
-          JOIN gameweek g ON md.gameweekId = g.id
-          JOIN season s ON g.seasonId = s.id
-          WHERE s.competition = 'premier_league' AND s.isCurrent = 1
-        `).get() as any).count,
+        teams: parseInt(plTeams?.count ?? "0", 10),
+        seasons: parseInt(plSeasons?.count ?? "0", 10),
+        gameweeks: parseInt(plGameweeks?.count ?? "0", 10),
+        matches: parseInt(plMatches?.count ?? "0", 10),
       },
       champions_league: {
-        teams: (db.prepare(`SELECT COUNT(*) as count FROM team WHERE competition = 'champions_league'`).get() as any).count,
-        seasons: (db.prepare(`SELECT COUNT(*) as count FROM season WHERE competition = 'champions_league'`).get() as any).count,
-        gameweeks: (db.prepare(`
-          SELECT COUNT(*) as count FROM gameweek g
-          JOIN season s ON g.seasonId = s.id
-          WHERE s.competition = 'champions_league' AND s.isCurrent = 1
-        `).get() as any).count,
-        matches: (db.prepare(`
-          SELECT COUNT(*) as count FROM match m
-          JOIN matchday md ON m.matchdayId = md.id
-          JOIN gameweek g ON md.gameweekId = g.id
-          JOIN season s ON g.seasonId = s.id
-          WHERE s.competition = 'champions_league' AND s.isCurrent = 1
-        `).get() as any).count,
+        teams: parseInt(clTeams?.count ?? "0", 10),
+        seasons: parseInt(clSeasons?.count ?? "0", 10),
+        gameweeks: parseInt(clGameweeks?.count ?? "0", 10),
+        matches: parseInt(clMatches?.count ?? "0", 10),
       },
     };
 
