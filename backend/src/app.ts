@@ -14,6 +14,9 @@ import userRouter from "./routes/user.js";
 
 export const app = express();
 
+// Trust proxy (Railway, Vercel, etc. use reverse proxies)
+app.set('trust proxy', 1);
+
 // CORS - only allow requests from your frontend
 app.use(cors({
   origin: process.env.CORS_ORIGIN,
