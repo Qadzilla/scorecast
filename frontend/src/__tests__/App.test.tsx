@@ -57,7 +57,7 @@ describe("App", () => {
       render(<App />);
 
       expect(screen.getByText("Welcome back")).toBeInTheDocument();
-      expect(screen.getByPlaceholderText("Enter your username or email")).toBeInTheDocument();
+      expect(screen.getByPlaceholderText("Username or email")).toBeInTheDocument();
     });
 
     it("should switch to signup form when Sign Up clicked", async () => {

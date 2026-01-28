@@ -136,7 +136,7 @@ export default function LoginForm({ onSwitch, verified }: { onSwitch: () => void
                 </label>
                 <input
                   type="text"
-                  placeholder="Enter your username or email"
+                  placeholder="Username or email"
                   value={identifier}
                   onChange={(e) => setIdentifier(e.target.value)}
                   className={getInputClassName("identifier")}
@@ -153,7 +153,7 @@ export default function LoginForm({ onSwitch, verified }: { onSwitch: () => void
                 </label>
                 <input
                   type="password"
-                  placeholder="Enter your password"
+                  placeholder="Password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   className={getInputClassName("password")}

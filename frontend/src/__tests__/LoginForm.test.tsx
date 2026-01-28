@@ -25,8 +25,8 @@ describe("LoginForm", () => {
 
       expect(screen.getByText("Welcome back")).toBeInTheDocument();
       expect(screen.getByText("Sign in to your account")).toBeInTheDocument();
-      expect(screen.getByPlaceholderText("Enter your username or email")).toBeInTheDocument();
-      expect(screen.getByPlaceholderText("Enter your password")).toBeInTheDocument();
+      expect(screen.getByPlaceholderText("Username or email")).toBeInTheDocument();
+      expect(screen.getByPlaceholderText("Password")).toBeInTheDocument();
       expect(screen.getByRole("button", { name: "Sign In" })).toBeInTheDocument();
     });
 
@@ -55,7 +55,7 @@ describe("LoginForm", () => {
       const user = userEvent.setup();
       render(<LoginForm onSwitch={mockOnSwitch} />);
 
-      const input = screen.getByPlaceholderText("Enter your username or email");
+      const input = screen.getByPlaceholderText("Username or email");
       await user.type(input, "test@example.com");
 
       expect(input).toHaveValue("test@example.com");
@@ -65,7 +65,7 @@ describe("LoginForm", () => {
       const user = userEvent.setup();
       render(<LoginForm onSwitch={mockOnSwitch} />);
 
-      const input = screen.getByPlaceholderText("Enter your password");
+      const input = screen.getByPlaceholderText("Password");
       await user.type(input, "password123");
 
       expect(input).toHaveValue("password123");
@@ -96,7 +96,7 @@ describe("LoginForm", () => {
       const user = userEvent.setup();
       render(<LoginForm onSwitch={mockOnSwitch} />);
 
-      await user.type(screen.getByPlaceholderText("Enter your username or email"), "test@example.com");
+      await user.type(screen.getByPlaceholderText("Username or email"), "test@example.com");
       await user.click(screen.getByRole("button", { name: "Sign In" }));
 
       expect(screen.queryByText("Username or email is required")).not.toBeInTheDocument();
@@ -107,7 +107,7 @@ describe("LoginForm", () => {
       const user = userEvent.setup();
       render(<LoginForm onSwitch={mockOnSwitch} />);
 
-      await user.type(screen.getByPlaceholderText("Enter your password"), "password123");
+      await user.type(screen.getByPlaceholderText("Password"), "password123");
       await user.click(screen.getByRole("button", { name: "Sign In" }));
 
       expect(screen.getByText("Username or email is required")).toBeInTheDocument();
@@ -129,8 +129,8 @@ describe("LoginForm", () => {
 
       render(<LoginForm onSwitch={mockOnSwitch} />);
 
-      await user.type(screen.getByPlaceholderText("Enter your username or email"), "test@example.com");
-      await user.type(screen.getByPlaceholderText("Enter your password"), "password123");
+      await user.type(screen.getByPlaceholderText("Username or email"), "test@example.com");
+      await user.type(screen.getByPlaceholderText("Password"), "password123");
       await user.click(screen.getByRole("button", { name: "Sign In" }));
 
       expect(signIn.email).toHaveBeenCalledWith({
@@ -145,8 +145,8 @@ describe("LoginForm", () => {
 
       render(<LoginForm onSwitch={mockOnSwitch} />);
 
-      await user.type(screen.getByPlaceholderText("Enter your username or email"), "test@example.com");
-      await user.type(screen.getByPlaceholderText("Enter your password"), "password123");
+      await user.type(screen.getByPlaceholderText("Username or email"), "test@example.com");
+      await user.type(screen.getByPlaceholderText("Password"), "password123");
       await user.click(screen.getByRole("button", { name: "Sign In" }));
 
       expect(screen.getByRole("button", { name: "Signing In..." })).toBeInTheDocument();
@@ -162,8 +162,8 @@ describe("LoginForm", () => {
 
       render(<LoginForm onSwitch={mockOnSwitch} />);
 
-      await user.type(screen.getByPlaceholderText("Enter your username or email"), "test@example.com");
-      await user.type(screen.getByPlaceholderText("Enter your password"), "wrongpassword");
+      await user.type(screen.getByPlaceholderText("Username or email"), "test@example.com");
+      await user.type(screen.getByPlaceholderText("Password"), "wrongpassword");
       await user.click(screen.getByRole("button", { name: "Sign In" }));
 
       await waitFor(() => {
@@ -180,8 +180,8 @@ describe("LoginForm", () => {
 
       render(<LoginForm onSwitch={mockOnSwitch} />);
 
-      await user.type(screen.getByPlaceholderText("Enter your username or email"), "test@example.com");
-      await user.type(screen.getByPlaceholderText("Enter your password"), "password123");
+      await user.type(screen.getByPlaceholderText("Username or email"), "test@example.com");
+      await user.type(screen.getByPlaceholderText("Password"), "password123");
       await user.click(screen.getByRole("button", { name: "Sign In" }));
 
       await waitFor(() => {
@@ -195,8 +195,8 @@ describe("LoginForm", () => {
 
       render(<LoginForm onSwitch={mockOnSwitch} />);
 
-      await user.type(screen.getByPlaceholderText("Enter your username or email"), "test@example.com");
-      await user.type(screen.getByPlaceholderText("Enter your password"), "password123");
+      await user.type(screen.getByPlaceholderText("Username or email"), "test@example.com");
+      await user.type(screen.getByPlaceholderText("Password"), "password123");
       await user.click(screen.getByRole("button", { name: "Sign In" }));
 
       await waitFor(() => {
@@ -210,8 +210,8 @@ describe("LoginForm", () => {
 
       render(<LoginForm onSwitch={mockOnSwitch} />);
 
-      await user.type(screen.getByPlaceholderText("Enter your username or email"), "  test@example.com  ");
-      await user.type(screen.getByPlaceholderText("Enter your password"), "password123");
+      await user.type(screen.getByPlaceholderText("Username or email"), "  test@example.com  ");
+      await user.type(screen.getByPlaceholderText("Password"), "password123");
       await user.click(screen.getByRole("button", { name: "Sign In" }));
 
       expect(signIn.email).toHaveBeenCalledWith({
@@ -230,8 +230,8 @@ describe("LoginForm", () => {
 
       expect(screen.getByText(/Your account has been verified/)).toBeInTheDocument();
 
-      await user.type(screen.getByPlaceholderText("Enter your username or email"), "test@example.com");
-      await user.type(screen.getByPlaceholderText("Enter your password"), "password123");
+      await user.type(screen.getByPlaceholderText("Username or email"), "test@example.com");
+      await user.type(screen.getByPlaceholderText("Password"), "password123");
       await user.click(screen.getByRole("button", { name: "Sign In" }));
 
       await waitFor(() => {
