@@ -39,7 +39,8 @@ export default function LoginForm({ onSwitch, verified }: { onSwitch: () => void
 
     try {
       // First, resolve the identifier to an email (handles both username and email)
-      const lookupRes = await fetch("http://localhost:3000/api/auth/lookup-email", {
+      const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:3000";
+      const lookupRes = await fetch(`${apiUrl}/api/auth/lookup-email`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
