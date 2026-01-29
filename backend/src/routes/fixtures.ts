@@ -4,8 +4,8 @@ import { requireAuth } from "../middleware/auth.js";
 
 const router = Router();
 
-// Get current gameweek for a competition
-router.get("/gameweek/current/:competition", requireAuth, async (req, res) => {
+// Get current gameweek for a competition (public - used by demo mode)
+router.get("/gameweek/current/:competition", async (req, res) => {
   const { competition } = req.params;
 
   if (competition !== "premier_league" && competition !== "champions_league") {
@@ -96,8 +96,8 @@ router.get("/gameweek/current/:competition", requireAuth, async (req, res) => {
   }
 });
 
-// Get gameweek by ID with matches
-router.get("/gameweek/:gameweekId", requireAuth, async (req, res) => {
+// Get gameweek by ID with matches (public - used by demo mode)
+router.get("/gameweek/:gameweekId", async (req, res) => {
   const { gameweekId } = req.params;
 
   try {
