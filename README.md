@@ -2,6 +2,8 @@
 
 A real-time football predictions platform for Premier League and UEFA Champions League matches. Compete with friends in private leagues, make match predictions, and climb the leaderboard throughout the season.
 
+**Live at [scorecast.club](https://scorecast.club)**
+
 ## The Game
 
 ### How It Works
@@ -28,6 +30,7 @@ ScoreCast brings the excitement of match predictions to life:
 - **Multi-Competition Support** - Separate leagues for Premier League and Champions League
 - **Favorite Team Badge** - Display your team's logo on the leaderboard
 - **Season Completion Detection** - Automatic champion crowning when the season ends
+- **Demo Mode** - Try the app without signing up via the "Try Demo" button
 
 ---
 
@@ -38,9 +41,9 @@ ScoreCast brings the excitement of match predictions to life:
 ```
 ┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
 │                 │     │                 │     │                 │
-│  React Frontend │────▶│  Express API    │────▶│  SQLite DB      │
-│  (Vite + TS)    │     │  (TypeScript)   │     │  (better-sqlite3)│
-│                 │     │                 │     │                 │
+│  React Frontend │────▶│  Express API    │────▶│  PostgreSQL     │
+│  (Vite + TS)    │     │  (TypeScript)   │     │  (Neon)         │
+│  Vercel         │     │  Railway        │     │                 │
 └─────────────────┘     └─────────────────┘     └─────────────────┘
                                │
                                ▼
@@ -50,14 +53,24 @@ ScoreCast brings the excitement of match predictions to life:
                         └─────────────────┘
 ```
 
+### Deployment
+
+| Component | Platform | URL |
+|-----------|----------|-----|
+| Frontend | Vercel | [scorecast.club](https://scorecast.club) |
+| Backend API | Railway | api.scorecast.club |
+| Database | Neon PostgreSQL | - |
+| Email | Resend | noreply@scorecast.club |
+
 ### Backend Architecture
 
 **Tech Stack:**
 - **Runtime**: Node.js with TypeScript
 - **Framework**: Express.js
-- **Database**: SQLite with better-sqlite3 (synchronous, high-performance)
+- **Database**: PostgreSQL (Neon serverless)
 - **Authentication**: Better Auth (session-based with secure cookies)
 - **Email**: Resend API for transactional emails
+- **Scheduler**: node-cron for automatic fixture sync
 
 **Directory Structure:**
 ```
@@ -68,6 +81,7 @@ backend/
 │   │   ├── predictions.ts # Submit/retrieve predictions
 │   │   ├── leagues.ts    # League CRUD, join/leave
 │   │   ├── leaderboard.ts # Rankings and standings
+│   │   ├── admin.ts      # Admin-only operations
 │   │   └── user.ts       # Profile, favorite team
 │   ├── middleware/
 │   │   ├── auth.ts       # Session validation
@@ -76,10 +90,12 @@ backend/
 │   │   └── footballData.ts # External API integration
 │   ├── db/
 │   │   └── migrations/   # Schema migrations
-│   ├── __tests__/        # Vitest test suites
+│   ├── __tests__/        # Vitest test suites (127 tests)
 │   ├── auth.ts           # Better Auth configuration
-│   ├── db.ts             # Database connection
+│   ├── db.ts             # PostgreSQL connection pool
 │   └── app.ts            # Express app setup
+├── Dockerfile            # Production container
+└── railway.json          # Railway deployment config
 ```
 
 **Database Schema:**
@@ -94,8 +110,8 @@ user ─────────────┬───────────
                   ├──────────────── league_member ──── league
                   │                      │
                   └──── prediction ──────┴──── match ──── matchday ──── gameweek ──── season
-                                                │
-                                          team ─┴─ team
+                                               │
+                                         team ─┴─ team
 ```
 
 **Key Tables:**
@@ -145,7 +161,7 @@ frontend/src/
 ├── components/
 │   ├── Dashboard.tsx     # Main app shell, navigation, all views
 │   ├── Predictions.tsx   # Match prediction form
-│   ├── LoginForm.tsx     # Authentication UI
+│   ├── LoginForm.tsx     # Authentication UI with demo button
 │   ├── SignUpForm.tsx    # Registration with validation
 │   ├── TeamSelector.tsx  # Favorite team picker
 │   └── VerifyEmail.tsx   # Email verification handler
@@ -211,6 +227,8 @@ Run tests:
 cd backend && npm test
 ```
 
+All 127 tests passing.
+
 ---
 
 ## Getting Started
@@ -219,10 +237,11 @@ cd backend && npm test
 
 - Node.js 18+
 - npm or yarn
+- PostgreSQL database (or Neon account for serverless)
 - Football-Data.org API key (free tier available)
 - Resend API key (for emails)
 
-### Installation
+### Local Development
 
 1. **Clone the repository**
    ```bash
@@ -240,6 +259,7 @@ cd backend && npm test
 
    Backend (`backend/.env`):
    ```env
+   DATABASE_URL=postgresql://user:password@localhost:5432/scorecast
    PORT=3000
    CORS_ORIGIN=http://localhost:5173
    BETTER_AUTH_SECRET=your-secret-key-here
@@ -251,12 +271,14 @@ cd backend && npm test
 
    Frontend (`frontend/.env`):
    ```env
+   VITE_API_URL=http://localhost:3000
    VITE_ADMIN_EMAIL=your-email@example.com
    ```
 
-4. **Sync fixture data**
+4. **Start PostgreSQL** (or use Neon connection string)
    ```bash
-   cd backend && npx tsx src/scripts/seed.ts
+   # Using Docker
+   docker run -d -p 5432:5432 -e POSTGRES_PASSWORD=password -e POSTGRES_DB=scorecast postgres:16
    ```
 
 5. **Start development servers**
@@ -268,9 +290,39 @@ cd backend && npm test
    cd frontend && npm run dev
    ```
 
-6. **Open the app**
+6. **Sync fixture data**
+   ```bash
+   cd backend && npx tsx src/scripts/seed.ts
+   ```
+
+7. **Open the app**
 
    Navigate to `http://localhost:5173`
+
+### Production Deployment
+
+**Backend (Railway):**
+1. Create a Railway project and connect your GitHub repo
+2. Set root directory to `backend`
+3. Add environment variables:
+   - `DATABASE_URL` - Neon PostgreSQL connection string
+   - `BETTER_AUTH_SECRET` - Secure random string
+   - `BETTER_AUTH_URL` - https://your-backend.railway.app
+   - `CORS_ORIGIN` - https://your-frontend.vercel.app
+   - `RESEND_API_KEY`
+   - `FOOTBALL_DATA_API_KEY`
+   - `ADMIN_EMAIL`
+
+**Frontend (Vercel):**
+1. Import your GitHub repo to Vercel
+2. Set root directory to `frontend`
+3. Add environment variables:
+   - `VITE_API_URL` - https://your-backend.railway.app
+   - `VITE_ADMIN_EMAIL`
+
+**Custom Domain:**
+1. Add A record pointing to Vercel IP for frontend
+2. Add CNAME record for `api` subdomain pointing to Railway
 
 ---
 
