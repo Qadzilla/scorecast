@@ -214,6 +214,9 @@ export default function Dashboard({ demoMode = false, onExitDemo }: DashboardPro
     if (demoMode) {
       setLeagues(DEMO_LEAGUES);
       setLoadingLeagues(false);
+      // Auto-select the first demo league and show it
+      setSelectedLeague(DEMO_LEAGUES[0]);
+      setActiveNav("league-detail");
       return;
     }
     try {
