@@ -6,7 +6,7 @@ export async function sendEmail(to: string, subject: string, html: string) {
   console.log(`[Email] Sending to: ${to}, subject: ${subject}`);
   try {
     const result = await resend.emails.send({
-      from: "onboarding@resend.dev",
+      from: process.env.EMAIL_FROM || "ScoreCast <noreply@scorecast.club>",
       to,
       subject,
       html,
