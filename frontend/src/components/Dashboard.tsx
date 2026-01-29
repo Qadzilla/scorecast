@@ -58,10 +58,48 @@ const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
 // Admin email for UI visibility (set via VITE_ADMIN_EMAIL env var)
 const ADMIN_EMAIL = import.meta.env.VITE_ADMIN_EMAIL || "";
 
-export default function Dashboard() {
+// Demo data
+const DEMO_USER: ExtendedUser = {
+  id: "demo-user",
+  name: "Demo User",
+  email: "demo@scorecast.club",
+  firstName: "Demo",
+  lastName: "User",
+  username: "demouser",
+};
+
+const DEMO_LEAGUES: League[] = [
+  {
+    id: "demo-league-1",
+    name: "Premier League Fans",
+    description: "A demo league for Premier League predictions",
+    type: "premier_league",
+    inviteCode: "DEMO123",
+    createdBy: "demo-user",
+    createdAt: new Date().toISOString(),
+    role: "member",
+    joinedAt: new Date().toISOString(),
+    memberCount: 8,
+  },
+];
+
+const DEMO_LEADERBOARD: LeaderboardEntry[] = [
+  { rank: 1, userId: "1", username: "champion_predictor", firstName: "Alex", lastName: "Smith", totalPoints: 156, teamLogo: "https://crests.football-data.org/57.png" },
+  { rank: 2, userId: "2", username: "football_guru", firstName: "Jordan", lastName: "Lee", totalPoints: 142, teamLogo: "https://crests.football-data.org/65.png" },
+  { rank: 3, userId: "3", username: "score_master", firstName: "Sam", lastName: "Wilson", totalPoints: 138, teamLogo: "https://crests.football-data.org/61.png" },
+  { rank: 4, userId: "demo-user", username: "demouser", firstName: "Demo", lastName: "User", totalPoints: 125, teamLogo: "https://crests.football-data.org/66.png" },
+  { rank: 5, userId: "5", username: "pl_expert", firstName: "Casey", lastName: "Brown", totalPoints: 118, teamLogo: "https://crests.football-data.org/73.png" },
+];
+
+interface DashboardProps {
+  demoMode?: boolean;
+  onExitDemo?: () => void;
+}
+
+export default function Dashboard({ demoMode = false, onExitDemo }: DashboardProps) {
   const [activeNav, setActiveNav] = useState<NavItem>("leagues");
   const { data: session } = useSession();
-  const user = session?.user as ExtendedUser | undefined;
+  const user = demoMode ? DEMO_USER : (session?.user as ExtendedUser | undefined);
 
   // Leagues state
   const [leagues, setLeagues] = useState<League[]>([]);
@@ -171,6 +209,11 @@ export default function Dashboard() {
 
   // Fetch user's leagues
   const fetchLeagues = async () => {
+    if (demoMode) {
+      setLeagues(DEMO_LEAGUES);
+      setLoadingLeagues(false);
+      return;
+    }
     try {
       const res = await fetch(`${API_URL}/api/leagues`, {
         credentials: "include",
@@ -188,13 +231,34 @@ export default function Dashboard() {
 
   useEffect(() => {
     fetchLeagues();
-  }, []);
+  }, [demoMode]);
 
   // Fetch league data when selecting a league
   const fetchLeagueData = useCallback(async (league: League) => {
     setLoadingFixtures(true);
     setLoadingPredictions(true);
     setLoadingLeaderboard(true);
+
+    // Demo mode - use mock data
+    if (demoMode) {
+      setLeaderboard(DEMO_LEADERBOARD);
+      setLoadingLeaderboard(false);
+      setLoadingFixtures(false);
+      setLoadingPredictions(false);
+      setCurrentGameweek({
+        id: "demo-gw",
+        number: 23,
+        name: "Gameweek 23",
+        status: "active",
+        seasonId: "demo-season",
+        deadline: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(),
+        startsAt: new Date().toISOString(),
+        endsAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+      });
+      setMatches([]);
+      setUserPredictions({});
+      return;
+    }
 
     try {
       // Fetch current gameweek (basic info)
@@ -468,6 +532,15 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* Demo Mode Banner */}
+      {demoMode && (
+        <div className="bg-gradient-to-r from-[#00ff87] to-[#60efff] text-gray-900 text-center py-2 px-4 font-medium">
+          You're viewing the demo. This is sample data.{" "}
+          <button onClick={onExitDemo} className="underline font-bold hover:no-underline">
+            Sign up to create your own leagues!
+          </button>
+        </div>
+      )}
       {/* Header */}
       <header
         className="h-32 flex items-center justify-between px-6"
@@ -592,17 +665,29 @@ export default function Dashboard() {
             </button>
           </nav>
 
-          {/* Logout button at bottom */}
+          {/* Logout/Exit Demo button at bottom */}
           <div className="absolute bottom-0 w-64 p-4 border-t border-gray-200">
-            <button
-              onClick={handleSignOut}
-              className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-900 transition-colors"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-              </svg>
-              <span className="font-medium">Log Out</span>
-            </button>
+            {demoMode ? (
+              <button
+                onClick={onExitDemo}
+                className="w-full flex items-center gap-3 px-4 py-3 rounded-lg bg-gradient-to-r from-[#00ff87] to-[#60efff] text-gray-900 hover:opacity-90 transition-all"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
+                </svg>
+                <span className="font-medium">Exit Demo</span>
+              </button>
+            ) : (
+              <button
+                onClick={handleSignOut}
+                className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-900 transition-colors"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                </svg>
+                <span className="font-medium">Log Out</span>
+              </button>
+            )}
           </div>
         </aside>
 

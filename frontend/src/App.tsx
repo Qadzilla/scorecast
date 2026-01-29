@@ -17,6 +17,7 @@ function App() {
   const [emailVerified, setEmailVerified] = useState(false);
   const [hasFavoriteTeam, setHasFavoriteTeam] = useState<boolean | null>(null);
   const [checkingTeam, setCheckingTeam] = useState(false);
+  const [demoMode, setDemoMode] = useState(false);
   const { data: session, isPending } = useSession();
 
   // Check if user just verified their email
@@ -83,6 +84,11 @@ function App() {
     );
   }
 
+  // Demo mode - show dashboard with mock data
+  if (demoMode) {
+    return <Dashboard demoMode onExitDemo={() => setDemoMode(false)} />;
+  }
+
   if (session) {
     // Show team selector if user hasn't selected a favorite team
     if (hasFavoriteTeam === false) {
@@ -94,7 +100,11 @@ function App() {
   return (
     <Background>
       {view === "login" && (
-        <LoginForm onSwitch={() => setView("signup")} verified={emailVerified} />
+        <LoginForm
+          onSwitch={() => setView("signup")}
+          verified={emailVerified}
+          onDemo={() => setDemoMode(true)}
+        />
       )}
       {view === "signup" && (
         <SignUpForm
