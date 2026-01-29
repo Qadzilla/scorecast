@@ -78,11 +78,12 @@ describe("Fixtures API", () => {
       expect(response.status).toBe(400);
     });
 
-    it("should require authentication", async () => {
+    it("should work without authentication (public route for demo)", async () => {
       const response = await request(app)
         .get("/api/fixtures/gameweek/current/premier_league");
 
-      expect(response.status).toBe(401);
+      // Route is public - returns 200 if data exists, 404 if no season
+      expect([200, 404]).toContain(response.status);
     });
   });
 
@@ -120,11 +121,12 @@ describe("Fixtures API", () => {
       expect(response.status).toBe(404);
     });
 
-    it("should require authentication", async () => {
+    it("should work without authentication (public route for demo)", async () => {
       const response = await request(app)
         .get("/api/fixtures/gameweek/any-id");
 
-      expect(response.status).toBe(401);
+      // Route is public - returns 404 for non-existent gameweek
+      expect(response.status).toBe(404);
     });
   });
 
