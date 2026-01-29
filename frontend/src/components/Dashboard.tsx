@@ -177,8 +177,10 @@ export default function Dashboard({ demoMode = false, onExitDemo }: DashboardPro
     fetchDeadlines();
   }, []);
 
-  // Fetch user's favorite team
+  // Fetch user's favorite team (skip in demo mode)
   useEffect(() => {
+    if (demoMode) return;
+
     const fetchFavoriteTeam = async () => {
       try {
         const res = await fetch(`${API_URL}/api/user/favorite-team`, {
@@ -196,7 +198,7 @@ export default function Dashboard({ demoMode = false, onExitDemo }: DashboardPro
     };
 
     fetchFavoriteTeam();
-  }, []);
+  }, [demoMode]);
 
   // Update countdown every second
   useEffect(() => {
@@ -239,24 +241,60 @@ export default function Dashboard({ demoMode = false, onExitDemo }: DashboardPro
     setLoadingPredictions(true);
     setLoadingLeaderboard(true);
 
-    // Demo mode - use mock data
+    // Demo mode - fetch real fixtures but use mock leaderboard
     if (demoMode) {
       setLeaderboard(DEMO_LEADERBOARD);
       setLoadingLeaderboard(false);
-      setLoadingFixtures(false);
-      setLoadingPredictions(false);
-      setCurrentGameweek({
-        id: "demo-gw",
-        number: 23,
-        name: "Gameweek 23",
-        status: "active",
-        seasonId: "demo-season",
-        deadline: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(),
-        startsAt: new Date().toISOString(),
-        endsAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
-      });
-      setMatches([]);
       setUserPredictions({});
+      setLoadingPredictions(false);
+
+      try {
+        // Fetch real current gameweek
+        const currentGw = await fixturesApi.getCurrentGameweek(league.type);
+        const fullGameweek = await fixturesApi.getGameweek(currentGw.id);
+        setCurrentGameweek({
+          ...fullGameweek,
+          name: fullGameweek.name || undefined,
+          status: fullGameweek.status as "upcoming" | "active" | "completed",
+        });
+
+        // Extract real matches from matchdays
+        const allMatches: MatchWithTeams[] = [];
+        for (const matchday of fullGameweek.matchdays) {
+          for (const match of matchday.matches) {
+            allMatches.push({
+              id: match.id,
+              matchdayId: matchday.id,
+              kickoffTime: match.kickoffTime,
+              homeScore: match.homeScore,
+              awayScore: match.awayScore,
+              status: match.status as "scheduled" | "live" | "finished" | "postponed" | "cancelled",
+              venue: match.venue || undefined,
+              homeTeam: {
+                id: match.homeTeam.id,
+                name: match.homeTeam.name,
+                shortName: match.homeTeam.shortName,
+                code: match.homeTeam.code,
+                logo: match.homeTeam.logo || undefined,
+                competition: league.type,
+              },
+              awayTeam: {
+                id: match.awayTeam.id,
+                name: match.awayTeam.name,
+                shortName: match.awayTeam.shortName,
+                code: match.awayTeam.code,
+                logo: match.awayTeam.logo || undefined,
+                competition: league.type,
+              },
+            });
+          }
+        }
+        setMatches(allMatches);
+      } catch (err) {
+        console.error("Demo mode - failed to fetch fixtures:", err);
+        setMatches([]);
+      }
+      setLoadingFixtures(false);
       return;
     }
 
@@ -440,7 +478,10 @@ export default function Dashboard({ demoMode = false, onExitDemo }: DashboardPro
   const handleSubmitPredictions = async (predictions: PredictionInput[]) => {
     if (!selectedLeague || !currentGameweek) return;
 
-    await predictionsApi.submitPredictions(selectedLeague.id, currentGameweek.id, predictions);
+    // In demo mode, only update local state (don't save to backend)
+    if (!demoMode) {
+      await predictionsApi.submitPredictions(selectedLeague.id, currentGameweek.id, predictions);
+    }
 
     // Update local state
     const predMap: Record<string, { homeScore: number; awayScore: number; points: number | null }> = {};
