@@ -4,6 +4,7 @@ import { fixturesApi, predictionsApi, leaderboardApi } from "../lib/api";
 import Predictions from "./Predictions";
 import type { Gameweek, MatchWithTeams } from "../types/fixtures";
 import type { PredictionInput } from "../types/predictions";
+import { calculatePredictionPoints, getPointsBadgeColor } from "../types/predictions";
 
 type NavItem = "leagues" | "create" | "join" | "account" | "league-detail";
 
@@ -1111,6 +1112,20 @@ export default function Dashboard({ demoMode = false, onExitDemo }: DashboardPro
                           <div className="space-y-2">
                             {matches.map((match) => {
                               const pred = userPredictions[match.id];
+                              const isFinished = match.status === "finished";
+                              const hasResult = match.homeScore !== null && match.awayScore !== null;
+
+                              // Calculate points if match is finished and user made a prediction
+                              let pointsResult: { points: number; type: "exact" | "result" | "incorrect" } | null = null;
+                              if (isFinished && hasResult && pred) {
+                                pointsResult = calculatePredictionPoints(
+                                  pred.homeScore,
+                                  pred.awayScore,
+                                  match.homeScore!,
+                                  match.awayScore!
+                                );
+                              }
+
                               return (
                                 <div key={match.id} className="flex items-center text-sm py-2 border-b border-gray-100 last:border-0">
                                   <div className="flex-1 flex items-center justify-end gap-2">
@@ -1132,6 +1147,14 @@ export default function Dashboard({ demoMode = false, onExitDemo }: DashboardPro
                                     )}
                                     <span className="font-medium">{match.awayTeam.code}</span>
                                   </div>
+                                  {/* Points badge for finished matches */}
+                                  {pointsResult ? (
+                                    <span className={`ml-2 w-8 text-center px-1.5 py-0.5 rounded text-xs font-bold ${getPointsBadgeColor(pointsResult.type)}`}>
+                                      +{pointsResult.points}
+                                    </span>
+                                  ) : (
+                                    <span className="ml-2 w-8" />
+                                  )}
                                 </div>
                               );
                             })}
