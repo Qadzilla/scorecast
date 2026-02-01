@@ -141,6 +141,8 @@ export default function Dashboard({ demoMode = false, onExitDemo }: DashboardPro
   const [uclGameweekNum, setUclGameweekNum] = useState<number | null>(null);
   const [plCountdown, setPlCountdown] = useState(getTimeRemaining(null));
   const [uclCountdown, setUclCountdown] = useState(getTimeRemaining(null));
+  const [plIsNextDeadline, setPlIsNextDeadline] = useState(false);
+  const [uclIsNextDeadline, setUclIsNextDeadline] = useState(false);
 
   // Favorite team state
   const [favoriteTeam, setFavoriteTeam] = useState<{ id: string; name: string; logo: string | null } | null>(null);
@@ -159,16 +161,38 @@ export default function Dashboard({ demoMode = false, onExitDemo }: DashboardPro
     const fetchDeadlines = async () => {
       try {
         const plGameweek = await fixturesApi.getCurrentGameweek("premier_league");
-        setPlDeadline(new Date(plGameweek.deadline));
-        setPlGameweekNum(plGameweek.number);
+        const currentDeadline = new Date(plGameweek.deadline);
+        const now = new Date();
+
+        // If current deadline has passed and there's a next deadline, show that
+        if (currentDeadline <= now && plGameweek.nextDeadline) {
+          setPlDeadline(new Date(plGameweek.nextDeadline.deadline));
+          setPlGameweekNum(plGameweek.nextDeadline.gameweekNumber);
+          setPlIsNextDeadline(true);
+        } else {
+          setPlDeadline(currentDeadline);
+          setPlGameweekNum(plGameweek.number);
+          setPlIsNextDeadline(false);
+        }
       } catch (err) {
         console.error("Failed to fetch PL deadline:", err);
       }
 
       try {
         const uclGameweek = await fixturesApi.getCurrentGameweek("champions_league");
-        setUclDeadline(new Date(uclGameweek.deadline));
-        setUclGameweekNum(uclGameweek.number);
+        const currentDeadline = new Date(uclGameweek.deadline);
+        const now = new Date();
+
+        // If current deadline has passed and there's a next deadline, show that
+        if (currentDeadline <= now && uclGameweek.nextDeadline) {
+          setUclDeadline(new Date(uclGameweek.nextDeadline.deadline));
+          setUclGameweekNum(uclGameweek.nextDeadline.gameweekNumber);
+          setUclIsNextDeadline(true);
+        } else {
+          setUclDeadline(currentDeadline);
+          setUclGameweekNum(uclGameweek.number);
+          setUclIsNextDeadline(false);
+        }
       } catch (err) {
         console.error("Failed to fetch UCL deadline:", err);
       }
@@ -1387,7 +1411,9 @@ export default function Dashboard({ demoMode = false, onExitDemo }: DashboardPro
         {activeNav !== "account" && (
           <aside className="w-72 min-h-[calc(100vh-8rem)] bg-white border-l border-gray-200 p-6">
             <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">
-              {activeNav === "league-detail" ? "Next Deadline" : "Next Deadlines"}
+              {activeNav === "league-detail"
+                ? (plIsNextDeadline || uclIsNextDeadline ? "Next Deadline" : "Deadline")
+                : "Deadlines"}
             </h3>
 
             {/* Premier League Countdown - show if not in league-detail OR if league is PL */}
@@ -1397,8 +1423,11 @@ export default function Dashboard({ demoMode = false, onExitDemo }: DashboardPro
                   <div className="flex items-center gap-2 mb-3">
                     <span className="w-3 h-3 rounded-full bg-[#3d195b]" />
                     <span className="font-medium text-gray-900">Premier League</span>
-                    {plGameweekNum && <span className="text-xs text-gray-500">GW{plGameweekNum}</span>}
+                    {plGameweekNum && <span className="text-xs text-gray-500">{plIsNextDeadline ? "Next: " : ""}GW{plGameweekNum}</span>}
                   </div>
+                )}
+                {activeNav === "league-detail" && plIsNextDeadline && (
+                  <p className="text-sm text-gray-600 mb-3">Gameweek {plGameweekNum}</p>
                 )}
                 <div className="bg-[#3d195b] rounded-lg p-4">
                   <div className="grid grid-cols-4 gap-2 text-center">
@@ -1433,8 +1462,11 @@ export default function Dashboard({ demoMode = false, onExitDemo }: DashboardPro
                   <div className="flex items-center gap-2 mb-3">
                     <span className="w-3 h-3 rounded-full bg-[#04065c]" />
                     <span className="font-medium text-gray-900">Champions League</span>
-                    {uclGameweekNum && <span className="text-xs text-gray-500">MD{uclGameweekNum}</span>}
+                    {uclGameweekNum && <span className="text-xs text-gray-500">{uclIsNextDeadline ? "Next: " : ""}MD{uclGameweekNum}</span>}
                   </div>
+                )}
+                {activeNav === "league-detail" && uclIsNextDeadline && (
+                  <p className="text-sm text-gray-600 mb-3">Matchday {uclGameweekNum}</p>
                 )}
                 <div className="bg-[#04065c] rounded-lg p-4">
                   <div className="grid grid-cols-4 gap-2 text-center">

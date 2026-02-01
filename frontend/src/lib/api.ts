@@ -32,6 +32,14 @@ export const fixturesApi = {
       startsAt: string;
       endsAt: string;
       status: string;
+      isGameweekComplete: boolean;
+      totalMatches: number;
+      finishedMatches: number;
+      nextDeadline: {
+        gameweekId: string;
+        gameweekNumber: number;
+        deadline: string;
+      } | null;
     }>(`/api/fixtures/gameweek/current/${competition}`),
 
   // Get gameweek by ID with matches

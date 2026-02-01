@@ -5,6 +5,7 @@ import { requireAuth } from "../middleware/auth.js";
 const router = Router();
 
 // Get current gameweek for a competition (public - used by demo mode)
+// Returns the gameweek to display (active/in-progress) + next deadline info
 router.get("/gameweek/current/:competition", async (req, res) => {
   const { competition } = req.params;
 
@@ -25,11 +26,10 @@ router.get("/gameweek/current/:competition", async (req, res) => {
       return;
     }
 
-    // Get the gameweek where predictions are still open (deadline not passed)
-    // If no open deadline, get the currently active or most recent gameweek
     const now = new Date().toISOString();
 
-    let gameweek = await queryOne<{
+    // Priority 1: Get active gameweek (matches in progress, deadline passed but not all finished)
+    let displayGameweek = await queryOne<{
       id: string;
       seasonId: string;
       number: number;
@@ -49,15 +49,15 @@ router.get("/gameweek/current/:competition", async (req, res) => {
         g."endsAt",
         g.status
       FROM gameweek g
-      WHERE g."seasonId" = $1 AND g.deadline > $2
-      ORDER BY g.number ASC
+      WHERE g."seasonId" = $1 AND g.status = 'active'
+      ORDER BY g.number DESC
       LIMIT 1`,
-      [season.id, now]
+      [season.id]
     );
 
-    // If no gameweek with open deadline, get the active one
-    if (!gameweek) {
-      gameweek = await queryOne<{
+    // Priority 2: If no active gameweek, get the one with open deadline (upcoming)
+    if (!displayGameweek) {
+      displayGameweek = await queryOne<{
         id: string;
         seasonId: string;
         number: number;
@@ -77,19 +77,87 @@ router.get("/gameweek/current/:competition", async (req, res) => {
           g."endsAt",
           g.status
         FROM gameweek g
-        WHERE g."seasonId" = $1 AND g.status = 'active'
+        WHERE g."seasonId" = $1 AND g.deadline > $2
+        ORDER BY g.number ASC
+        LIMIT 1`,
+        [season.id, now]
+      );
+    }
+
+    // Priority 3: If still nothing, get the most recent completed one
+    if (!displayGameweek) {
+      displayGameweek = await queryOne<{
+        id: string;
+        seasonId: string;
+        number: number;
+        name: string;
+        deadline: string;
+        startsAt: string;
+        endsAt: string;
+        status: string;
+      }>(
+        `SELECT
+          g.id,
+          g."seasonId",
+          g.number,
+          g.name,
+          g.deadline,
+          g."startsAt",
+          g."endsAt",
+          g.status
+        FROM gameweek g
+        WHERE g."seasonId" = $1
         ORDER BY g.number DESC
         LIMIT 1`,
         [season.id]
       );
     }
 
-    if (!gameweek) {
-      res.status(404).json({ error: "No upcoming gameweek found" });
+    if (!displayGameweek) {
+      res.status(404).json({ error: "No gameweek found" });
       return;
     }
 
-    res.json(gameweek);
+    // Get next gameweek deadline (for countdown when current deadline has passed)
+    const nextGameweek = await queryOne<{
+      id: string;
+      number: number;
+      deadline: string;
+    }>(
+      `SELECT g.id, g.number, g.deadline
+      FROM gameweek g
+      WHERE g."seasonId" = $1 AND g.number > $2
+      ORDER BY g.number ASC
+      LIMIT 1`,
+      [season.id, displayGameweek.number]
+    );
+
+    // Check if all matches in display gameweek are finished
+    const matchStats = await queryOne<{ total: string; finished: string }>(
+      `SELECT
+        COUNT(*) as total,
+        SUM(CASE WHEN m.status = 'finished' THEN 1 ELSE 0 END) as finished
+      FROM match m
+      JOIN matchday md ON m."matchdayId" = md.id
+      WHERE md."gameweekId" = $1`,
+      [displayGameweek.id]
+    );
+
+    const totalMatches = parseInt(matchStats?.total ?? "0", 10);
+    const finishedMatches = parseInt(matchStats?.finished ?? "0", 10);
+    const isGameweekComplete = totalMatches > 0 && totalMatches === finishedMatches;
+
+    res.json({
+      ...displayGameweek,
+      isGameweekComplete,
+      totalMatches,
+      finishedMatches,
+      nextDeadline: nextGameweek ? {
+        gameweekId: nextGameweek.id,
+        gameweekNumber: nextGameweek.number,
+        deadline: nextGameweek.deadline,
+      } : null,
+    });
   } catch (err) {
     console.error("Failed to fetch current gameweek:", err);
     res.status(500).json({ error: "Failed to fetch current gameweek" });
