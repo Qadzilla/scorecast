@@ -95,11 +95,12 @@ router.post("/sync/:competition/results", requireAuth, requireAdmin, async (req,
   try {
     const updated = await updateMatchResults(competition);
 
-    // Score predictions for finished matches
+    // Re-score ALL predictions for finished matches in this competition
+    // This handles both new scores and corrections to wrong scores
     const finishedMatches = await queryAll<{ id: string }>(
-      `SELECT id FROM match
-       WHERE id LIKE $1 AND status = 'finished'
-       AND id IN (SELECT "matchId" FROM prediction WHERE points IS NULL)`,
+      `SELECT DISTINCT m.id FROM match m
+       JOIN prediction p ON p."matchId" = m.id
+       WHERE m.id LIKE $1 AND m.status = 'finished'`,
       [`${competition}-%`]
     );
 
@@ -111,7 +112,7 @@ router.post("/sync/:competition/results", requireAuth, requireAdmin, async (req,
 
     res.json({
       success: true,
-      message: `Updated ${updated} results, scored ${scored} matches`,
+      message: `Updated ${updated} results, re-scored ${scored} matches`,
       data: { updated, scored },
     });
   } catch (err: any) {
