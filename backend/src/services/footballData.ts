@@ -422,6 +422,26 @@ export async function syncAll(): Promise<{
   };
 }
 
+// Fetch individual match details (includes bookings for red cards)
+interface ApiMatchDetails extends ApiMatch {
+  bookings?: ApiBooking[];
+}
+
+async function fetchMatchDetails(matchApiId: number): Promise<ApiMatchDetails | null> {
+  try {
+    return await apiRequest<ApiMatchDetails>(`/matches/${matchApiId}`);
+  } catch (error) {
+    console.error(`Failed to fetch match details for ${matchApiId}:`, error);
+    return null;
+  }
+}
+
+// Count red cards from bookings
+function countRedCards(bookings: ApiBooking[] | undefined, teamId: number): number {
+  if (!bookings) return 0;
+  return bookings.filter(b => b.card === "RED" && b.team.id === teamId).length;
+}
+
 // Update only match results (for scoring predictions)
 export async function updateMatchResults(competition: "premier_league" | "champions_league"): Promise<number> {
   const competitionCode = COMPETITIONS[competition];
@@ -436,20 +456,34 @@ export async function updateMatchResults(competition: "premier_league" | "champi
   await withTransaction(async (client) => {
     for (const match of data.matches) {
       const matchId = `${competition}-match-${match.id}`;
-      // Always update with latest scores from API (fixes incorrect scores)
+
+      // Fetch detailed match info to get red cards
+      const details = await fetchMatchDetails(match.id);
+      const homeRedCards = details ? countRedCards(details.bookings, match.homeTeam.id) : 0;
+      const awayRedCards = details ? countRedCards(details.bookings, match.awayTeam.id) : 0;
+
+      // Always update with latest scores and red cards from API
       const result = await client.query(
         `UPDATE match
-        SET "homeScore" = $1, "awayScore" = $2, status = 'finished', "updatedAt" = NOW()
-        WHERE id = $3 AND ("homeScore" != $1 OR "awayScore" != $2 OR status != 'finished')`,
+        SET "homeScore" = $1, "awayScore" = $2, "homeRedCards" = $3, "awayRedCards" = $4, status = 'finished', "updatedAt" = NOW()
+        WHERE id = $5 AND ("homeScore" != $1 OR "awayScore" != $2 OR "homeRedCards" != $3 OR "awayRedCards" != $4 OR status != 'finished')`,
         [
           match.score.fullTime.home,
           match.score.fullTime.away,
+          homeRedCards,
+          awayRedCards,
           matchId
         ]
       );
       if ((result.rowCount ?? 0) > 0) {
         updated++;
+        if (homeRedCards > 0 || awayRedCards > 0) {
+          console.log(`Match ${matchId}: ${homeRedCards} home red cards, ${awayRedCards} away red cards`);
+        }
       }
+
+      // Small delay to respect API rate limits (10 requests/minute for free tier)
+      await new Promise(resolve => setTimeout(resolve, 100));
     }
   });
 
