@@ -84,16 +84,21 @@ async function start() {
       console.log(`Server running on http://localhost:${PORT}`);
     });
 
-    // Run initial sync after 5 seconds (let server start first)
-    setTimeout(runSync, 5000);
+    // Run immediate sync on startup (don't wait)
+    console.log("[Startup] Running immediate sync...");
+    runResultsUpdate().then(() => {
+      console.log("[Startup] Initial results sync completed");
+    }).catch(err => {
+      console.error("[Startup] Initial sync failed:", err);
+    });
 
     // Schedule full sync every 6 hours (at minute 0)
     cron.schedule("0 */6 * * *", runSync);
 
-    // Schedule results update every hour (at minute 30)
-    cron.schedule("30 * * * *", runResultsUpdate);
+    // Schedule results update every 15 minutes for faster updates
+    cron.schedule("*/15 * * * *", runResultsUpdate);
 
-    console.log("[Cron] Scheduled: full sync every 6 hours, results update every hour");
+    console.log("[Cron] Scheduled: full sync every 6 hours, results update every 15 minutes");
   } catch (error) {
     console.error("Failed to start server:", error);
     process.exit(1);
