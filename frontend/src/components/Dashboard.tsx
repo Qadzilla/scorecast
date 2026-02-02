@@ -1200,16 +1200,6 @@ export default function Dashboard({ demoMode = false, onExitDemo }: DashboardPro
                 </form>
               </div>
 
-              {/* Help Text */}
-              <p className="text-center text-gray-400 text-sm mt-8">
-                Don't have a code? Ask a friend who's already in a league, or{" "}
-                <button 
-                  onClick={() => setActiveNav("create")}
-                  className="text-[#3d195b] font-medium hover:underline"
-                >
-                  create your own league
-                </button>
-              </p>
             </div>
           )}
 
