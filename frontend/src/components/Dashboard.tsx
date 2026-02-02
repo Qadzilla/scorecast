@@ -1154,7 +1154,7 @@ export default function Dashboard({ demoMode = false, onExitDemo }: DashboardPro
                 </div>
                 <h2 className="text-4xl font-extrabold text-gray-900 mb-3 tracking-tight">Join a League</h2>
                 <p className="text-gray-500 text-lg max-w-md mx-auto">
-                  Got an invite code? Enter it below to join your friends and start competing!
+                  Enter your invite code below to join an existing league.
                 </p>
               </div>
 
