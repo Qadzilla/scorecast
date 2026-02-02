@@ -422,33 +422,12 @@ export async function syncAll(): Promise<{
   };
 }
 
-// Fetch individual match details (includes bookings for red cards)
-interface ApiMatchDetails extends ApiMatch {
-  bookings?: ApiBooking[];
-}
-
-async function fetchMatchDetails(matchApiId: number): Promise<ApiMatchDetails | null> {
-  try {
-    const details = await apiRequest<ApiMatchDetails>(`/matches/${matchApiId}`);
-    // Debug: log if bookings data is present
-    if (details.bookings && details.bookings.length > 0) {
-      console.log(`[API] Match ${matchApiId} has ${details.bookings.length} bookings:`,
-        details.bookings.map(b => `${b.player?.name || 'Unknown'} - ${b.card}`).join(', '));
-    } else {
-      console.log(`[API] Match ${matchApiId} has no bookings data`);
-    }
-    return details;
-  } catch (error) {
-    console.error(`Failed to fetch match details for ${matchApiId}:`, error);
-    return null;
-  }
-}
-
-// Count red cards from bookings
-function countRedCards(bookings: ApiBooking[] | undefined, teamId: number): number {
-  if (!bookings) return 0;
-  return bookings.filter(b => b.card === "RED" && b.team.id === teamId).length;
-}
+// NOTE: Red cards feature requires paid API tier to fetch individual match details
+// The database columns and frontend UI are in place - just need to enable this
+// when/if the API subscription is upgraded.
+//
+// To enable: uncomment fetchMatchDetails calls below and the /matches/{id} endpoint
+// will return bookings data with red card information.
 
 // Update only match results (for scoring predictions)
 export async function updateMatchResults(competition: "premier_league" | "champions_league"): Promise<number> {
@@ -465,33 +444,20 @@ export async function updateMatchResults(competition: "premier_league" | "champi
     for (const match of data.matches) {
       const matchId = `${competition}-match-${match.id}`;
 
-      // Fetch detailed match info to get red cards
-      const details = await fetchMatchDetails(match.id);
-      const homeRedCards = details ? countRedCards(details.bookings, match.homeTeam.id) : 0;
-      const awayRedCards = details ? countRedCards(details.bookings, match.awayTeam.id) : 0;
-
-      // Always update with latest scores and red cards from API
+      // Always update with latest scores from API
       const result = await client.query(
         `UPDATE match
-        SET "homeScore" = $1, "awayScore" = $2, "homeRedCards" = $3, "awayRedCards" = $4, status = 'finished', "updatedAt" = NOW()
-        WHERE id = $5 AND ("homeScore" != $1 OR "awayScore" != $2 OR "homeRedCards" != $3 OR "awayRedCards" != $4 OR status != 'finished')`,
+        SET "homeScore" = $1, "awayScore" = $2, status = 'finished', "updatedAt" = NOW()
+        WHERE id = $3 AND ("homeScore" != $1 OR "awayScore" != $2 OR status != 'finished')`,
         [
           match.score.fullTime.home,
           match.score.fullTime.away,
-          homeRedCards,
-          awayRedCards,
           matchId
         ]
       );
       if ((result.rowCount ?? 0) > 0) {
         updated++;
-        if (homeRedCards > 0 || awayRedCards > 0) {
-          console.log(`Match ${matchId}: ${homeRedCards} home red cards, ${awayRedCards} away red cards`);
-        }
       }
-
-      // Small delay to respect API rate limits (10 requests/minute for free tier)
-      await new Promise(resolve => setTimeout(resolve, 100));
     }
   });
 
