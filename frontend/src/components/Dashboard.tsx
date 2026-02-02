@@ -1176,7 +1176,7 @@ export default function Dashboard({ demoMode = false, onExitDemo }: DashboardPro
                       type="text"
                       value={joinCode}
                       onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
-                      placeholder="Enter code (e.g. ABC123)"
+                      placeholder="ENTER CODE"
                       className="w-full px-5 py-4 rounded-xl border-2 border-gray-200 focus:border-[#00ff87] focus:ring-4 focus:ring-[#00ff87]/20 outline-none transition-all font-mono text-center text-2xl tracking-[0.3em] uppercase bg-gray-50/50"
                       maxLength={8}
                     />
