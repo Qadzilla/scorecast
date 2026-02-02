@@ -846,72 +846,180 @@ export default function Dashboard({ demoMode = false, onExitDemo }: DashboardPro
         {/* Main Content */}
         <main className="flex-1 p-10">
           {activeNav === "leagues" && (
-            <div>
-              <h2 className="text-3xl font-extrabold text-gray-900 mb-8 tracking-tight">My Leagues</h2>
+            <div className="space-y-8">
+              {/* Welcome Header */}
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-3xl font-extrabold text-gray-900 tracking-tight">
+                    Welcome back, {user?.firstName || user?.username || "Predictor"}!
+                  </h2>
+                  <p className="text-gray-500 mt-1">Ready to make some winning predictions?</p>
+                </div>
+                <button
+                  onClick={() => setActiveNav("join")}
+                  className="px-5 py-2.5 bg-gradient-to-r from-[#00ff87] to-[#60efff] text-gray-900 font-bold rounded-xl hover:opacity-90 transition-all duration-200 shadow-lg hover:shadow-xl"
+                >
+                  + Join League
+                </button>
+              </div>
 
               {loadingLeagues ? (
                 <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-8 text-center border border-white/50 shadow-xl shadow-gray-200/50 transition-all duration-300">
-                  <p className="text-gray-500">Loading leagues...</p>
+                  <p className="text-gray-500">Loading your leagues...</p>
                 </div>
               ) : leagues.length === 0 ? (
-                <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-8 text-center border border-white/50 shadow-xl shadow-gray-200/50 transition-all duration-300">
-                  <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-[#00ff87]/20 flex items-center justify-center">
-                    <svg className="w-8 h-8 text-[#00915c]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                /* Empty State - No Leagues */
+                <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-12 text-center border border-white/50 shadow-xl shadow-gray-200/50 transition-all duration-300">
+                  <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-gradient-to-br from-[#00ff87]/30 to-[#60efff]/30 flex items-center justify-center">
+                    <svg className="w-10 h-10 text-[#00915c]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15c-3 0-5-2-5-5V4h10v6c0 3-2 5-5 5zm0 0v4m0 0H9m3 0h3M7 4H4v3a3 3 0 003 3m10-6h3v3a3 3 0 01-3 3" />
                     </svg>
                   </div>
-                  <p className="text-gray-500 mb-4">You haven't joined any leagues yet.</p>
-                  <div className="flex gap-3 justify-center">
+                  <h3 className="text-2xl font-bold text-gray-900 mb-2">Start Your Prediction Journey</h3>
+                  <p className="text-gray-500 mb-8 max-w-md mx-auto">
+                    Join a league to compete with friends and prove you're the ultimate football predictor!
+                  </p>
+                  <div className="flex gap-4 justify-center">
+                    <button
+                      onClick={() => setActiveNav("join")}
+                      className="px-8 py-3 bg-gradient-to-r from-[#00ff87] to-[#60efff] text-gray-900 font-bold rounded-xl hover:opacity-90 transition-all duration-200 shadow-lg hover:shadow-xl"
+                    >
+                      Join a League
+                    </button>
                     {user?.email === ADMIN_EMAIL && (
                       <button
                         onClick={() => setActiveNav("create")}
-                        className="px-6 py-2 bg-[#00ff87] text-gray-900 font-semibold rounded-lg hover:bg-[#00e67a] transition-colors"
+                        className="px-8 py-3 border-2 border-gray-300 text-gray-700 font-bold rounded-xl hover:border-gray-400 hover:bg-gray-50 transition-all duration-200"
                       >
                         Create League
                       </button>
                     )}
-                    <button
-                      onClick={() => setActiveNav("join")}
-                      className="px-6 py-2 border border-gray-300 text-gray-700 font-semibold rounded-lg hover:bg-gray-50 transition-colors"
-                    >
-                      Join League
-                    </button>
                   </div>
                 </div>
               ) : (
-                <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-white/50 shadow-xl shadow-gray-200/50 transition-all duration-300 hover:shadow-2xl">
-                  <div className="p-6 border-b border-gray-100">
-                    <h3 className="text-lg font-semibold text-gray-900">Leaderboard Snapshot</h3>
-                    <p className="text-sm text-gray-500 mt-1">Your ranking across all leagues</p>
-                  </div>
-                  <div className="divide-y divide-gray-100">
-                    {leagues.map((league, index) => (
-                      <div
-                        key={league.id}
-                        className="p-4 flex items-center gap-4"
-                      >
-                        <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-sm ${
-                          league.type === "premier_league" ? "bg-[#3d195b]" : "bg-[#04065c]"
-                        }`}>
-                          {index + 1}
+                /* Has Leagues - Show Dashboard */
+                <>
+                  {/* Upcoming Deadlines */}
+                  <div className="grid grid-cols-2 gap-6">
+                    <div className="bg-gradient-to-br from-[#3d195b] to-[#6b2d8a] rounded-2xl p-6 text-white shadow-xl">
+                      <div className="flex items-center gap-3 mb-4">
+                        <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center">
+                          <span className="text-lg">⚽</span>
                         </div>
-                        <div className="flex-1">
-                          <p className="font-medium text-gray-900">{league.name}</p>
-                          <p className="text-xs text-gray-500">
-                            {league.memberCount} member{league.memberCount !== 1 ? "s" : ""} • {league.role}
+                        <div>
+                          <p className="text-white/70 text-sm">Premier League</p>
+                          <p className="font-bold">
+                            {plGameweekNum ? `Gameweek ${plGameweekNum}` : "No upcoming gameweek"}
                           </p>
                         </div>
-                        <div className="text-right">
-                          <p className="text-lg font-bold text-gray-900">--</p>
-                          <p className="text-xs text-gray-500">points</p>
+                      </div>
+                      {plDeadline && plCountdown.days + plCountdown.hours + plCountdown.minutes > 0 ? (
+                        <div className="flex gap-3">
+                          <div className="bg-white/20 rounded-lg px-3 py-2 text-center min-w-[60px]">
+                            <p className="text-2xl font-bold">{plCountdown.days}</p>
+                            <p className="text-xs text-white/70">days</p>
+                          </div>
+                          <div className="bg-white/20 rounded-lg px-3 py-2 text-center min-w-[60px]">
+                            <p className="text-2xl font-bold">{plCountdown.hours}</p>
+                            <p className="text-xs text-white/70">hrs</p>
+                          </div>
+                          <div className="bg-white/20 rounded-lg px-3 py-2 text-center min-w-[60px]">
+                            <p className="text-2xl font-bold">{plCountdown.minutes}</p>
+                            <p className="text-xs text-white/70">min</p>
+                          </div>
+                        </div>
+                      ) : (
+                        <p className="text-white/70">No upcoming deadline</p>
+                      )}
+                    </div>
+                    <div className="bg-gradient-to-br from-[#04065c] to-[#1a237e] rounded-2xl p-6 text-white shadow-xl">
+                      <div className="flex items-center gap-3 mb-4">
+                        <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center">
+                          <span className="text-lg">🏆</span>
+                        </div>
+                        <div>
+                          <p className="text-white/70 text-sm">Champions League</p>
+                          <p className="font-bold">
+                            {uclGameweekNum ? `Matchday ${uclGameweekNum}` : "No upcoming matchday"}
+                          </p>
                         </div>
                       </div>
-                    ))}
+                      {uclDeadline && uclCountdown.days + uclCountdown.hours + uclCountdown.minutes > 0 ? (
+                        <div className="flex gap-3">
+                          <div className="bg-white/20 rounded-lg px-3 py-2 text-center min-w-[60px]">
+                            <p className="text-2xl font-bold">{uclCountdown.days}</p>
+                            <p className="text-xs text-white/70">days</p>
+                          </div>
+                          <div className="bg-white/20 rounded-lg px-3 py-2 text-center min-w-[60px]">
+                            <p className="text-2xl font-bold">{uclCountdown.hours}</p>
+                            <p className="text-xs text-white/70">hrs</p>
+                          </div>
+                          <div className="bg-white/20 rounded-lg px-3 py-2 text-center min-w-[60px]">
+                            <p className="text-2xl font-bold">{uclCountdown.minutes}</p>
+                            <p className="text-xs text-white/70">min</p>
+                          </div>
+                        </div>
+                      ) : (
+                        <p className="text-white/70">No upcoming deadline</p>
+                      )}
+                    </div>
                   </div>
-                  <div className="p-4 bg-gray-50 rounded-b-xl">
-                    <p className="text-xs text-gray-500 text-center">Select a league from the sidebar to view full standings</p>
+
+                  {/* League Cards */}
+                  <div>
+                    <h3 className="text-xl font-bold text-gray-900 mb-4">Your Leagues</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {leagues.map((league) => (
+                        <button
+                          key={league.id}
+                          onClick={() => {
+                            setSelectedLeague(league);
+                            setActiveNav("league-detail");
+                            setShowPredictionsForm(false);
+                          }}
+                          className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 border border-white/50 shadow-xl shadow-gray-200/50 transition-all duration-300 hover:shadow-2xl hover:scale-[1.02] text-left group"
+                        >
+                          <div className="flex items-start justify-between mb-4">
+                            <div className="flex items-center gap-3">
+                              <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-white font-bold shadow-lg ${
+                                league.type === "premier_league" 
+                                  ? "bg-gradient-to-br from-[#3d195b] to-[#6b2d8a]" 
+                                  : "bg-gradient-to-br from-[#04065c] to-[#1a237e]"
+                              }`}>
+                                {league.type === "premier_league" ? "⚽" : "🏆"}
+                              </div>
+                              <div>
+                                <h4 className="font-bold text-gray-900 text-lg group-hover:text-[#3d195b] transition-colors">
+                                  {league.name}
+                                </h4>
+                                <p className="text-sm text-gray-500">
+                                  {league.type === "premier_league" ? "Premier League" : "Champions League"}
+                                </p>
+                              </div>
+                            </div>
+                            <svg className="w-5 h-5 text-gray-400 group-hover:text-[#00ff87] group-hover:translate-x-1 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                            </svg>
+                          </div>
+                          <div className="flex items-center gap-6 text-sm">
+                            <div className="flex items-center gap-2 text-gray-600">
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                              </svg>
+                              <span>{league.memberCount} members</span>
+                            </div>
+                            <div className="flex items-center gap-2 text-gray-600">
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                              </svg>
+                              <span className="capitalize">{league.role}</span>
+                            </div>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
                   </div>
-                </div>
+                </>
               )}
             </div>
           )}
