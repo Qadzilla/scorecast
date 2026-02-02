@@ -103,6 +103,11 @@ const DEMO_LEADERBOARD: LeaderboardEntry[] = [
   { rank: 5, userId: "5", username: "pl_expert", firstName: "Casey", lastName: "Brown", totalPoints: 118, teamLogo: "https://crests.football-data.org/73.png" },
 ];
 
+// Demo user standings per league
+const DEMO_USER_STANDINGS: Record<string, { rank: number; totalPoints: number; totalMembers: number }> = {
+  "demo-league-1": { rank: 4, totalPoints: 125, totalMembers: 8 },
+};
+
 interface DashboardProps {
   demoMode?: boolean;
   onExitDemo?: () => void;
@@ -133,6 +138,11 @@ export default function Dashboard({ demoMode = false, onExitDemo }: DashboardPro
   const [loadingLeaderboard, setLoadingLeaderboard] = useState(false);
   const [isSeasonComplete, setIsSeasonComplete] = useState(false);
   const [champion, setChampion] = useState<LeaderboardEntry | null>(null);
+
+  // User standings per league (for My Leagues dashboard)
+  const [userStandings, setUserStandings] = useState<Record<string, { rank: number; totalPoints: number; totalMembers: number }>>(
+    demoMode ? DEMO_USER_STANDINGS : {}
+  );
 
   // Admin panel state
   const [showAdminPanel, setShowAdminPanel] = useState(false);
@@ -1001,6 +1011,32 @@ export default function Dashboard({ demoMode = false, onExitDemo }: DashboardPro
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                             </svg>
                           </div>
+                          {/* User Standing */}
+                          {userStandings[league.id] && (
+                            <div className="flex items-center gap-4 mb-4 p-3 bg-gradient-to-r from-gray-50 to-gray-100/50 rounded-xl">
+                              <div className="flex items-center gap-2">
+                                <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm shadow-md ${
+                                  userStandings[league.id].rank === 1 ? "bg-gradient-to-br from-yellow-300 to-yellow-500 text-yellow-900" :
+                                  userStandings[league.id].rank === 2 ? "bg-gradient-to-br from-gray-200 to-gray-400 text-gray-700" :
+                                  userStandings[league.id].rank === 3 ? "bg-gradient-to-br from-orange-300 to-orange-500 text-orange-900" :
+                                  "bg-gradient-to-br from-[#00ff87]/80 to-[#60efff]/80 text-gray-900"
+                                }`}>
+                                  #{userStandings[league.id].rank}
+                                </div>
+                                <div>
+                                  <p className="text-xs text-gray-500">Your Rank</p>
+                                  <p className="font-bold text-gray-900">
+                                    {userStandings[league.id].rank} of {userStandings[league.id].totalMembers}
+                                  </p>
+                                </div>
+                              </div>
+                              <div className="h-8 w-px bg-gray-200" />
+                              <div>
+                                <p className="text-xs text-gray-500">Points</p>
+                                <p className="font-bold text-gray-900 text-lg">{userStandings[league.id].totalPoints}</p>
+                              </div>
+                            </div>
+                          )}
                           <div className="flex items-center gap-6 text-sm">
                             <div className="flex items-center gap-2 text-gray-600">
                               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
