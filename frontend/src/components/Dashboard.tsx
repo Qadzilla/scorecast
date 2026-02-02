@@ -678,7 +678,7 @@ export default function Dashboard({ demoMode = false, onExitDemo }: DashboardPro
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-br from-slate-100 via-gray-100 to-slate-200">
       {/* Demo Mode Banner */}
       {demoMode && (
         <div className="bg-gradient-to-r from-[#00ff87] to-[#60efff] text-gray-900 text-center py-2 px-4 font-medium">
@@ -720,7 +720,12 @@ export default function Dashboard({ demoMode = false, onExitDemo }: DashboardPro
 
       <div className="flex">
         {/* Sidebar */}
-        <aside className="w-64 min-h-[calc(100vh-8rem)] bg-white border-r border-gray-200">
+        <aside 
+          className="w-64 min-h-[calc(100vh-8rem)] relative"
+          style={{
+            background: 'linear-gradient(180deg, #1a0826 0%, #120830 50%, #0a0a2e 100%)'
+          }}
+        >
           <nav className="p-4 space-y-1">
             {/* My Leagues Section */}
             <button
@@ -728,10 +733,10 @@ export default function Dashboard({ demoMode = false, onExitDemo }: DashboardPro
                 setSelectedLeague(null);
                 setActiveNav("leagues");
               }}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left transition-colors ${
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left transition-all duration-200 ${
                 activeNav === "leagues" && !selectedLeague
-                  ? "bg-[#00ff87]/20 text-[#00915c] font-semibold"
-                  : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+                  ? "bg-[#00ff87]/20 text-[#00ff87] font-semibold shadow-lg shadow-[#00ff87]/10"
+                  : "text-white/70 hover:bg-white/10 hover:text-white"
               }`}
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -751,14 +756,14 @@ export default function Dashboard({ demoMode = false, onExitDemo }: DashboardPro
                       setActiveNav("league-detail");
                       setShowPredictionsForm(false);
                     }}
-                    className={`w-full flex items-center gap-2 px-4 py-2 rounded-lg text-left transition-colors text-sm ${
+                    className={`w-full flex items-center gap-2 px-4 py-2 rounded-lg text-left transition-all duration-200 text-sm ${
                       selectedLeague?.id === league.id
-                        ? "bg-[#00ff87]/20 text-[#00915c] font-semibold"
-                        : "text-gray-500 hover:bg-gray-100 hover:text-gray-900"
+                        ? "bg-[#00ff87]/20 text-[#00ff87] font-semibold shadow-lg shadow-[#00ff87]/10"
+                        : "text-white/50 hover:bg-white/10 hover:text-white/90"
                     }`}
                   >
                     <span className={`w-2 h-2 rounded-full ${
-                      league.type === "premier_league" ? "bg-[#3d195b]" : "bg-[#04065c]"
+                      league.type === "premier_league" ? "bg-[#9b4dca]" : "bg-[#3b82f6]"
                     }`} />
                     <span className="truncate">{league.name}</span>
                   </button>
@@ -770,10 +775,10 @@ export default function Dashboard({ demoMode = false, onExitDemo }: DashboardPro
             {user?.email === ADMIN_EMAIL && (
               <button
                 onClick={() => setActiveNav("create")}
-                className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left transition-colors ${
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left transition-all duration-200 ${
                   activeNav === "create"
-                    ? "bg-[#00ff87]/20 text-[#00915c] font-semibold"
-                    : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+                    ? "bg-[#00ff87]/20 text-[#00ff87] font-semibold shadow-lg shadow-[#00ff87]/10"
+                    : "text-white/70 hover:bg-white/10 hover:text-white"
                 }`}
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -785,10 +790,10 @@ export default function Dashboard({ demoMode = false, onExitDemo }: DashboardPro
 
             <button
               onClick={() => setActiveNav("join")}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left transition-colors ${
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left transition-all duration-200 ${
                 activeNav === "join"
-                  ? "bg-[#00ff87]/20 text-[#00915c] font-semibold"
-                  : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+                  ? "bg-[#00ff87]/20 text-[#00ff87] font-semibold shadow-lg shadow-[#00ff87]/10"
+                  : "text-white/70 hover:bg-white/10 hover:text-white"
               }`}
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -799,10 +804,10 @@ export default function Dashboard({ demoMode = false, onExitDemo }: DashboardPro
 
             <button
               onClick={() => setActiveNav("account")}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left transition-colors ${
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left transition-all duration-200 ${
                 activeNav === "account"
-                  ? "bg-[#00ff87]/20 text-[#00915c] font-semibold"
-                  : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+                  ? "bg-[#00ff87]/20 text-[#00ff87] font-semibold shadow-lg shadow-[#00ff87]/10"
+                  : "text-white/70 hover:bg-white/10 hover:text-white"
               }`}
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -813,11 +818,11 @@ export default function Dashboard({ demoMode = false, onExitDemo }: DashboardPro
           </nav>
 
           {/* Logout/Exit Demo button at bottom */}
-          <div className="absolute bottom-0 w-64 p-4 border-t border-gray-200">
+          <div className="absolute bottom-0 w-64 p-4 border-t border-white/10">
             {demoMode ? (
               <button
                 onClick={onExitDemo}
-                className="w-full flex items-center gap-3 px-4 py-3 rounded-lg bg-gradient-to-r from-[#00ff87] to-[#60efff] text-gray-900 hover:opacity-90 transition-all"
+                className="w-full flex items-center gap-3 px-4 py-3 rounded-lg bg-gradient-to-r from-[#00ff87] to-[#60efff] text-gray-900 hover:opacity-90 transition-all duration-200 shadow-lg shadow-[#00ff87]/20"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
@@ -827,7 +832,7 @@ export default function Dashboard({ demoMode = false, onExitDemo }: DashboardPro
             ) : (
               <button
                 onClick={handleSignOut}
-                className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-900 transition-colors"
+                className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-white/50 hover:bg-white/10 hover:text-white transition-all duration-200"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
@@ -839,17 +844,17 @@ export default function Dashboard({ demoMode = false, onExitDemo }: DashboardPro
         </aside>
 
         {/* Main Content */}
-        <main className="flex-1 p-8">
+        <main className="flex-1 p-10">
           {activeNav === "leagues" && (
             <div>
-              <h2 className="text-2xl font-bold text-gray-900 mb-6">My Leagues</h2>
+              <h2 className="text-3xl font-extrabold text-gray-900 mb-8 tracking-tight">My Leagues</h2>
 
               {loadingLeagues ? (
-                <div className="bg-white rounded-xl p-8 text-center border border-gray-200 shadow-sm">
+                <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-8 text-center border border-white/50 shadow-xl shadow-gray-200/50 transition-all duration-300">
                   <p className="text-gray-500">Loading leagues...</p>
                 </div>
               ) : leagues.length === 0 ? (
-                <div className="bg-white rounded-xl p-8 text-center border border-gray-200 shadow-sm">
+                <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-8 text-center border border-white/50 shadow-xl shadow-gray-200/50 transition-all duration-300">
                   <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-[#00ff87]/20 flex items-center justify-center">
                     <svg className="w-8 h-8 text-[#00915c]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15c-3 0-5-2-5-5V4h10v6c0 3-2 5-5 5zm0 0v4m0 0H9m3 0h3M7 4H4v3a3 3 0 003 3m10-6h3v3a3 3 0 01-3 3" />
@@ -874,7 +879,7 @@ export default function Dashboard({ demoMode = false, onExitDemo }: DashboardPro
                   </div>
                 </div>
               ) : (
-                <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
+                <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-white/50 shadow-xl shadow-gray-200/50 transition-all duration-300 hover:shadow-2xl">
                   <div className="p-6 border-b border-gray-100">
                     <h3 className="text-lg font-semibold text-gray-900">Leaderboard Snapshot</h3>
                     <p className="text-sm text-gray-500 mt-1">Your ranking across all leagues</p>
@@ -913,8 +918,8 @@ export default function Dashboard({ demoMode = false, onExitDemo }: DashboardPro
 
           {activeNav === "create" && (
             <div>
-              <h2 className="text-2xl font-bold text-gray-900 mb-6">Create League</h2>
-              <div className="bg-white rounded-xl p-8 border border-gray-200 shadow-sm">
+              <h2 className="text-3xl font-extrabold text-gray-900 mb-8 tracking-tight">Create League</h2>
+              <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-8 border border-white/50 shadow-xl shadow-gray-200/50 transition-all duration-300 hover:shadow-2xl">
                 {createSuccess ? (
                   <div className="text-center">
                     <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-[#00ff87]/20 flex items-center justify-center">
@@ -1002,8 +1007,8 @@ export default function Dashboard({ demoMode = false, onExitDemo }: DashboardPro
 
           {activeNav === "join" && (
             <div>
-              <h2 className="text-2xl font-bold text-gray-900 mb-6">Join League</h2>
-              <div className="bg-white rounded-xl p-8 border border-gray-200 shadow-sm">
+              <h2 className="text-3xl font-extrabold text-gray-900 mb-8 tracking-tight">Join League</h2>
+              <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-8 border border-white/50 shadow-xl shadow-gray-200/50 transition-all duration-300 hover:shadow-2xl">
                 <div className="text-center">
                   <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-[#00ff87]/20 flex items-center justify-center">
                     <svg className="w-8 h-8 text-[#00915c]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1042,28 +1047,28 @@ export default function Dashboard({ demoMode = false, onExitDemo }: DashboardPro
 
           {activeNav === "league-detail" && selectedLeague && (
             <div>
-              <div className="flex items-center gap-3 mb-6">
+              <div className="flex items-center gap-4 mb-8">
                 {showPredictionsForm && (
                   <button
                     onClick={() => setShowPredictionsForm(false)}
-                    className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                    className="p-2.5 hover:bg-white/50 rounded-xl transition-all duration-200 shadow-sm hover:shadow-md"
                   >
                     <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                     </svg>
                   </button>
                 )}
-                <h2 className="text-2xl font-bold text-gray-900">{selectedLeague.name}</h2>
-                <span className={`px-2 py-0.5 rounded text-xs font-medium ${
+                <h2 className="text-3xl font-extrabold text-gray-900 tracking-tight">{selectedLeague.name}</h2>
+                <span className={`px-3 py-1 rounded-full text-xs font-semibold shadow-sm ${
                   selectedLeague.type === "premier_league"
-                    ? "bg-[#3d195b] text-white"
-                    : "bg-[#04065c] text-white"
+                    ? "bg-gradient-to-r from-[#3d195b] to-[#6b2d8a] text-white"
+                    : "bg-gradient-to-r from-[#04065c] to-[#1a237e] text-white"
                 }`}>
                   {selectedLeague.type === "premier_league" ? "Premier League" : "Champions League"}
                 </span>
                 <button
                   onClick={() => setShowRulesModal(true)}
-                  className="ml-auto flex items-center gap-1.5 px-3 py-1.5 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+                  className="ml-auto flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-white/50 rounded-xl transition-all duration-200 shadow-sm hover:shadow-md"
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -1073,12 +1078,12 @@ export default function Dashboard({ demoMode = false, onExitDemo }: DashboardPro
               </div>
 
               {loadingFixtures ? (
-                <div className="bg-white rounded-xl p-8 text-center border border-gray-200 shadow-sm">
+                <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-8 text-center border border-white/50 shadow-xl shadow-gray-200/50 transition-all duration-300">
                   <p className="text-gray-500">Loading fixtures...</p>
                 </div>
               ) : showPredictionsForm && currentGameweek ? (
                 /* Full Predictions Form */
-                <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
+                <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 border border-white/50 shadow-xl shadow-gray-200/50 transition-all duration-300 hover:shadow-2xl">
                   <Predictions
                     gameweek={currentGameweek}
                     matches={matches}
@@ -1142,10 +1147,10 @@ export default function Dashboard({ demoMode = false, onExitDemo }: DashboardPro
                   {/* Top Row - 3 columns */}
                   <div className="grid grid-cols-3 gap-6">
                     {/* Leaderboard */}
-                    <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm min-h-[600px] max-h-[600px] overflow-y-auto flex flex-col">
+                    <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 border border-white/50 shadow-xl shadow-gray-200/50 min-h-[600px] max-h-[600px] overflow-y-auto flex flex-col transition-all duration-300 hover:shadow-2xl hover:shadow-gray-300/50">
                       <div className="flex items-center justify-between mb-4">
                         <div className="flex items-center gap-2">
-                          <h3 className="text-lg font-semibold text-gray-900">Leaderboard</h3>
+                          <h3 className="text-xl font-bold text-gray-900">Leaderboard</h3>
                           {isSeasonComplete && (
                             <span className="px-2 py-0.5 bg-yellow-100 text-yellow-800 text-xs font-medium rounded-full">
                               Final
@@ -1163,25 +1168,27 @@ export default function Dashboard({ demoMode = false, onExitDemo }: DashboardPro
                           {leaderboard.map((entry) => (
                             <div
                               key={entry.userId}
-                              className={`flex items-center gap-3 p-3 rounded-lg ${
-                                entry.userId === user?.id ? "bg-[#00ff87]/10" : ""
+                              className={`flex items-center gap-3 p-3 rounded-xl transition-all duration-200 ${
+                                entry.userId === user?.id 
+                                  ? "bg-gradient-to-r from-[#00ff87]/20 to-[#60efff]/10 border border-[#00ff87]/30 shadow-sm" 
+                                  : "hover:bg-gray-50"
                               }`}
                             >
-                              <span className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
-                                entry.rank === 1 ? "bg-yellow-400 text-yellow-900" :
-                                entry.rank === 2 ? "bg-gray-300 text-gray-700" :
-                                entry.rank === 3 ? "bg-orange-300 text-orange-900" :
+                              <span className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold shadow-md ${
+                                entry.rank === 1 ? "bg-gradient-to-br from-yellow-300 to-yellow-500 text-yellow-900" :
+                                entry.rank === 2 ? "bg-gradient-to-br from-gray-200 to-gray-400 text-gray-700" :
+                                entry.rank === 3 ? "bg-gradient-to-br from-orange-300 to-orange-500 text-orange-900" :
                                 "bg-gray-100 text-gray-600"
                               }`}>
                                 {isSeasonComplete && entry.rank === 1 ? "👑" : entry.rank}
                               </span>
-                              <span className={`flex-1 flex items-center gap-2 ${entry.userId === user?.id ? "font-semibold" : ""}`}>
+                              <span className={`flex-1 flex items-center gap-2 ${entry.userId === user?.id ? "font-bold text-gray-900" : "text-gray-700"}`}>
                                 {entry.username || entry.firstName || "Anonymous"}
                                 {entry.teamLogo && (
-                                  <img src={entry.teamLogo} alt="" className="w-5 h-5 object-contain" />
+                                  <img src={entry.teamLogo} alt="" className="w-6 h-6 object-contain" />
                                 )}
                               </span>
-                              <span className="font-bold text-gray-900 text-lg">{entry.totalPoints}</span>
+                              <span className="font-bold text-gray-900 text-lg tabular-nums">{entry.totalPoints}</span>
                             </div>
                           ))}
                         </div>
@@ -1189,8 +1196,8 @@ export default function Dashboard({ demoMode = false, onExitDemo }: DashboardPro
                     </div>
 
                     {/* My Predictions Summary */}
-                    <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm min-h-[600px] max-h-[600px] flex flex-col">
-                      <h3 className="text-lg font-semibold text-gray-900 mb-4">My Predictions</h3>
+                    <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 border border-white/50 shadow-xl shadow-gray-200/50 min-h-[600px] max-h-[600px] flex flex-col transition-all duration-300 hover:shadow-2xl hover:shadow-gray-300/50">
+                      <h3 className="text-xl font-bold text-gray-900 mb-4">My Predictions</h3>
                       <div className="flex-1 overflow-y-auto">
                         {loadingPredictions ? (
                           <p className="text-gray-500 text-sm">Loading...</p>
@@ -1263,8 +1270,12 @@ export default function Dashboard({ demoMode = false, onExitDemo }: DashboardPro
                       {!isDeadlinePassed && (
                         <button
                           onClick={() => setShowPredictionsForm(true)}
-                          className="mt-4 w-full py-3 rounded-lg font-semibold text-white transition-colors"
-                          style={{ backgroundColor: selectedLeague.type === "premier_league" ? "#3d195b" : "#04065c" }}
+                          className="mt-4 w-full py-3.5 rounded-xl font-bold text-white transition-all duration-200 shadow-lg hover:shadow-xl hover:scale-[1.02] active:scale-[0.98]"
+                          style={{ 
+                            background: selectedLeague.type === "premier_league" 
+                              ? "linear-gradient(135deg, #3d195b 0%, #6b2d8a 100%)" 
+                              : "linear-gradient(135deg, #04065c 0%, #1a237e 100%)" 
+                          }}
                         >
                           {Object.keys(userPredictions).length > 0 ? "Edit Predictions" : "Make Predictions"}
                         </button>
@@ -1277,8 +1288,8 @@ export default function Dashboard({ demoMode = false, onExitDemo }: DashboardPro
                     </div>
 
                     {/* Gameweek Fixtures */}
-                    <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm min-h-[600px] max-h-[600px] overflow-y-auto">
-                      <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                    <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 border border-white/50 shadow-xl shadow-gray-200/50 min-h-[600px] max-h-[600px] overflow-y-auto transition-all duration-300 hover:shadow-2xl hover:shadow-gray-300/50">
+                      <h3 className="text-xl font-bold text-gray-900 mb-4">
                         {currentGameweek ? `Gameweek ${currentGameweek.number}` : "Fixtures"}
                       </h3>
                       {matches.length === 0 ? (
@@ -1337,7 +1348,7 @@ export default function Dashboard({ demoMode = false, onExitDemo }: DashboardPro
                   </div>
 
                   {/* Bottom Row - League Info */}
-                  <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
+                  <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 border border-white/50 shadow-xl shadow-gray-200/50 transition-all duration-300 hover:shadow-2xl">
                     <div className="flex items-center justify-between mb-4">
                       <h3 className="text-lg font-semibold text-gray-900">League Info</h3>
                       {user?.email === ADMIN_EMAIL && (
@@ -1469,10 +1480,10 @@ export default function Dashboard({ demoMode = false, onExitDemo }: DashboardPro
 
           {activeNav === "account" && (
             <div>
-              <h2 className="text-2xl font-bold text-gray-900 mb-6">Account Settings</h2>
+              <h2 className="text-3xl font-extrabold text-gray-900 mb-8 tracking-tight">Account Settings</h2>
 
               {/* Profile Section */}
-              <div className="bg-white rounded-xl p-8 border border-gray-200 shadow-sm mb-6">
+              <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-8 border border-white/50 shadow-xl shadow-gray-200/50 transition-all duration-300 hover:shadow-2xl mb-6">
                 <h3 className="text-lg font-semibold text-gray-900 mb-6">Profile</h3>
 
                 {/* Favorite Team */}
@@ -1605,7 +1616,7 @@ export default function Dashboard({ demoMode = false, onExitDemo }: DashboardPro
               </div>
 
               {/* Account Info Section */}
-              <div className="bg-white rounded-xl p-8 border border-gray-200 shadow-sm">
+              <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-8 border border-white/50 shadow-xl shadow-gray-200/50 transition-all duration-300 hover:shadow-2xl">
                 <h3 className="text-lg font-semibold text-gray-900 mb-6">Account Information</h3>
                 <div className="grid grid-cols-2 gap-6">
                   <div>
