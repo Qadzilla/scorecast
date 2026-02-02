@@ -55,6 +55,9 @@ Auto-configured:
 
 ## Recent Changes (Feb 2026)
 
+### Typography Update
+- **Plus Jakarta Sans font**: Modern, friendly font applied globally via Google Fonts
+
 ### Dashboard UI/UX Refresh
 - **Dark gradient sidebar**: Matches header theme with purple-to-dark gradient
 - **Glass-morphism cards**: Cards use backdrop blur, semi-transparent backgrounds, and enhanced shadows
@@ -63,3 +66,18 @@ Auto-configured:
 - **Smooth transitions**: Navigation and hover states have 200ms transitions
 - **Better buttons**: Gradient backgrounds with shadow and micro-interaction effects
 - **Updated content background**: Subtle gradient from slate to gray tones
+- **User standings on league cards**: Shows rank badge and points for each league
+
+### Join League Page Redesign
+- **Hero section**: Large icon with gradient background and compelling headline
+- **Prominent invite input**: Large, centered input with monospace tracking for codes
+- **Benefits cards**: Three-card grid explaining competing, leaderboard, and bragging rights
+- **Loading spinner**: Animated spinner during join process
+- **Help text**: Link to create own league if no invite code
+
+### Account Page Redesign
+- **Profile header card**: Purple gradient card with avatar, name, team badge, and quick stats
+- **Stats summary**: Shows leagues joined, total points, and predictions made
+- **Profile Settings card**: Username and favorite team editing with inline forms
+- **Account Information card**: Read-only display of name, email, member since
+- **Danger Zone**: Delete account option in a separate card
