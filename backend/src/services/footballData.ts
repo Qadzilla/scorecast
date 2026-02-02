@@ -429,7 +429,15 @@ interface ApiMatchDetails extends ApiMatch {
 
 async function fetchMatchDetails(matchApiId: number): Promise<ApiMatchDetails | null> {
   try {
-    return await apiRequest<ApiMatchDetails>(`/matches/${matchApiId}`);
+    const details = await apiRequest<ApiMatchDetails>(`/matches/${matchApiId}`);
+    // Debug: log if bookings data is present
+    if (details.bookings && details.bookings.length > 0) {
+      console.log(`[API] Match ${matchApiId} has ${details.bookings.length} bookings:`,
+        details.bookings.map(b => `${b.player?.name || 'Unknown'} - ${b.card}`).join(', '));
+    } else {
+      console.log(`[API] Match ${matchApiId} has no bookings data`);
+    }
+    return details;
   } catch (error) {
     console.error(`Failed to fetch match details for ${matchApiId}:`, error);
     return null;
