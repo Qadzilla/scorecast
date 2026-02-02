@@ -64,6 +64,8 @@ export const fixturesApi = {
           kickoffTime: string;
           homeScore: number | null;
           awayScore: number | null;
+          homeRedCards: number;
+          awayRedCards: number;
           status: string;
           venue: string | null;
           homeTeam: {

@@ -225,6 +225,8 @@ router.get("/gameweek/:gameweekId", async (req, res) => {
         kickoffTime: string;
         homeScore: number | null;
         awayScore: number | null;
+        homeRedCards: number;
+        awayRedCards: number;
         status: string;
         venue: string | null;
         homeTeamId: string;
@@ -243,6 +245,8 @@ router.get("/gameweek/:gameweekId", async (req, res) => {
           m."kickoffTime",
           m."homeScore",
           m."awayScore",
+          COALESCE(m."homeRedCards", 0) as "homeRedCards",
+          COALESCE(m."awayRedCards", 0) as "awayRedCards",
           m.status,
           m.venue,
           ht.id as "homeTeamId",
@@ -270,6 +274,8 @@ router.get("/gameweek/:gameweekId", async (req, res) => {
           kickoffTime: m.kickoffTime,
           homeScore: m.homeScore,
           awayScore: m.awayScore,
+          homeRedCards: m.homeRedCards,
+          awayRedCards: m.awayRedCards,
           status: m.status,
           venue: m.venue,
           homeTeam: {

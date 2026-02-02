@@ -19,6 +19,13 @@ interface ApiTeam {
   crest: string;
 }
 
+interface ApiBooking {
+  minute: number;
+  team: { id: number };
+  player: { id: number; name: string };
+  card: "YELLOW" | "RED";
+}
+
 interface ApiMatch {
   id: number;
   utcDate: string;
@@ -34,6 +41,7 @@ interface ApiMatch {
     };
   };
   venue: string | null;
+  bookings?: ApiBooking[];
 }
 
 interface ApiCompetition {
@@ -326,15 +334,32 @@ export async function syncMatches(
             ]
           );
 
+          // Count red cards from bookings if available
+          let homeRedCards = 0;
+          let awayRedCards = 0;
+          if (match.bookings) {
+            for (const booking of match.bookings) {
+              if (booking.card === "RED") {
+                if (booking.team.id === match.homeTeam.id) {
+                  homeRedCards++;
+                } else if (booking.team.id === match.awayTeam.id) {
+                  awayRedCards++;
+                }
+              }
+            }
+          }
+
           await client.query(
-            `INSERT INTO match (id, "matchdayId", "homeTeamId", "awayTeamId", "kickoffTime", "homeScore", "awayScore", status, venue, "createdAt", "updatedAt")
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+            `INSERT INTO match (id, "matchdayId", "homeTeamId", "awayTeamId", "kickoffTime", "homeScore", "awayScore", status, venue, "homeRedCards", "awayRedCards", "createdAt", "updatedAt")
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
             ON CONFLICT(id) DO UPDATE SET
               "kickoffTime" = EXCLUDED."kickoffTime",
               "homeScore" = EXCLUDED."homeScore",
               "awayScore" = EXCLUDED."awayScore",
               status = EXCLUDED.status,
               venue = EXCLUDED.venue,
+              "homeRedCards" = EXCLUDED."homeRedCards",
+              "awayRedCards" = EXCLUDED."awayRedCards",
               "updatedAt" = EXCLUDED."updatedAt"`,
             [
               matchId,
@@ -346,6 +371,8 @@ export async function syncMatches(
               match.score.fullTime.away,
               mapMatchStatus(match.status),
               match.venue,
+              homeRedCards,
+              awayRedCards,
               timestamp,
               timestamp
             ]

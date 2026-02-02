@@ -33,6 +33,8 @@ export interface Match {
   kickoffTime: string; // ISO datetime
   homeScore: number | null;
   awayScore: number | null;
+  homeRedCards: number;
+  awayRedCards: number;
   status: MatchStatus;
   venue?: string;
 }

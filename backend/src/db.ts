@@ -3,6 +3,7 @@ import { up as leaguesMigration } from "./db/migrations/000_leagues.js";
 import { up as fixturesMigration } from "./db/migrations/001_fixtures.js";
 import { up as predictionsMigration } from "./db/migrations/002_predictions.js";
 import { up as favoriteTeamMigration } from "./db/migrations/003_favorite_team.js";
+import { up as redCardsMigration } from "./db/migrations/004_red_cards.js";
 
 const { Pool } = pg;
 
@@ -131,6 +132,7 @@ export async function runMigrations(): Promise<void> {
     await fixturesMigration(client);
     await predictionsMigration(client);
     await favoriteTeamMigration(client);
+    await redCardsMigration(client);
   } finally {
     client.release();
   }

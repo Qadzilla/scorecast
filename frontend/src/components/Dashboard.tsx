@@ -296,6 +296,8 @@ export default function Dashboard({ demoMode = false, onExitDemo }: DashboardPro
               kickoffTime: match.kickoffTime,
               homeScore: match.homeScore,
               awayScore: match.awayScore,
+              homeRedCards: match.homeRedCards,
+              awayRedCards: match.awayRedCards,
               status: match.status as "scheduled" | "live" | "finished" | "postponed" | "cancelled",
               venue: match.venue || undefined,
               homeTeam: {
@@ -348,6 +350,8 @@ export default function Dashboard({ demoMode = false, onExitDemo }: DashboardPro
             kickoffTime: match.kickoffTime,
             homeScore: match.homeScore,
             awayScore: match.awayScore,
+            homeRedCards: match.homeRedCards,
+            awayRedCards: match.awayRedCards,
             status: match.status as "scheduled" | "live" | "finished" | "postponed" | "cancelled",
             venue: match.venue || undefined,
             homeTeam: {
@@ -1211,9 +1215,28 @@ export default function Dashboard({ demoMode = false, onExitDemo }: DashboardPro
                                 )}
                               </div>
                               {match.status === "finished" ? (
-                                <span className="px-3 font-bold text-gray-900">
-                                  {match.homeScore} - {match.awayScore}
-                                </span>
+                                <div className="px-3 flex flex-col items-center">
+                                  {/* Red cards row */}
+                                  {(match.homeRedCards > 0 || match.awayRedCards > 0) && (
+                                    <div className="flex items-center gap-4 text-xs mb-0.5">
+                                      <span className="w-4 text-center">
+                                        {match.homeRedCards > 0 && (
+                                          <span className="inline-block w-2.5 h-3.5 bg-red-600 rounded-sm" title={`${match.homeRedCards} red card${match.homeRedCards > 1 ? 's' : ''}`} />
+                                        )}
+                                      </span>
+                                      <span className="w-2" />
+                                      <span className="w-4 text-center">
+                                        {match.awayRedCards > 0 && (
+                                          <span className="inline-block w-2.5 h-3.5 bg-red-600 rounded-sm" title={`${match.awayRedCards} red card${match.awayRedCards > 1 ? 's' : ''}`} />
+                                        )}
+                                      </span>
+                                    </div>
+                                  )}
+                                  {/* Score row */}
+                                  <span className="font-bold text-gray-900">
+                                    {match.homeScore} - {match.awayScore}
+                                  </span>
+                                </div>
                               ) : (
                                 <span className="px-3 text-gray-400">vs</span>
                               )}
