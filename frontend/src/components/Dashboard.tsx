@@ -140,7 +140,8 @@ export default function Dashboard({ demoMode = false, onExitDemo }: DashboardPro
   const [champion, setChampion] = useState<LeaderboardEntry | null>(null);
 
   // User standings per league (for My Leagues dashboard)
-  const [userStandings, setUserStandings] = useState<Record<string, { rank: number; totalPoints: number; totalMembers: number }>>(
+  // Currently only populated in demo mode - real API integration TODO
+  const [userStandings] = useState<Record<string, { rank: number; totalPoints: number; totalMembers: number }>>(
     demoMode ? DEMO_USER_STANDINGS : {}
   );
 

@@ -11,16 +11,13 @@ type AuthView = "login" | "signup" | "verify-email";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
 
-// Dev bypass mode - set VITE_DEV_BYPASS=true to skip login (for Replit design work)
-const DEV_BYPASS = import.meta.env.VITE_DEV_BYPASS === "true";
-
 function App() {
   const [view, setView] = useState<AuthView>("login");
   const [verifyEmail, setVerifyEmail] = useState("");
   const [emailVerified, setEmailVerified] = useState(false);
   const [hasFavoriteTeam, setHasFavoriteTeam] = useState<boolean | null>(null);
   const [checkingTeam, setCheckingTeam] = useState(false);
-  const [demoMode, setDemoMode] = useState(DEV_BYPASS);
+  const [demoMode, setDemoMode] = useState(false);
   const { data: session, isPending } = useSession();
 
   // Check if user just verified their email
