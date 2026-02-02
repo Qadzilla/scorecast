@@ -157,6 +157,9 @@ export default function Dashboard({ demoMode = false, onExitDemo }: DashboardPro
   // Rules modal state
   const [showRulesModal, setShowRulesModal] = useState(false);
 
+  // Mobile menu state
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
   // Create league form state
   const [createName, setCreateName] = useState("");
   const [createType, setCreateType] = useState<"premier_league" | "champions_league">("premier_league");
@@ -701,7 +704,7 @@ export default function Dashboard({ demoMode = false, onExitDemo }: DashboardPro
       )}
       {/* Header */}
       <header
-        className="h-32 flex items-center justify-between px-6"
+        className="h-20 lg:h-32 flex items-center justify-between px-4 lg:px-6"
         style={{
           background: activeNav === "league-detail" && selectedLeague
             ? selectedLeague.type === "premier_league"
@@ -710,19 +713,36 @@ export default function Dashboard({ demoMode = false, onExitDemo }: DashboardPro
             : "linear-gradient(to right, #3d195b 0%, #3d195b 45%, #21105c 52%, #04065c 58%, #04065c 100%)",
         }}
       >
-        <h1 className="text-5xl font-bold text-white">ScoreCast</h1>
-        <div className="flex items-center gap-5">
-          <span className="text-white/70 text-lg">
+        <div className="flex items-center gap-3">
+          {/* Hamburger menu button - mobile only */}
+          <button
+            className="lg:hidden p-2 text-white hover:bg-white/10 rounded-lg transition-colors"
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            aria-label="Toggle menu"
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d={mobileMenuOpen ? "M6 18L18 6M6 6l12 12" : "M4 6h16M4 12h16M4 18h16"}
+              />
+            </svg>
+          </button>
+          <h1 className="text-3xl lg:text-5xl font-bold text-white">ScoreCast</h1>
+        </div>
+        <div className="flex items-center gap-3 lg:gap-5">
+          <span className="hidden sm:block text-white/70 text-sm lg:text-lg">
             {user?.username || user?.email}
           </span>
           {favoriteTeam?.logo ? (
             <img
               src={favoriteTeam.logo}
               alt={favoriteTeam.name}
-              className="w-12 h-12 object-contain"
+              className="w-10 h-10 lg:w-12 lg:h-12 object-contain"
             />
           ) : (
-            <div className="w-12 h-12 rounded-full bg-[#00ff87] flex items-center justify-center text-gray-900 font-semibold text-xl">
+            <div className="w-10 h-10 lg:w-12 lg:h-12 rounded-full bg-[#00ff87] flex items-center justify-center text-gray-900 font-semibold text-lg lg:text-xl">
               {user?.firstName?.charAt(0).toUpperCase() || user?.name?.charAt(0).toUpperCase() || "U"}
             </div>
           )}
@@ -730,9 +750,23 @@ export default function Dashboard({ demoMode = false, onExitDemo }: DashboardPro
       </header>
 
       <div className="flex">
+        {/* Mobile overlay */}
+        {mobileMenuOpen && (
+          <div
+            className="lg:hidden fixed inset-0 bg-black/50 z-40"
+            onClick={() => setMobileMenuOpen(false)}
+          />
+        )}
+
         {/* Sidebar */}
-        <aside 
-          className="w-64 min-h-[calc(100vh-8rem)] relative"
+        <aside
+          className={`
+            fixed lg:relative inset-y-0 left-0 z-50
+            w-64 min-h-[calc(100vh-5rem)] lg:min-h-[calc(100vh-8rem)]
+            transform transition-transform duration-300 ease-in-out
+            lg:transform-none
+            ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
+          `}
           style={{
             background: 'linear-gradient(180deg, #1a0826 0%, #120830 50%, #0a0a2e 100%)'
           }}
@@ -743,6 +777,7 @@ export default function Dashboard({ demoMode = false, onExitDemo }: DashboardPro
               onClick={() => {
                 setSelectedLeague(null);
                 setActiveNav("leagues");
+                setMobileMenuOpen(false);
               }}
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left transition-all duration-200 ${
                 activeNav === "leagues" && !selectedLeague
@@ -766,6 +801,7 @@ export default function Dashboard({ demoMode = false, onExitDemo }: DashboardPro
                       setSelectedLeague(league);
                       setActiveNav("league-detail");
                       setShowPredictionsForm(false);
+                      setMobileMenuOpen(false);
                     }}
                     className={`w-full flex items-center gap-2 px-4 py-2 rounded-lg text-left transition-all duration-200 text-sm ${
                       selectedLeague?.id === league.id
@@ -785,7 +821,7 @@ export default function Dashboard({ demoMode = false, onExitDemo }: DashboardPro
             {/* Other Nav Items */}
             {user?.email === ADMIN_EMAIL && (
               <button
-                onClick={() => setActiveNav("create")}
+                onClick={() => { setActiveNav("create"); setMobileMenuOpen(false); }}
                 className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left transition-all duration-200 ${
                   activeNav === "create"
                     ? "bg-[#00ff87]/20 text-[#00ff87] font-semibold shadow-lg shadow-[#00ff87]/10"
@@ -800,7 +836,7 @@ export default function Dashboard({ demoMode = false, onExitDemo }: DashboardPro
             )}
 
             <button
-              onClick={() => setActiveNav("join")}
+              onClick={() => { setActiveNav("join"); setMobileMenuOpen(false); }}
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left transition-all duration-200 ${
                 activeNav === "join"
                   ? "bg-[#00ff87]/20 text-[#00ff87] font-semibold shadow-lg shadow-[#00ff87]/10"
@@ -814,7 +850,7 @@ export default function Dashboard({ demoMode = false, onExitDemo }: DashboardPro
             </button>
 
             <button
-              onClick={() => setActiveNav("account")}
+              onClick={() => { setActiveNav("account"); setMobileMenuOpen(false); }}
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left transition-all duration-200 ${
                 activeNav === "account"
                   ? "bg-[#00ff87]/20 text-[#00ff87] font-semibold shadow-lg shadow-[#00ff87]/10"
@@ -829,7 +865,7 @@ export default function Dashboard({ demoMode = false, onExitDemo }: DashboardPro
           </nav>
 
           {/* Logout/Exit Demo button at bottom */}
-          <div className="absolute bottom-0 w-64 p-4 border-t border-white/10">
+          <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-white/10">
             {demoMode ? (
               <button
                 onClick={onExitDemo}
@@ -855,7 +891,7 @@ export default function Dashboard({ demoMode = false, onExitDemo }: DashboardPro
         </aside>
 
         {/* Main Content */}
-        <main className="flex-1 p-10">
+        <main className="flex-1 p-4 sm:p-6 lg:p-10">
           {activeNav === "leagues" && (
             <div className="space-y-8">
               {/* Welcome Header */}
@@ -911,7 +947,7 @@ export default function Dashboard({ demoMode = false, onExitDemo }: DashboardPro
                 /* Has Leagues - Show Dashboard */
                 <>
                   {/* Upcoming Deadlines */}
-                  <div className="grid grid-cols-2 gap-6">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                     <div className="bg-gradient-to-br from-[#3d195b] to-[#6b2d8a] rounded-2xl p-6 text-white shadow-xl">
                       <div className="flex items-center gap-3 mb-4">
                         <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center">
@@ -1303,10 +1339,10 @@ export default function Dashboard({ demoMode = false, onExitDemo }: DashboardPro
                     </div>
                   )}
 
-                  {/* Top Row - 3 columns */}
-                  <div className="grid grid-cols-3 gap-6">
+                  {/* Top Row - 3 columns on desktop, stacked on mobile */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
                     {/* Leaderboard */}
-                    <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 border border-white/50 shadow-xl shadow-gray-200/50 min-h-[600px] max-h-[600px] overflow-y-auto flex flex-col transition-all duration-300 hover:shadow-2xl hover:shadow-gray-300/50">
+                    <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-4 sm:p-6 border border-white/50 shadow-xl shadow-gray-200/50 min-h-[350px] lg:min-h-[600px] max-h-[70vh] lg:max-h-[600px] overflow-y-auto flex flex-col transition-all duration-300 hover:shadow-2xl hover:shadow-gray-300/50">
                       <div className="flex items-center justify-between mb-4">
                         <div className="flex items-center gap-2">
                           <h3 className="text-xl font-bold text-gray-900">Leaderboard</h3>
@@ -1355,7 +1391,7 @@ export default function Dashboard({ demoMode = false, onExitDemo }: DashboardPro
                     </div>
 
                     {/* My Predictions Summary */}
-                    <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 border border-white/50 shadow-xl shadow-gray-200/50 min-h-[600px] max-h-[600px] flex flex-col transition-all duration-300 hover:shadow-2xl hover:shadow-gray-300/50">
+                    <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-4 sm:p-6 border border-white/50 shadow-xl shadow-gray-200/50 min-h-[350px] lg:min-h-[600px] max-h-[70vh] lg:max-h-[600px] flex flex-col transition-all duration-300 hover:shadow-2xl hover:shadow-gray-300/50">
                       <h3 className="text-xl font-bold text-gray-900 mb-4">My Predictions</h3>
                       <div className="flex-1 overflow-y-auto">
                         {loadingPredictions ? (
@@ -1447,7 +1483,7 @@ export default function Dashboard({ demoMode = false, onExitDemo }: DashboardPro
                     </div>
 
                     {/* Gameweek Fixtures */}
-                    <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 border border-white/50 shadow-xl shadow-gray-200/50 min-h-[600px] max-h-[600px] overflow-y-auto transition-all duration-300 hover:shadow-2xl hover:shadow-gray-300/50">
+                    <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-4 sm:p-6 border border-white/50 shadow-xl shadow-gray-200/50 min-h-[350px] lg:min-h-[600px] max-h-[70vh] lg:max-h-[600px] overflow-y-auto transition-all duration-300 hover:shadow-2xl hover:shadow-gray-300/50 md:col-span-2 lg:col-span-1">
                       <h3 className="text-xl font-bold text-gray-900 mb-4">
                         {currentGameweek ? `Gameweek ${currentGameweek.number}` : "Fixtures"}
                       </h3>
@@ -1519,7 +1555,7 @@ export default function Dashboard({ demoMode = false, onExitDemo }: DashboardPro
                         </button>
                       )}
                     </div>
-                    <div className="grid grid-cols-4 gap-6">
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-6">
                       <div>
                         <p className="text-sm text-gray-500">Members</p>
                         <p className="text-gray-900 font-medium">{selectedLeague.memberCount}</p>
@@ -1781,7 +1817,7 @@ export default function Dashboard({ demoMode = false, onExitDemo }: DashboardPro
                             <p className="text-gray-500">Loading teams...</p>
                           </div>
                         ) : (
-                          <div className="grid grid-cols-4 gap-2 max-h-64 overflow-y-auto p-1">
+                          <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 max-h-64 overflow-y-auto p-1">
                             {availableTeams.map((team) => (
                               <button
                                 key={team.id}
@@ -1880,9 +1916,9 @@ export default function Dashboard({ demoMode = false, onExitDemo }: DashboardPro
           )}
         </main>
 
-        {/* Right Sidebar - Countdown Timers (only for league sections) */}
+        {/* Right Sidebar - Countdown Timers (only for league sections, hidden on mobile) */}
         {activeNav !== "account" && activeNav !== "join" && (
-          <aside className="w-72 min-h-[calc(100vh-8rem)] bg-white border-l border-gray-200 p-6">
+          <aside className="hidden lg:block w-72 min-h-[calc(100vh-8rem)] bg-white border-l border-gray-200 p-6">
             <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">
               {activeNav === "league-detail"
                 ? (plIsNextDeadline || uclIsNextDeadline ? "Next Deadline" : "Deadline")

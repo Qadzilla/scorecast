@@ -130,15 +130,15 @@ export default function SignUpForm({ onSwitch, onSuccess }: { onSwitch: () => vo
       </div>
 
       {/* Right side - Form */}
-      <div className="w-full lg:w-1/2 flex items-center justify-center p-8">
+      <div className="w-full lg:w-1/2 flex items-center justify-center p-4 sm:p-8">
         <div className="w-full max-w-md">
           {/* Mobile branding */}
           <div className="lg:hidden text-center mb-8">
-            <h1 className="text-4xl font-bold text-white mb-2">ScoreCast</h1>
-            <p className="text-white/70">Premier League & UCL prediction leagues</p>
+            <h1 className="text-3xl sm:text-4xl font-bold text-white mb-2">ScoreCast</h1>
+            <p className="text-white/70 text-sm sm:text-base">Premier League & UCL prediction leagues</p>
           </div>
 
-          <div className="bg-white/10 backdrop-blur-sm rounded-2xl border border-white/20 p-8 shadow-xl">
+          <div className="bg-white/10 backdrop-blur-sm rounded-2xl border border-white/20 p-6 sm:p-8 shadow-xl">
             <h2 className="text-2xl font-extrabold text-white mb-6 tracking-tight">Create account</h2>
 
             <form onSubmit={handleSubmit} className="space-y-4">
@@ -159,8 +159,8 @@ export default function SignUpForm({ onSwitch, onSuccess }: { onSwitch: () => vo
                 </div>
               )}
 
-              {/* Name fields - side by side */}
-              <div className="flex gap-3">
+              {/* Name fields - stacked on mobile, side by side on larger screens */}
+              <div className="flex flex-col sm:flex-row gap-3">
                 <div className="flex-1">
                   <label className="block text-sm font-medium text-white/80 mb-1">
                     First Name

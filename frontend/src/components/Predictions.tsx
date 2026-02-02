@@ -160,31 +160,31 @@ export default function Predictions({
                     </div>
 
                     {/* Match row */}
-                    <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-2 sm:gap-4">
                       {/* Home team */}
-                      <div className="flex-1 flex items-center justify-end gap-2">
-                        <span className="font-medium text-gray-900 text-right">
+                      <div className="flex-1 flex items-center justify-end gap-1 sm:gap-2">
+                        <span className="font-medium text-gray-900 text-right text-sm sm:text-base truncate max-w-[60px] sm:max-w-none">
                           {match.homeTeam.shortName}
                         </span>
                         {match.homeTeam.logo && (
-                          <img src={match.homeTeam.logo} alt={match.homeTeam.name} className="w-8 h-8 object-contain" />
+                          <img src={match.homeTeam.logo} alt={match.homeTeam.name} className="w-6 h-6 sm:w-8 sm:h-8 object-contain flex-shrink-0" />
                         )}
                       </div>
 
                       {/* Score inputs / Result */}
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-1 sm:gap-2">
                         {isDeadlinePassed ? (
                           // Show predictions (locked)
                           <>
                             <div
-                              className="w-10 h-10 rounded flex items-center justify-center text-white font-bold"
+                              className="w-11 h-11 sm:w-10 sm:h-10 rounded flex items-center justify-center text-white font-bold"
                               style={{ backgroundColor: themeColor }}
                             >
                               {existing?.homeScore ?? "-"}
                             </div>
                             <span className="text-gray-400">-</span>
                             <div
-                              className="w-10 h-10 rounded flex items-center justify-center text-white font-bold"
+                              className="w-11 h-11 sm:w-10 sm:h-10 rounded flex items-center justify-center text-white font-bold"
                               style={{ backgroundColor: themeColor }}
                             >
                               {existing?.awayScore ?? "-"}
@@ -199,7 +199,7 @@ export default function Predictions({
                               maxLength={1}
                               value={pred?.home ?? ""}
                               onChange={(e) => handleScoreChange(match.id, "home", e.target.value)}
-                              className="w-10 h-10 rounded border-2 border-gray-200 text-center text-lg font-bold focus:border-gray-400 focus:outline-none transition-colors"
+                              className="w-12 h-12 sm:w-10 sm:h-10 rounded border-2 border-gray-200 text-center text-lg font-bold focus:border-gray-400 focus:outline-none transition-colors"
                               style={{
                                 borderColor: pred?.home ? themeColor : undefined,
                                 color: themeColor
@@ -212,7 +212,7 @@ export default function Predictions({
                               maxLength={1}
                               value={pred?.away ?? ""}
                               onChange={(e) => handleScoreChange(match.id, "away", e.target.value)}
-                              className="w-10 h-10 rounded border-2 border-gray-200 text-center text-lg font-bold focus:border-gray-400 focus:outline-none transition-colors"
+                              className="w-12 h-12 sm:w-10 sm:h-10 rounded border-2 border-gray-200 text-center text-lg font-bold focus:border-gray-400 focus:outline-none transition-colors"
                               style={{
                                 borderColor: pred?.away ? themeColor : undefined,
                                 color: themeColor
@@ -223,11 +223,11 @@ export default function Predictions({
                       </div>
 
                       {/* Away team */}
-                      <div className="flex-1 flex items-center gap-2">
+                      <div className="flex-1 flex items-center gap-1 sm:gap-2">
                         {match.awayTeam.logo && (
-                          <img src={match.awayTeam.logo} alt={match.awayTeam.name} className="w-8 h-8 object-contain" />
+                          <img src={match.awayTeam.logo} alt={match.awayTeam.name} className="w-6 h-6 sm:w-8 sm:h-8 object-contain flex-shrink-0" />
                         )}
-                        <span className="font-medium text-gray-900">
+                        <span className="font-medium text-gray-900 text-sm sm:text-base truncate max-w-[60px] sm:max-w-none">
                           {match.awayTeam.shortName}
                         </span>
                       </div>
