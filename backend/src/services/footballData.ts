@@ -409,14 +409,14 @@ export async function updateMatchResults(competition: "premier_league" | "champi
   await withTransaction(async (client) => {
     for (const match of data.matches) {
       const matchId = `${competition}-match-${match.id}`;
+      // Always update with latest scores from API (fixes incorrect scores)
       const result = await client.query(
         `UPDATE match
-        SET "homeScore" = $1, "awayScore" = $2, status = $3
-        WHERE id = $4 AND ("homeScore" IS NULL OR "awayScore" IS NULL OR status != 'finished')`,
+        SET "homeScore" = $1, "awayScore" = $2, status = 'finished', "updatedAt" = NOW()
+        WHERE id = $3 AND ("homeScore" != $1 OR "awayScore" != $2 OR status != 'finished')`,
         [
           match.score.fullTime.home,
           match.score.fullTime.away,
-          "finished",
           matchId
         ]
       );

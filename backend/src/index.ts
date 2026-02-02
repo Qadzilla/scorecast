@@ -37,7 +37,24 @@ async function runResultsUpdate() {
     await updateMatchResults("premier_league");
     await updateMatchResults("champions_league");
 
-    // Score predictions for finished matches that haven't been scored yet
+    // Re-score ALL predictions for finished matches (handles both new scores and corrections)
+    // This is idempotent - recalculating already-correct scores has no effect
+    const finishedMatchesWithPredictions = await queryAll<{ id: string }>(
+      `SELECT DISTINCT m.id FROM match m
+       JOIN prediction p ON p."matchId" = m.id
+       WHERE m.status = 'finished'
+       AND m."updatedAt" > NOW() - INTERVAL '2 hours'`
+    );
+
+    if (finishedMatchesWithPredictions.length > 0) {
+      console.log(`[Results] Re-scoring ${finishedMatchesWithPredictions.length} recently updated matches...`);
+      for (const match of finishedMatchesWithPredictions) {
+        await scorePredictionsForMatch(match.id);
+      }
+      console.log("[Results] Scoring completed");
+    }
+
+    // Also catch any unscored predictions (fallback for older matches)
     const unscoredMatches = await queryAll<{ id: string }>(
       `SELECT DISTINCT m.id FROM match m
        JOIN prediction p ON p."matchId" = m.id
@@ -49,7 +66,6 @@ async function runResultsUpdate() {
       for (const match of unscoredMatches) {
         await scorePredictionsForMatch(match.id);
       }
-      console.log("[Results] Scoring completed");
     }
 
     console.log("[Results] Update completed");
