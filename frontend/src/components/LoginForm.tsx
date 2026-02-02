@@ -132,8 +132,8 @@ export default function LoginForm({ onSwitch, verified, onDemo }: { onSwitch: ()
             <p className="text-white/70">Premier League & UCL prediction leagues</p>
           </div>
 
-          <div className="bg-white/10 backdrop-blur-sm rounded-2xl border border-white/20 p-8">
-            <h2 className="text-2xl font-bold text-white mb-6">Sign in</h2>
+          <div className="bg-white/10 backdrop-blur-sm rounded-2xl border border-white/20 p-8 shadow-xl">
+            <h2 className="text-2xl font-extrabold text-white mb-6 tracking-tight">Sign in</h2>
 
             <form onSubmit={handleSubmit} className="space-y-4">
               {showVerified && (
