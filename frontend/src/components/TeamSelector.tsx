@@ -74,14 +74,14 @@ export default function TeamSelector({ onComplete }: { onComplete: () => void })
         background: "linear-gradient(135deg, #3d195b 0%, #3d195b 40%, #21105c 50%, #04065c 60%, #04065c 100%)",
       }}
     >
-      <div className="w-full max-w-2xl px-6">
+      <div className="w-full max-w-2xl px-4 sm:px-6">
         {/* Header */}
         <div className="text-center mb-8">
-          <h1 className="text-5xl font-extrabold text-white">ScoreCast</h1>
+          <h1 className="text-4xl sm:text-5xl font-extrabold text-white">ScoreCast</h1>
         </div>
 
         {/* Card */}
-        <div className="bg-white/10 backdrop-blur-sm rounded-2xl border border-white/20 p-6 shadow-xl">
+        <div className="bg-white/10 backdrop-blur-sm rounded-2xl border border-white/20 p-4 sm:p-6 shadow-xl">
           {loading ? (
             <div className="py-12 text-center">
               <p className="text-white/70">Loading teams...</p>
@@ -111,13 +111,13 @@ export default function TeamSelector({ onComplete }: { onComplete: () => void })
               </div>
 
               {/* Teams grid - scrollable area */}
-              <div className="max-h-96 overflow-y-auto rounded-xl bg-white/5 p-4">
-                <div className="grid grid-cols-5 gap-4">
+              <div className="max-h-96 overflow-y-auto rounded-xl bg-white/5 p-3 sm:p-4">
+                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3 sm:gap-4">
                   {teams.map((team) => (
                     <button
                       key={team.id}
                       onClick={() => setSelectedTeam(team)}
-                      className={`aspect-square p-3 rounded-xl transition-all duration-150 flex items-center justify-center ${
+                      className={`aspect-square p-2 sm:p-3 rounded-xl transition-all duration-150 flex items-center justify-center ${
                         selectedTeam?.id === team.id
                           ? "bg-[#00ff87] scale-105 ring-2 ring-[#00ff87]"
                           : "bg-white/10 hover:bg-white/20"
