@@ -112,7 +112,8 @@ describe("Dashboard", () => {
       await user.click(screen.getByText("Account"));
 
       await waitFor(() => {
-        expect(screen.getByText("Account Settings")).toBeInTheDocument();
+        // Account page now shows user info and Account Information section
+        expect(screen.getByText("Account Information")).toBeInTheDocument();
       });
     });
 
@@ -134,14 +135,15 @@ describe("Dashboard", () => {
     it("should show loading state initially", () => {
       render(<Dashboard />);
 
-      expect(screen.getByText("Loading leagues...")).toBeInTheDocument();
+      expect(screen.getByText("Loading your leagues...")).toBeInTheDocument();
     });
 
     it("should show empty state when no leagues", async () => {
       render(<Dashboard />);
 
       await waitFor(() => {
-        expect(screen.getByText("You haven't joined any leagues yet.")).toBeInTheDocument();
+        // New empty state has a call-to-action message
+        expect(screen.getByText("Start Your Prediction Journey")).toBeInTheDocument();
       });
     });
   });
@@ -161,8 +163,8 @@ describe("Dashboard", () => {
       await user.click(screen.getByText("Account"));
 
       await waitFor(() => {
-        expect(screen.getByText("Account Settings")).toBeInTheDocument();
-        expect(screen.getByText("Profile")).toBeInTheDocument();
+        // Redesigned account page with profile header and settings sections
+        expect(screen.getByText("Profile Settings")).toBeInTheDocument();
         expect(screen.getByText("Account Information")).toBeInTheDocument();
       });
     });
@@ -188,7 +190,7 @@ describe("Dashboard", () => {
       render(<Dashboard />);
 
       await waitFor(() => {
-        expect(screen.getByText("Next Deadlines")).toBeInTheDocument();
+        expect(screen.getByText("Deadlines")).toBeInTheDocument();
       });
     });
   });
@@ -205,7 +207,7 @@ describe("Dashboard", () => {
 
       // Should not crash, loading should complete
       await waitFor(() => {
-        expect(screen.queryByText("Loading leagues...")).not.toBeInTheDocument();
+        expect(screen.queryByText("Loading your leagues...")).not.toBeInTheDocument();
       });
     });
   });

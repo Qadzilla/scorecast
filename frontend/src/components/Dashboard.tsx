@@ -103,6 +103,11 @@ const DEMO_LEADERBOARD: LeaderboardEntry[] = [
   { rank: 5, userId: "5", username: "pl_expert", firstName: "Casey", lastName: "Brown", totalPoints: 118, teamLogo: "https://crests.football-data.org/73.png" },
 ];
 
+// Demo user standings per league
+const DEMO_USER_STANDINGS: Record<string, { rank: number; totalPoints: number; totalMembers: number }> = {
+  "demo-league-1": { rank: 4, totalPoints: 125, totalMembers: 8 },
+};
+
 interface DashboardProps {
   demoMode?: boolean;
   onExitDemo?: () => void;
@@ -133,6 +138,12 @@ export default function Dashboard({ demoMode = false, onExitDemo }: DashboardPro
   const [loadingLeaderboard, setLoadingLeaderboard] = useState(false);
   const [isSeasonComplete, setIsSeasonComplete] = useState(false);
   const [champion, setChampion] = useState<LeaderboardEntry | null>(null);
+
+  // User standings per league (for My Leagues dashboard)
+  // Currently only populated in demo mode - real API integration TODO
+  const [userStandings] = useState<Record<string, { rank: number; totalPoints: number; totalMembers: number }>>(
+    demoMode ? DEMO_USER_STANDINGS : {}
+  );
 
   // Admin panel state
   const [showAdminPanel, setShowAdminPanel] = useState(false);
@@ -678,7 +689,7 @@ export default function Dashboard({ demoMode = false, onExitDemo }: DashboardPro
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-br from-slate-100 via-gray-100 to-slate-200">
       {/* Demo Mode Banner */}
       {demoMode && (
         <div className="bg-gradient-to-r from-[#00ff87] to-[#60efff] text-gray-900 text-center py-2 px-4 font-medium">
@@ -720,7 +731,12 @@ export default function Dashboard({ demoMode = false, onExitDemo }: DashboardPro
 
       <div className="flex">
         {/* Sidebar */}
-        <aside className="w-64 min-h-[calc(100vh-8rem)] bg-white border-r border-gray-200">
+        <aside 
+          className="w-64 min-h-[calc(100vh-8rem)] relative"
+          style={{
+            background: 'linear-gradient(180deg, #1a0826 0%, #120830 50%, #0a0a2e 100%)'
+          }}
+        >
           <nav className="p-4 space-y-1">
             {/* My Leagues Section */}
             <button
@@ -728,10 +744,10 @@ export default function Dashboard({ demoMode = false, onExitDemo }: DashboardPro
                 setSelectedLeague(null);
                 setActiveNav("leagues");
               }}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left transition-colors ${
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left transition-all duration-200 ${
                 activeNav === "leagues" && !selectedLeague
-                  ? "bg-[#00ff87]/20 text-[#00915c] font-semibold"
-                  : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+                  ? "bg-[#00ff87]/20 text-[#00ff87] font-semibold shadow-lg shadow-[#00ff87]/10"
+                  : "text-white/70 hover:bg-white/10 hover:text-white"
               }`}
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -751,14 +767,14 @@ export default function Dashboard({ demoMode = false, onExitDemo }: DashboardPro
                       setActiveNav("league-detail");
                       setShowPredictionsForm(false);
                     }}
-                    className={`w-full flex items-center gap-2 px-4 py-2 rounded-lg text-left transition-colors text-sm ${
+                    className={`w-full flex items-center gap-2 px-4 py-2 rounded-lg text-left transition-all duration-200 text-sm ${
                       selectedLeague?.id === league.id
-                        ? "bg-[#00ff87]/20 text-[#00915c] font-semibold"
-                        : "text-gray-500 hover:bg-gray-100 hover:text-gray-900"
+                        ? "bg-[#00ff87]/20 text-[#00ff87] font-semibold shadow-lg shadow-[#00ff87]/10"
+                        : "text-white/50 hover:bg-white/10 hover:text-white/90"
                     }`}
                   >
                     <span className={`w-2 h-2 rounded-full ${
-                      league.type === "premier_league" ? "bg-[#3d195b]" : "bg-[#04065c]"
+                      league.type === "premier_league" ? "bg-[#9b4dca]" : "bg-[#3b82f6]"
                     }`} />
                     <span className="truncate">{league.name}</span>
                   </button>
@@ -770,10 +786,10 @@ export default function Dashboard({ demoMode = false, onExitDemo }: DashboardPro
             {user?.email === ADMIN_EMAIL && (
               <button
                 onClick={() => setActiveNav("create")}
-                className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left transition-colors ${
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left transition-all duration-200 ${
                   activeNav === "create"
-                    ? "bg-[#00ff87]/20 text-[#00915c] font-semibold"
-                    : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+                    ? "bg-[#00ff87]/20 text-[#00ff87] font-semibold shadow-lg shadow-[#00ff87]/10"
+                    : "text-white/70 hover:bg-white/10 hover:text-white"
                 }`}
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -785,10 +801,10 @@ export default function Dashboard({ demoMode = false, onExitDemo }: DashboardPro
 
             <button
               onClick={() => setActiveNav("join")}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left transition-colors ${
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left transition-all duration-200 ${
                 activeNav === "join"
-                  ? "bg-[#00ff87]/20 text-[#00915c] font-semibold"
-                  : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+                  ? "bg-[#00ff87]/20 text-[#00ff87] font-semibold shadow-lg shadow-[#00ff87]/10"
+                  : "text-white/70 hover:bg-white/10 hover:text-white"
               }`}
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -799,10 +815,10 @@ export default function Dashboard({ demoMode = false, onExitDemo }: DashboardPro
 
             <button
               onClick={() => setActiveNav("account")}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left transition-colors ${
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left transition-all duration-200 ${
                 activeNav === "account"
-                  ? "bg-[#00ff87]/20 text-[#00915c] font-semibold"
-                  : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+                  ? "bg-[#00ff87]/20 text-[#00ff87] font-semibold shadow-lg shadow-[#00ff87]/10"
+                  : "text-white/70 hover:bg-white/10 hover:text-white"
               }`}
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -813,11 +829,11 @@ export default function Dashboard({ demoMode = false, onExitDemo }: DashboardPro
           </nav>
 
           {/* Logout/Exit Demo button at bottom */}
-          <div className="absolute bottom-0 w-64 p-4 border-t border-gray-200">
+          <div className="absolute bottom-0 w-64 p-4 border-t border-white/10">
             {demoMode ? (
               <button
                 onClick={onExitDemo}
-                className="w-full flex items-center gap-3 px-4 py-3 rounded-lg bg-gradient-to-r from-[#00ff87] to-[#60efff] text-gray-900 hover:opacity-90 transition-all"
+                className="w-full flex items-center gap-3 px-4 py-3 rounded-lg bg-gradient-to-r from-[#00ff87] to-[#60efff] text-gray-900 hover:opacity-90 transition-all duration-200 shadow-lg shadow-[#00ff87]/20"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
@@ -827,7 +843,7 @@ export default function Dashboard({ demoMode = false, onExitDemo }: DashboardPro
             ) : (
               <button
                 onClick={handleSignOut}
-                className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-900 transition-colors"
+                className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-white/50 hover:bg-white/10 hover:text-white transition-all duration-200"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
@@ -839,82 +855,210 @@ export default function Dashboard({ demoMode = false, onExitDemo }: DashboardPro
         </aside>
 
         {/* Main Content */}
-        <main className="flex-1 p-8">
+        <main className="flex-1 p-10">
           {activeNav === "leagues" && (
-            <div>
-              <h2 className="text-2xl font-bold text-gray-900 mb-6">My Leagues</h2>
+            <div className="space-y-8">
+              {/* Welcome Header */}
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-3xl font-extrabold text-gray-900 tracking-tight">
+                    Welcome back, {user?.firstName || user?.username || "Predictor"}!
+                  </h2>
+                  <p className="text-gray-500 mt-1">Ready to make some winning predictions?</p>
+                </div>
+                <button
+                  onClick={() => setActiveNav("join")}
+                  className="px-5 py-2.5 bg-gradient-to-r from-[#00ff87] to-[#60efff] text-gray-900 font-bold rounded-xl hover:opacity-90 transition-all duration-200 shadow-lg hover:shadow-xl"
+                >
+                  + Join League
+                </button>
+              </div>
 
               {loadingLeagues ? (
-                <div className="bg-white rounded-xl p-8 text-center border border-gray-200 shadow-sm">
-                  <p className="text-gray-500">Loading leagues...</p>
+                <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-8 text-center border border-white/50 shadow-xl shadow-gray-200/50 transition-all duration-300">
+                  <p className="text-gray-500">Loading your leagues...</p>
                 </div>
               ) : leagues.length === 0 ? (
-                <div className="bg-white rounded-xl p-8 text-center border border-gray-200 shadow-sm">
-                  <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-[#00ff87]/20 flex items-center justify-center">
-                    <svg className="w-8 h-8 text-[#00915c]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                /* Empty State - No Leagues */
+                <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-12 text-center border border-white/50 shadow-xl shadow-gray-200/50 transition-all duration-300">
+                  <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-gradient-to-br from-[#00ff87]/30 to-[#60efff]/30 flex items-center justify-center">
+                    <svg className="w-10 h-10 text-[#00915c]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15c-3 0-5-2-5-5V4h10v6c0 3-2 5-5 5zm0 0v4m0 0H9m3 0h3M7 4H4v3a3 3 0 003 3m10-6h3v3a3 3 0 01-3 3" />
                     </svg>
                   </div>
-                  <p className="text-gray-500 mb-4">You haven't joined any leagues yet.</p>
-                  <div className="flex gap-3 justify-center">
+                  <h3 className="text-2xl font-bold text-gray-900 mb-2">Start Your Prediction Journey</h3>
+                  <p className="text-gray-500 mb-8 max-w-md mx-auto">
+                    Join a league to compete with friends and prove you're the ultimate football predictor!
+                  </p>
+                  <div className="flex gap-4 justify-center">
+                    <button
+                      onClick={() => setActiveNav("join")}
+                      className="px-8 py-3 bg-gradient-to-r from-[#00ff87] to-[#60efff] text-gray-900 font-bold rounded-xl hover:opacity-90 transition-all duration-200 shadow-lg hover:shadow-xl"
+                    >
+                      Join a League
+                    </button>
                     {user?.email === ADMIN_EMAIL && (
                       <button
                         onClick={() => setActiveNav("create")}
-                        className="px-6 py-2 bg-[#00ff87] text-gray-900 font-semibold rounded-lg hover:bg-[#00e67a] transition-colors"
+                        className="px-8 py-3 border-2 border-gray-300 text-gray-700 font-bold rounded-xl hover:border-gray-400 hover:bg-gray-50 transition-all duration-200"
                       >
                         Create League
                       </button>
                     )}
-                    <button
-                      onClick={() => setActiveNav("join")}
-                      className="px-6 py-2 border border-gray-300 text-gray-700 font-semibold rounded-lg hover:bg-gray-50 transition-colors"
-                    >
-                      Join League
-                    </button>
                   </div>
                 </div>
               ) : (
-                <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
-                  <div className="p-6 border-b border-gray-100">
-                    <h3 className="text-lg font-semibold text-gray-900">Leaderboard Snapshot</h3>
-                    <p className="text-sm text-gray-500 mt-1">Your ranking across all leagues</p>
-                  </div>
-                  <div className="divide-y divide-gray-100">
-                    {leagues.map((league, index) => (
-                      <div
-                        key={league.id}
-                        className="p-4 flex items-center gap-4"
-                      >
-                        <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-sm ${
-                          league.type === "premier_league" ? "bg-[#3d195b]" : "bg-[#04065c]"
-                        }`}>
-                          {index + 1}
+                /* Has Leagues - Show Dashboard */
+                <>
+                  {/* Upcoming Deadlines */}
+                  <div className="grid grid-cols-2 gap-6">
+                    <div className="bg-gradient-to-br from-[#3d195b] to-[#6b2d8a] rounded-2xl p-6 text-white shadow-xl">
+                      <div className="flex items-center gap-3 mb-4">
+                        <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center">
+                          <span className="text-lg">⚽</span>
                         </div>
-                        <div className="flex-1">
-                          <p className="font-medium text-gray-900">{league.name}</p>
-                          <p className="text-xs text-gray-500">
-                            {league.memberCount} member{league.memberCount !== 1 ? "s" : ""} • {league.role}
+                        <div>
+                          <p className="text-white/70 text-sm">Premier League</p>
+                          <p className="font-bold">
+                            {plGameweekNum ? `Gameweek ${plGameweekNum}` : "No upcoming gameweek"}
                           </p>
                         </div>
-                        <div className="text-right">
-                          <p className="text-lg font-bold text-gray-900">--</p>
-                          <p className="text-xs text-gray-500">points</p>
+                      </div>
+                      {plDeadline && plCountdown.days + plCountdown.hours + plCountdown.minutes > 0 ? (
+                        <div className="flex gap-3">
+                          <div className="bg-white/20 rounded-lg px-3 py-2 text-center min-w-[60px]">
+                            <p className="text-2xl font-bold">{plCountdown.days}</p>
+                            <p className="text-xs text-white/70">days</p>
+                          </div>
+                          <div className="bg-white/20 rounded-lg px-3 py-2 text-center min-w-[60px]">
+                            <p className="text-2xl font-bold">{plCountdown.hours}</p>
+                            <p className="text-xs text-white/70">hrs</p>
+                          </div>
+                          <div className="bg-white/20 rounded-lg px-3 py-2 text-center min-w-[60px]">
+                            <p className="text-2xl font-bold">{plCountdown.minutes}</p>
+                            <p className="text-xs text-white/70">min</p>
+                          </div>
+                        </div>
+                      ) : (
+                        <p className="text-white/70">No upcoming deadline</p>
+                      )}
+                    </div>
+                    <div className="bg-gradient-to-br from-[#04065c] to-[#1a237e] rounded-2xl p-6 text-white shadow-xl">
+                      <div className="flex items-center gap-3 mb-4">
+                        <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center">
+                          <span className="text-lg">🏆</span>
+                        </div>
+                        <div>
+                          <p className="text-white/70 text-sm">Champions League</p>
+                          <p className="font-bold">
+                            {uclGameweekNum ? `Matchday ${uclGameweekNum}` : "No upcoming matchday"}
+                          </p>
                         </div>
                       </div>
-                    ))}
+                      {uclDeadline && uclCountdown.days + uclCountdown.hours + uclCountdown.minutes > 0 ? (
+                        <div className="flex gap-3">
+                          <div className="bg-white/20 rounded-lg px-3 py-2 text-center min-w-[60px]">
+                            <p className="text-2xl font-bold">{uclCountdown.days}</p>
+                            <p className="text-xs text-white/70">days</p>
+                          </div>
+                          <div className="bg-white/20 rounded-lg px-3 py-2 text-center min-w-[60px]">
+                            <p className="text-2xl font-bold">{uclCountdown.hours}</p>
+                            <p className="text-xs text-white/70">hrs</p>
+                          </div>
+                          <div className="bg-white/20 rounded-lg px-3 py-2 text-center min-w-[60px]">
+                            <p className="text-2xl font-bold">{uclCountdown.minutes}</p>
+                            <p className="text-xs text-white/70">min</p>
+                          </div>
+                        </div>
+                      ) : (
+                        <p className="text-white/70">No upcoming deadline</p>
+                      )}
+                    </div>
                   </div>
-                  <div className="p-4 bg-gray-50 rounded-b-xl">
-                    <p className="text-xs text-gray-500 text-center">Select a league from the sidebar to view full standings</p>
+
+                  {/* League Cards */}
+                  <div>
+                    <h3 className="text-xl font-bold text-gray-900 mb-4">Your Leagues</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {leagues.map((league) => (
+                        <button
+                          key={league.id}
+                          onClick={() => {
+                            setSelectedLeague(league);
+                            setActiveNav("league-detail");
+                            setShowPredictionsForm(false);
+                          }}
+                          className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 border border-white/50 shadow-xl shadow-gray-200/50 transition-all duration-300 hover:shadow-2xl hover:scale-[1.02] text-left group"
+                        >
+                          <div className="flex items-start justify-between mb-4">
+                            <div className="flex items-center gap-3">
+                              <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-white font-bold shadow-lg ${
+                                league.type === "premier_league" 
+                                  ? "bg-gradient-to-br from-[#3d195b] to-[#6b2d8a]" 
+                                  : "bg-gradient-to-br from-[#04065c] to-[#1a237e]"
+                              }`}>
+                                {league.type === "premier_league" ? "⚽" : "🏆"}
+                              </div>
+                              <div>
+                                <h4 className="font-bold text-gray-900 text-lg group-hover:text-[#3d195b] transition-colors">
+                                  {league.name}
+                                </h4>
+                                <p className="text-sm text-gray-500">
+                                  {league.type === "premier_league" ? "Premier League" : "Champions League"}
+                                </p>
+                              </div>
+                            </div>
+                            <svg className="w-5 h-5 text-gray-400 group-hover:text-[#00ff87] group-hover:translate-x-1 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                            </svg>
+                          </div>
+                          {/* User Standing - horizontal layout */}
+                          {userStandings[league.id] && (
+                            <div className="flex items-center justify-between mb-4 py-2 px-3 bg-gradient-to-r from-gray-50 to-transparent rounded-lg">
+                              <div className="flex items-center gap-3">
+                                <div className={`w-9 h-9 rounded-full flex items-center justify-center font-bold text-sm shadow-md ${
+                                  userStandings[league.id].rank === 1 ? "bg-gradient-to-br from-yellow-300 to-yellow-500 text-yellow-900" :
+                                  userStandings[league.id].rank === 2 ? "bg-gradient-to-br from-gray-200 to-gray-400 text-gray-700" :
+                                  userStandings[league.id].rank === 3 ? "bg-gradient-to-br from-orange-300 to-orange-500 text-orange-900" :
+                                  "bg-gradient-to-br from-[#00ff87]/80 to-[#60efff]/80 text-gray-900"
+                                }`}>
+                                  {userStandings[league.id].rank}
+                                </div>
+                                <span className="text-gray-600 text-sm">Your Position</span>
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <span className="font-bold text-gray-900 text-lg">{userStandings[league.id].totalPoints}</span>
+                                <span className="text-gray-500 text-sm">pts</span>
+                              </div>
+                            </div>
+                          )}
+                          <div className="flex items-center gap-6 text-sm">
+                            <div className="flex items-center gap-2 text-gray-600">
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                              </svg>
+                              <span>{league.memberCount} members</span>
+                            </div>
+                            <div className="flex items-center gap-2 text-gray-600">
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                              </svg>
+                              <span className="capitalize">{league.role}</span>
+                            </div>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
                   </div>
-                </div>
+                </>
               )}
             </div>
           )}
 
           {activeNav === "create" && (
             <div>
-              <h2 className="text-2xl font-bold text-gray-900 mb-6">Create League</h2>
-              <div className="bg-white rounded-xl p-8 border border-gray-200 shadow-sm">
+              <h2 className="text-3xl font-extrabold text-gray-900 mb-8 tracking-tight">Create League</h2>
+              <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-8 border border-white/50 shadow-xl shadow-gray-200/50 transition-all duration-300 hover:shadow-2xl">
                 {createSuccess ? (
                   <div className="text-center">
                     <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-[#00ff87]/20 flex items-center justify-center">
@@ -1001,69 +1145,89 @@ export default function Dashboard({ demoMode = false, onExitDemo }: DashboardPro
           )}
 
           {activeNav === "join" && (
-            <div>
-              <h2 className="text-2xl font-bold text-gray-900 mb-6">Join League</h2>
-              <div className="bg-white rounded-xl p-8 border border-gray-200 shadow-sm">
-                <div className="text-center">
-                  <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-[#00ff87]/20 flex items-center justify-center">
-                    <svg className="w-8 h-8 text-[#00915c]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
-                    </svg>
-                  </div>
-                  <p className="text-gray-500 mb-6">Enter an invite code to join an existing league.</p>
-                  <form onSubmit={handleJoinLeague} className="max-w-sm mx-auto space-y-4">
-                    {joinError && (
-                      <div className="p-3 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm">
-                        {joinError}
-                      </div>
-                    )}
-                    <div>
-                      <input
-                        type="text"
-                        value={joinCode}
-                        onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
-                        placeholder="Invite Code"
-                        className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-[#00ff87] focus:ring-1 focus:ring-[#00ff87] outline-none transition-colors font-mono text-center text-lg tracking-wider"
-                        maxLength={8}
-                      />
-                    </div>
-                    <button
-                      type="submit"
-                      disabled={joinLoading}
-                      className="w-full py-3 bg-[#00ff87] text-gray-900 font-semibold rounded-lg hover:bg-[#00e67a] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {joinLoading ? "Joining..." : "Join League"}
-                    </button>
-                  </form>
+            <div className="max-w-xl mx-auto">
+              {/* Hero Section */}
+              <div className="text-center mb-10">
+                <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-gradient-to-br from-[#00ff87] to-[#60efff] shadow-lg shadow-[#00ff87]/30 mb-6">
+                  <svg className="w-10 h-10 text-gray-900" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+                  </svg>
                 </div>
+                <h2 className="text-4xl font-extrabold text-gray-900 mb-3 tracking-tight">Join a League</h2>
+                <p className="text-gray-500 text-lg max-w-md mx-auto">
+                  Enter your invite code below to join an existing league.
+                </p>
               </div>
+
+              {/* Main Join Card */}
+              <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-8 border border-white/50 shadow-xl shadow-gray-200/50 mb-8">
+                <form onSubmit={handleJoinLeague} className="max-w-md mx-auto">
+                  {joinError && (
+                    <div className="p-4 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm mb-6 flex items-center gap-3">
+                      <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      {joinError}
+                    </div>
+                  )}
+                  
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">Invite Code</label>
+                  <div className="relative mb-4">
+                    <input
+                      type="text"
+                      value={joinCode}
+                      onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
+                      placeholder="ENTER CODE"
+                      className="w-full px-5 py-4 rounded-xl border-2 border-gray-200 focus:border-[#00ff87] focus:ring-4 focus:ring-[#00ff87]/20 outline-none transition-all font-mono text-center text-2xl tracking-[0.3em] uppercase bg-gray-50/50"
+                      maxLength={8}
+                    />
+                  </div>
+                  
+                  <button
+                    type="submit"
+                    disabled={joinLoading || !joinCode.trim()}
+                    className="w-full py-4 bg-gradient-to-r from-[#00ff87] to-[#60efff] text-gray-900 font-bold text-lg rounded-xl hover:opacity-90 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-[#00ff87]/20 hover:shadow-xl hover:shadow-[#00ff87]/30"
+                  >
+                    {joinLoading ? (
+                      <span className="flex items-center justify-center gap-2">
+                        <svg className="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                        </svg>
+                        Joining...
+                      </span>
+                    ) : "Join League"}
+                  </button>
+                </form>
+              </div>
+
             </div>
           )}
 
           {activeNav === "league-detail" && selectedLeague && (
             <div>
-              <div className="flex items-center gap-3 mb-6">
+              <div className="flex items-center gap-4 mb-8">
                 {showPredictionsForm && (
                   <button
                     onClick={() => setShowPredictionsForm(false)}
-                    className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                    className="p-2.5 hover:bg-white/50 rounded-xl transition-all duration-200 shadow-sm hover:shadow-md"
                   >
                     <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                     </svg>
                   </button>
                 )}
-                <h2 className="text-2xl font-bold text-gray-900">{selectedLeague.name}</h2>
-                <span className={`px-2 py-0.5 rounded text-xs font-medium ${
+                <h2 className="text-3xl font-extrabold text-gray-900 tracking-tight">{selectedLeague.name}</h2>
+                <span className={`px-3 py-1 rounded-full text-xs font-semibold shadow-sm ${
                   selectedLeague.type === "premier_league"
-                    ? "bg-[#3d195b] text-white"
-                    : "bg-[#04065c] text-white"
+                    ? "bg-gradient-to-r from-[#3d195b] to-[#6b2d8a] text-white"
+                    : "bg-gradient-to-r from-[#04065c] to-[#1a237e] text-white"
                 }`}>
                   {selectedLeague.type === "premier_league" ? "Premier League" : "Champions League"}
                 </span>
                 <button
                   onClick={() => setShowRulesModal(true)}
-                  className="ml-auto flex items-center gap-1.5 px-3 py-1.5 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+                  className="ml-auto flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-white/50 rounded-xl transition-all duration-200 shadow-sm hover:shadow-md"
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -1073,12 +1237,12 @@ export default function Dashboard({ demoMode = false, onExitDemo }: DashboardPro
               </div>
 
               {loadingFixtures ? (
-                <div className="bg-white rounded-xl p-8 text-center border border-gray-200 shadow-sm">
+                <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-8 text-center border border-white/50 shadow-xl shadow-gray-200/50 transition-all duration-300">
                   <p className="text-gray-500">Loading fixtures...</p>
                 </div>
               ) : showPredictionsForm && currentGameweek ? (
                 /* Full Predictions Form */
-                <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
+                <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 border border-white/50 shadow-xl shadow-gray-200/50 transition-all duration-300 hover:shadow-2xl">
                   <Predictions
                     gameweek={currentGameweek}
                     matches={matches}
@@ -1142,10 +1306,10 @@ export default function Dashboard({ demoMode = false, onExitDemo }: DashboardPro
                   {/* Top Row - 3 columns */}
                   <div className="grid grid-cols-3 gap-6">
                     {/* Leaderboard */}
-                    <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm min-h-[600px] max-h-[600px] overflow-y-auto flex flex-col">
+                    <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 border border-white/50 shadow-xl shadow-gray-200/50 min-h-[600px] max-h-[600px] overflow-y-auto flex flex-col transition-all duration-300 hover:shadow-2xl hover:shadow-gray-300/50">
                       <div className="flex items-center justify-between mb-4">
                         <div className="flex items-center gap-2">
-                          <h3 className="text-lg font-semibold text-gray-900">Leaderboard</h3>
+                          <h3 className="text-xl font-bold text-gray-900">Leaderboard</h3>
                           {isSeasonComplete && (
                             <span className="px-2 py-0.5 bg-yellow-100 text-yellow-800 text-xs font-medium rounded-full">
                               Final
@@ -1163,25 +1327,27 @@ export default function Dashboard({ demoMode = false, onExitDemo }: DashboardPro
                           {leaderboard.map((entry) => (
                             <div
                               key={entry.userId}
-                              className={`flex items-center gap-3 p-3 rounded-lg ${
-                                entry.userId === user?.id ? "bg-[#00ff87]/10" : ""
+                              className={`flex items-center gap-3 p-3 rounded-xl transition-all duration-200 ${
+                                entry.userId === user?.id 
+                                  ? "bg-gradient-to-r from-[#00ff87]/20 to-[#60efff]/10 border border-[#00ff87]/30 shadow-sm" 
+                                  : "hover:bg-gray-50"
                               }`}
                             >
-                              <span className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
-                                entry.rank === 1 ? "bg-yellow-400 text-yellow-900" :
-                                entry.rank === 2 ? "bg-gray-300 text-gray-700" :
-                                entry.rank === 3 ? "bg-orange-300 text-orange-900" :
+                              <span className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold shadow-md ${
+                                entry.rank === 1 ? "bg-gradient-to-br from-yellow-300 to-yellow-500 text-yellow-900" :
+                                entry.rank === 2 ? "bg-gradient-to-br from-gray-200 to-gray-400 text-gray-700" :
+                                entry.rank === 3 ? "bg-gradient-to-br from-orange-300 to-orange-500 text-orange-900" :
                                 "bg-gray-100 text-gray-600"
                               }`}>
                                 {isSeasonComplete && entry.rank === 1 ? "👑" : entry.rank}
                               </span>
-                              <span className={`flex-1 flex items-center gap-2 ${entry.userId === user?.id ? "font-semibold" : ""}`}>
+                              <span className={`flex-1 flex items-center gap-2 ${entry.userId === user?.id ? "font-bold text-gray-900" : "text-gray-700"}`}>
                                 {entry.username || entry.firstName || "Anonymous"}
                                 {entry.teamLogo && (
-                                  <img src={entry.teamLogo} alt="" className="w-5 h-5 object-contain" />
+                                  <img src={entry.teamLogo} alt="" className="w-6 h-6 object-contain" />
                                 )}
                               </span>
-                              <span className="font-bold text-gray-900 text-lg">{entry.totalPoints}</span>
+                              <span className="font-bold text-gray-900 text-lg tabular-nums">{entry.totalPoints}</span>
                             </div>
                           ))}
                         </div>
@@ -1189,8 +1355,8 @@ export default function Dashboard({ demoMode = false, onExitDemo }: DashboardPro
                     </div>
 
                     {/* My Predictions Summary */}
-                    <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm min-h-[600px] max-h-[600px] flex flex-col">
-                      <h3 className="text-lg font-semibold text-gray-900 mb-4">My Predictions</h3>
+                    <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 border border-white/50 shadow-xl shadow-gray-200/50 min-h-[600px] max-h-[600px] flex flex-col transition-all duration-300 hover:shadow-2xl hover:shadow-gray-300/50">
+                      <h3 className="text-xl font-bold text-gray-900 mb-4">My Predictions</h3>
                       <div className="flex-1 overflow-y-auto">
                         {loadingPredictions ? (
                           <p className="text-gray-500 text-sm">Loading...</p>
@@ -1263,8 +1429,12 @@ export default function Dashboard({ demoMode = false, onExitDemo }: DashboardPro
                       {!isDeadlinePassed && (
                         <button
                           onClick={() => setShowPredictionsForm(true)}
-                          className="mt-4 w-full py-3 rounded-lg font-semibold text-white transition-colors"
-                          style={{ backgroundColor: selectedLeague.type === "premier_league" ? "#3d195b" : "#04065c" }}
+                          className="mt-4 w-full py-3.5 rounded-xl font-bold text-white transition-all duration-200 shadow-lg hover:shadow-xl hover:scale-[1.02] active:scale-[0.98]"
+                          style={{ 
+                            background: selectedLeague.type === "premier_league" 
+                              ? "linear-gradient(135deg, #3d195b 0%, #6b2d8a 100%)" 
+                              : "linear-gradient(135deg, #04065c 0%, #1a237e 100%)" 
+                          }}
                         >
                           {Object.keys(userPredictions).length > 0 ? "Edit Predictions" : "Make Predictions"}
                         </button>
@@ -1277,8 +1447,8 @@ export default function Dashboard({ demoMode = false, onExitDemo }: DashboardPro
                     </div>
 
                     {/* Gameweek Fixtures */}
-                    <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm min-h-[600px] max-h-[600px] overflow-y-auto">
-                      <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                    <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 border border-white/50 shadow-xl shadow-gray-200/50 min-h-[600px] max-h-[600px] overflow-y-auto transition-all duration-300 hover:shadow-2xl hover:shadow-gray-300/50">
+                      <h3 className="text-xl font-bold text-gray-900 mb-4">
                         {currentGameweek ? `Gameweek ${currentGameweek.number}` : "Fixtures"}
                       </h3>
                       {matches.length === 0 ? (
@@ -1337,7 +1507,7 @@ export default function Dashboard({ demoMode = false, onExitDemo }: DashboardPro
                   </div>
 
                   {/* Bottom Row - League Info */}
-                  <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
+                  <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 border border-white/50 shadow-xl shadow-gray-200/50 transition-all duration-300 hover:shadow-2xl">
                     <div className="flex items-center justify-between mb-4">
                       <h3 className="text-lg font-semibold text-gray-900">League Info</h3>
                       {user?.email === ADMIN_EMAIL && (
@@ -1468,170 +1638,250 @@ export default function Dashboard({ demoMode = false, onExitDemo }: DashboardPro
           )}
 
           {activeNav === "account" && (
-            <div>
-              <h2 className="text-2xl font-bold text-gray-900 mb-6">Account Settings</h2>
-
-              {/* Profile Section */}
-              <div className="bg-white rounded-xl p-8 border border-gray-200 shadow-sm mb-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-6">Profile</h3>
-
-                {/* Favorite Team */}
-                <div className="mb-6">
-                  <label className="block text-gray-500 text-sm mb-2">Favorite Team</label>
-                  {editingTeam ? (
-                    <div className="bg-gray-50 rounded-lg p-4">
-                      <p className="text-sm text-gray-600 mb-3">Select your favorite team:</p>
-                      {teamsLoading ? (
-                        <div className="flex items-center justify-center py-8">
-                          <p className="text-gray-500">Loading teams...</p>
-                        </div>
-                      ) : (
-                        <div className="grid grid-cols-5 gap-3 max-h-72 overflow-y-auto p-1">
-                          {availableTeams.map((team) => (
-                            <button
-                              key={team.id}
-                              onClick={() => handleUpdateTeam(team.id)}
-                              className={`p-3 rounded-xl border-2 transition-all flex flex-col items-center gap-2 hover:shadow-md ${
-                                favoriteTeam?.id === team.id
-                                  ? "border-[#3d195b] bg-white shadow-md"
-                                  : "border-transparent bg-white hover:border-gray-200"
-                              }`}
-                            >
-                              {team.logo ? (
-                                <img src={team.logo} alt={team.name} className="w-12 h-12 object-contain" />
-                              ) : (
-                                <div className="w-12 h-12 rounded-full bg-gray-200" />
-                              )}
-                              <span className="text-xs text-gray-700 text-center line-clamp-2 leading-tight">{team.name}</span>
-                            </button>
-                          ))}
-                        </div>
-                      )}
-                      <button
-                        onClick={() => setEditingTeam(false)}
-                        className="mt-4 px-4 py-2 border border-gray-300 text-gray-700 text-sm font-medium rounded-lg hover:bg-white transition-colors"
-                      >
-                        Cancel
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-4">
-                      {favoriteTeam?.logo ? (
-                        <img src={favoriteTeam.logo} alt={favoriteTeam.name} className="w-14 h-14 object-contain" />
-                      ) : (
-                        <div className="w-14 h-14 rounded-full bg-gray-100 flex items-center justify-center text-gray-400">
-                          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                          </svg>
-                        </div>
-                      )}
-                      <div>
-                        <p className="text-gray-900 font-medium text-lg">{favoriteTeam?.name || "No team selected"}</p>
-                        <p className="text-gray-500 text-sm">Your favorite team badge</p>
+            <div className="max-w-3xl mx-auto">
+              {/* Profile Header Card */}
+              <div className="bg-gradient-to-r from-[#3d195b] to-[#6b2d8a] rounded-2xl p-8 mb-6 shadow-xl">
+                <div className="flex items-center gap-6">
+                  {/* Avatar */}
+                  <div className="relative">
+                    {favoriteTeam?.logo ? (
+                      <div className="w-24 h-24 rounded-2xl bg-white/20 backdrop-blur-sm p-3 shadow-lg">
+                        <img src={favoriteTeam.logo} alt={favoriteTeam.name} className="w-full h-full object-contain" />
                       </div>
-                      <button
-                        onClick={() => {
-                          fetchTeams();
-                          setEditingTeam(true);
-                        }}
-                        className="px-4 py-2 bg-[#3d195b] text-white text-sm font-medium rounded-lg hover:bg-[#2d1245] transition-colors flex items-center gap-2"
-                      >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                        </svg>
-                        Change
-                      </button>
+                    ) : (
+                      <div className="w-24 h-24 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center shadow-lg">
+                        <span className="text-4xl font-bold text-white">
+                          {(user?.firstName?.[0] || user?.username?.[0] || "U").toUpperCase()}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                  
+                  {/* User Info */}
+                  <div className="flex-1">
+                    <h2 className="text-2xl font-bold text-white mb-1">
+                      {user?.firstName && user?.lastName 
+                        ? `${user.firstName} ${user.lastName}` 
+                        : user?.username || "User"}
+                    </h2>
+                    <p className="text-white/70 mb-3">@{user?.username || "username"}</p>
+                    <div className="flex items-center gap-2">
+                      <span className="px-3 py-1 rounded-full bg-white/20 text-white text-sm font-medium">
+                        {favoriteTeam?.name || "No team"}
+                      </span>
                     </div>
-                  )}
-                </div>
+                  </div>
 
-                {/* Username */}
-                <div className="mb-6">
-                  <label className="block text-gray-500 text-sm mb-2">Username</label>
-                  {editingUsername ? (
-                    <div className="bg-gray-50 rounded-lg p-4">
-                      <div className="flex gap-3">
+                  {/* Quick Stats */}
+                  <div className="flex gap-6">
+                    <div className="text-center">
+                      <p className="text-3xl font-bold text-white">{demoMode ? "1" : leagues.length}</p>
+                      <p className="text-white/70 text-sm">Leagues</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-3xl font-bold text-[#00ff87]">{demoMode ? "125" : "0"}</p>
+                      <p className="text-white/70 text-sm">Points</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-3xl font-bold text-white">{demoMode ? "42" : "0"}</p>
+                      <p className="text-white/70 text-sm">Predictions</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Settings Grid */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Profile Settings */}
+                <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 border border-white/50 shadow-xl shadow-gray-200/50">
+                  <div className="flex items-center gap-3 mb-6">
+                    <div className="w-10 h-10 rounded-xl bg-[#3d195b]/10 flex items-center justify-center">
+                      <svg className="w-5 h-5 text-[#3d195b]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                      </svg>
+                    </div>
+                    <h3 className="text-lg font-bold text-gray-900">Profile Settings</h3>
+                  </div>
+
+                  {/* Username */}
+                  <div className="mb-5">
+                    <div className="flex items-center justify-between mb-2">
+                      <label className="text-sm font-medium text-gray-700">Username</label>
+                      {!editingUsername && (
+                        <button
+                          onClick={() => {
+                            setNewUsername(user?.username || "");
+                            setEditingUsername(true);
+                          }}
+                          className="text-sm text-[#3d195b] font-medium hover:underline"
+                        >
+                          Edit
+                        </button>
+                      )}
+                    </div>
+                    {editingUsername ? (
+                      <div className="space-y-3">
                         <input
                           type="text"
                           value={newUsername}
                           onChange={(e) => setNewUsername(e.target.value)}
                           placeholder="Enter new username"
-                          className="flex-1 px-4 py-2.5 rounded-lg border border-gray-300 focus:border-[#3d195b] focus:ring-2 focus:ring-[#3d195b]/20 outline-none transition-all"
+                          className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-[#3d195b] focus:ring-4 focus:ring-[#3d195b]/10 outline-none transition-all"
                         />
-                        <button
-                          onClick={handleUpdateUsername}
-                          disabled={usernameLoading}
-                          className="px-5 py-2.5 bg-[#3d195b] text-white font-medium rounded-lg hover:bg-[#2d1245] disabled:opacity-50 transition-colors"
-                        >
-                          {usernameLoading ? "Saving..." : "Save"}
-                        </button>
+                        {usernameError && (
+                          <p className="text-red-500 text-sm">{usernameError}</p>
+                        )}
+                        <p className="text-gray-400 text-xs">3-20 characters, letters, numbers, and underscores only</p>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={handleUpdateUsername}
+                            disabled={usernameLoading}
+                            className="flex-1 py-2.5 bg-[#3d195b] text-white font-medium rounded-lg hover:bg-[#2d1245] disabled:opacity-50 transition-colors"
+                          >
+                            {usernameLoading ? "Saving..." : "Save"}
+                          </button>
+                          <button
+                            onClick={() => {
+                              setEditingUsername(false);
+                              setUsernameError("");
+                              setNewUsername("");
+                            }}
+                            className="px-4 py-2.5 border border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-50 transition-colors"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <p className="text-gray-900 font-medium py-2">@{user?.username || "Not set"}</p>
+                    )}
+                  </div>
+
+                  {/* Favorite Team */}
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <label className="text-sm font-medium text-gray-700">Favorite Team</label>
+                      {!editingTeam && (
                         <button
                           onClick={() => {
-                            setEditingUsername(false);
-                            setUsernameError("");
-                            setNewUsername("");
+                            fetchTeams();
+                            setEditingTeam(true);
                           }}
-                          className="px-5 py-2.5 border border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-100 transition-colors"
+                          className="text-sm text-[#3d195b] font-medium hover:underline"
+                        >
+                          Change
+                        </button>
+                      )}
+                    </div>
+                    {editingTeam ? (
+                      <div className="space-y-3">
+                        <p className="text-gray-500 text-sm">Select your favorite team:</p>
+                        {teamsLoading ? (
+                          <div className="flex items-center justify-center py-8">
+                            <p className="text-gray-500">Loading teams...</p>
+                          </div>
+                        ) : (
+                          <div className="grid grid-cols-4 gap-2 max-h-64 overflow-y-auto p-1">
+                            {availableTeams.map((team) => (
+                              <button
+                                key={team.id}
+                                onClick={() => handleUpdateTeam(team.id)}
+                                className={`p-2 rounded-lg border-2 transition-all flex flex-col items-center gap-1 hover:shadow-md ${
+                                  favoriteTeam?.id === team.id
+                                    ? "border-[#3d195b] bg-white shadow-md"
+                                    : "border-transparent bg-gray-50 hover:border-gray-200"
+                                }`}
+                              >
+                                {team.logo ? (
+                                  <img src={team.logo} alt={team.name} className="w-10 h-10 object-contain" />
+                                ) : (
+                                  <div className="w-10 h-10 rounded-full bg-gray-200" />
+                                )}
+                                <span className="text-xs text-gray-700 text-center line-clamp-1">{team.name}</span>
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                        <button
+                          onClick={() => setEditingTeam(false)}
+                          className="w-full py-2 border border-gray-300 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-50 transition-colors"
                         >
                           Cancel
                         </button>
                       </div>
-                      {usernameError && (
-                        <p className="mt-3 text-red-500 text-sm">{usernameError}</p>
-                      )}
-                      <p className="mt-3 text-gray-500 text-sm">3-20 characters, letters, numbers, and underscores only</p>
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-4">
-                      <div>
-                        <p className="text-gray-900 font-medium text-lg">{user?.username || "Not set"}</p>
-                        <p className="text-gray-500 text-sm">Your display name</p>
+                    ) : (
+                      <div className="flex items-center gap-3 py-2">
+                        {favoriteTeam?.logo ? (
+                          <img src={favoriteTeam.logo} alt={favoriteTeam.name} className="w-10 h-10 object-contain" />
+                        ) : (
+                          <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-400">
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                            </svg>
+                          </div>
+                        )}
+                        <span className="text-gray-900 font-medium">{favoriteTeam?.name || "No team selected"}</span>
                       </div>
-                      <button
-                        onClick={() => {
-                          setNewUsername(user?.username || "");
-                          setEditingUsername(true);
-                        }}
-                        className="px-4 py-2 bg-[#3d195b] text-white text-sm font-medium rounded-lg hover:bg-[#2d1245] transition-colors flex items-center gap-2"
-                      >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                        </svg>
-                        Edit
-                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {/* Account Information */}
+                <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 border border-white/50 shadow-xl shadow-gray-200/50">
+                  <div className="flex items-center gap-3 mb-6">
+                    <div className="w-10 h-10 rounded-xl bg-[#00ff87]/20 flex items-center justify-center">
+                      <svg className="w-5 h-5 text-[#00915c]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                      </svg>
                     </div>
-                  )}
+                    <h3 className="text-lg font-bold text-gray-900">Account Information</h3>
+                  </div>
+
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between py-3 border-b border-gray-100">
+                      <div>
+                        <p className="text-sm text-gray-500">First Name</p>
+                        <p className="text-gray-900 font-medium">{user?.firstName || "Not set"}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between py-3 border-b border-gray-100">
+                      <div>
+                        <p className="text-sm text-gray-500">Last Name</p>
+                        <p className="text-gray-900 font-medium">{user?.lastName || "Not set"}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between py-3 border-b border-gray-100">
+                      <div>
+                        <p className="text-sm text-gray-500">Email</p>
+                        <p className="text-gray-900 font-medium">{user?.email}</p>
+                      </div>
+                      <span className="px-2 py-1 rounded-full bg-green-100 text-green-700 text-xs font-medium">Verified</span>
+                    </div>
+                    <div className="flex items-center justify-between py-3">
+                      <div>
+                        <p className="text-sm text-gray-500">Member Since</p>
+                        <p className="text-gray-900 font-medium">{demoMode ? "January 2026" : "Recently"}</p>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
 
-              {/* Account Info Section */}
-              <div className="bg-white rounded-xl p-8 border border-gray-200 shadow-sm">
-                <h3 className="text-lg font-semibold text-gray-900 mb-6">Account Information</h3>
-                <div className="grid grid-cols-2 gap-6">
-                  <div>
-                    <label className="block text-gray-500 text-sm mb-1">First Name</label>
-                    <p className="text-gray-900">{user?.firstName || "Not set"}</p>
-                  </div>
-                  <div>
-                    <label className="block text-gray-500 text-sm mb-1">Last Name</label>
-                    <p className="text-gray-900">{user?.lastName || "Not set"}</p>
-                  </div>
-                  <div>
-                    <label className="block text-gray-500 text-sm mb-1">Email</label>
-                    <p className="text-gray-900">{user?.email}</p>
-                  </div>
-                  <div>
-                    <label className="block text-gray-500 text-sm mb-1">User ID</label>
-                    <p className="text-gray-900 font-mono text-sm">{user?.id}</p>
-                  </div>
-                </div>
+              {/* Delete Account */}
+              <div className="mt-6 flex justify-end">
+                <button 
+                  className="px-4 py-2.5 border-2 border-red-200 text-red-600 font-medium rounded-xl hover:bg-red-50 transition-colors"
+                  onClick={() => {/* TODO: Delete account functionality */}}
+                >
+                  Delete Account
+                </button>
               </div>
             </div>
           )}
         </main>
 
         {/* Right Sidebar - Countdown Timers (only for league sections) */}
-        {activeNav !== "account" && (
+        {activeNav !== "account" && activeNav !== "join" && (
           <aside className="w-72 min-h-[calc(100vh-8rem)] bg-white border-l border-gray-200 p-6">
             <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">
               {activeNav === "league-detail"
