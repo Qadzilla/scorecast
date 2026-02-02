@@ -179,4 +179,124 @@ router.get("/", requireAuth, async (req, res) => {
   }
 });
 
+// Update league (admin only)
+router.patch("/:leagueId", requireAuth, async (req, res) => {
+  const { user } = req as AuthenticatedRequest;
+  const { leagueId } = req.params;
+  const { name } = req.body;
+
+  // Only admin can update leagues
+  if (user.email !== ADMIN_EMAIL) {
+    res.status(403).json({ error: "Only the admin can update leagues" });
+    return;
+  }
+
+  if (!name || typeof name !== "string" || name.trim().length === 0) {
+    res.status(400).json({ error: "League name is required" });
+    return;
+  }
+
+  if (name.length > 100) {
+    res.status(400).json({ error: "League name must be less than 100 characters" });
+    return;
+  }
+
+  try {
+    const result = await query(
+      `UPDATE league SET name = $1, "updatedAt" = $2 WHERE id = $3`,
+      [name.trim(), new Date().toISOString(), leagueId]
+    );
+
+    if (result.rowCount === 0) {
+      res.status(404).json({ error: "League not found" });
+      return;
+    }
+
+    res.json({ success: true, name: name.trim() });
+  } catch (err) {
+    console.error("Failed to update league:", err);
+    res.status(500).json({ error: "Failed to update league" });
+  }
+});
+
+// Get league members (admin only)
+router.get("/:leagueId/members", requireAuth, async (req, res) => {
+  const { user } = req as AuthenticatedRequest;
+  const { leagueId } = req.params;
+
+  // Only admin can view member list
+  if (user.email !== ADMIN_EMAIL) {
+    res.status(403).json({ error: "Only the admin can view members" });
+    return;
+  }
+
+  try {
+    const members = await queryAll<{
+      id: string;
+      userId: string;
+      username: string | null;
+      firstName: string | null;
+      lastName: string | null;
+      email: string;
+      role: string;
+      joinedAt: string;
+    }>(
+      `SELECT
+        lm.id,
+        u.id as "userId",
+        u.username,
+        u."firstName",
+        u."lastName",
+        u.email,
+        lm.role,
+        lm."joinedAt"
+      FROM league_member lm
+      JOIN "user" u ON lm."userId" = u.id
+      WHERE lm."leagueId" = $1
+      ORDER BY lm."joinedAt" ASC`,
+      [leagueId]
+    );
+
+    res.json(members);
+  } catch (err) {
+    console.error("Failed to fetch members:", err);
+    res.status(500).json({ error: "Failed to fetch members" });
+  }
+});
+
+// Kick member from league (admin only)
+router.delete("/:leagueId/members/:userId", requireAuth, async (req, res) => {
+  const { user } = req as AuthenticatedRequest;
+  const { leagueId, userId } = req.params;
+
+  // Only admin can kick members
+  if (user.email !== ADMIN_EMAIL) {
+    res.status(403).json({ error: "Only the admin can remove members" });
+    return;
+  }
+
+  // Can't kick yourself
+  if (userId === user.id) {
+    res.status(400).json({ error: "You cannot remove yourself from the league" });
+    return;
+  }
+
+  try {
+    const result = await query(
+      `DELETE FROM league_member WHERE "leagueId" = $1 AND "userId" = $2`,
+      [leagueId, userId]
+    );
+
+    if (result.rowCount === 0) {
+      res.status(404).json({ error: "Member not found" });
+      return;
+    }
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error("Failed to remove member:", err);
+    res.status(500).json({ error: "Failed to remove member" });
+  }
+});
+
 export default router;

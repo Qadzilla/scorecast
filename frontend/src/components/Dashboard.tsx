@@ -1,10 +1,21 @@
 import { useState, useEffect, useCallback } from "react";
 import { signOut, useSession } from "../lib/auth";
-import { fixturesApi, predictionsApi, leaderboardApi } from "../lib/api";
+import { fixturesApi, predictionsApi, leaderboardApi, leaguesAdminApi } from "../lib/api";
 import Predictions from "./Predictions";
 import type { Gameweek, MatchWithTeams } from "../types/fixtures";
 import type { PredictionInput } from "../types/predictions";
 import { calculatePredictionPoints, getPointsBadgeColor } from "../types/predictions";
+
+interface LeagueMember {
+  id: string;
+  userId: string;
+  username: string | null;
+  firstName: string | null;
+  lastName: string | null;
+  email: string;
+  role: string;
+  joinedAt: string;
+}
 
 type NavItem = "leagues" | "create" | "join" | "account" | "league-detail";
 
@@ -122,6 +133,15 @@ export default function Dashboard({ demoMode = false, onExitDemo }: DashboardPro
   const [loadingLeaderboard, setLoadingLeaderboard] = useState(false);
   const [isSeasonComplete, setIsSeasonComplete] = useState(false);
   const [champion, setChampion] = useState<LeaderboardEntry | null>(null);
+
+  // Admin panel state
+  const [showAdminPanel, setShowAdminPanel] = useState(false);
+  const [editingLeagueName, setEditingLeagueName] = useState(false);
+  const [newLeagueName, setNewLeagueName] = useState("");
+  const [savingLeagueName, setSavingLeagueName] = useState(false);
+  const [leagueMembers, setLeagueMembers] = useState<LeagueMember[]>([]);
+  const [loadingMembers, setLoadingMembers] = useState(false);
+  const [kickingMember, setKickingMember] = useState<string | null>(null);
 
   // Create league form state
   const [createName, setCreateName] = useState("");
@@ -529,6 +549,57 @@ export default function Dashboard({ demoMode = false, onExitDemo }: DashboardPro
   };
 
   const isDeadlinePassed = currentGameweek ? new Date(currentGameweek.deadline) <= new Date() : true;
+
+  // Admin panel handlers
+  const fetchLeagueMembers = async (leagueId: string) => {
+    setLoadingMembers(true);
+    try {
+      const members = await leaguesAdminApi.getMembers(leagueId);
+      setLeagueMembers(members);
+    } catch (err) {
+      console.error("Failed to fetch members:", err);
+    }
+    setLoadingMembers(false);
+  };
+
+  const handleSaveLeagueName = async () => {
+    if (!selectedLeague || !newLeagueName.trim()) return;
+    setSavingLeagueName(true);
+    try {
+      await leaguesAdminApi.updateLeague(selectedLeague.id, newLeagueName.trim());
+      // Update local state
+      setSelectedLeague({ ...selectedLeague, name: newLeagueName.trim() });
+      setLeagues(leagues.map(l => l.id === selectedLeague.id ? { ...l, name: newLeagueName.trim() } : l));
+      setEditingLeagueName(false);
+    } catch (err) {
+      console.error("Failed to update league name:", err);
+    }
+    setSavingLeagueName(false);
+  };
+
+  const handleKickMember = async (userId: string) => {
+    if (!selectedLeague) return;
+    if (!confirm("Are you sure you want to remove this member from the league?")) return;
+    setKickingMember(userId);
+    try {
+      await leaguesAdminApi.kickMember(selectedLeague.id, userId);
+      // Update local state
+      setLeagueMembers(leagueMembers.filter(m => m.userId !== userId));
+      setSelectedLeague({ ...selectedLeague, memberCount: selectedLeague.memberCount - 1 });
+      setLeagues(leagues.map(l => l.id === selectedLeague.id ? { ...l, memberCount: l.memberCount - 1 } : l));
+    } catch (err) {
+      console.error("Failed to kick member:", err);
+    }
+    setKickingMember(null);
+  };
+
+  const openAdminPanel = () => {
+    if (selectedLeague) {
+      setShowAdminPanel(true);
+      setNewLeagueName(selectedLeague.name);
+      fetchLeagueMembers(selectedLeague.id);
+    }
+  };
 
   // Fetch available teams for team selector
   const fetchTeams = async () => {
@@ -1255,7 +1326,17 @@ export default function Dashboard({ demoMode = false, onExitDemo }: DashboardPro
 
                   {/* Bottom Row - League Info */}
                   <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-4">League Info</h3>
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="text-lg font-semibold text-gray-900">League Info</h3>
+                      {user?.email === ADMIN_EMAIL && (
+                        <button
+                          onClick={() => showAdminPanel ? setShowAdminPanel(false) : openAdminPanel()}
+                          className="text-sm px-3 py-1 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 transition-colors"
+                        >
+                          {showAdminPanel ? "Hide Admin" : "Manage League"}
+                        </button>
+                      )}
+                    </div>
                     <div className="grid grid-cols-4 gap-6">
                       <div>
                         <p className="text-sm text-gray-500">Members</p>
@@ -1284,6 +1365,90 @@ export default function Dashboard({ demoMode = false, onExitDemo }: DashboardPro
                         </div>
                       )}
                     </div>
+
+                    {/* Admin Panel */}
+                    {showAdminPanel && user?.email === ADMIN_EMAIL && (
+                      <div className="mt-6 pt-6 border-t border-gray-200">
+                        <h4 className="text-md font-semibold text-gray-900 mb-4">Admin Controls</h4>
+
+                        {/* Edit League Name */}
+                        <div className="mb-6">
+                          <label className="block text-sm text-gray-500 mb-2">League Name</label>
+                          {editingLeagueName ? (
+                            <div className="flex gap-2">
+                              <input
+                                type="text"
+                                value={newLeagueName}
+                                onChange={(e) => setNewLeagueName(e.target.value)}
+                                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00ff87]"
+                                maxLength={100}
+                              />
+                              <button
+                                onClick={handleSaveLeagueName}
+                                disabled={savingLeagueName || !newLeagueName.trim()}
+                                className="px-4 py-2 bg-[#00ff87] text-gray-900 font-medium rounded-lg hover:bg-[#00cc6a] disabled:opacity-50 transition-colors"
+                              >
+                                {savingLeagueName ? "Saving..." : "Save"}
+                              </button>
+                              <button
+                                onClick={() => {
+                                  setEditingLeagueName(false);
+                                  setNewLeagueName(selectedLeague.name);
+                                }}
+                                className="px-4 py-2 bg-gray-200 text-gray-700 font-medium rounded-lg hover:bg-gray-300 transition-colors"
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-2">
+                              <span className="text-gray-900 font-medium">{selectedLeague.name}</span>
+                              <button
+                                onClick={() => setEditingLeagueName(true)}
+                                className="text-sm text-blue-600 hover:text-blue-800"
+                              >
+                                Edit
+                              </button>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Members List */}
+                        <div>
+                          <label className="block text-sm text-gray-500 mb-2">Members ({leagueMembers.length})</label>
+                          {loadingMembers ? (
+                            <p className="text-gray-500 text-sm">Loading members...</p>
+                          ) : (
+                            <div className="space-y-2 max-h-64 overflow-y-auto">
+                              {leagueMembers.map((member) => (
+                                <div key={member.id} className="flex items-center justify-between py-2 px-3 bg-gray-50 rounded-lg">
+                                  <div>
+                                    <span className="font-medium text-gray-900">
+                                      {member.firstName && member.lastName
+                                        ? `${member.firstName} ${member.lastName}`
+                                        : member.username || member.email}
+                                    </span>
+                                    {member.role === "admin" && (
+                                      <span className="ml-2 text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded">Admin</span>
+                                    )}
+                                    <p className="text-xs text-gray-500">{member.email}</p>
+                                  </div>
+                                  {member.role !== "admin" && (
+                                    <button
+                                      onClick={() => handleKickMember(member.userId)}
+                                      disabled={kickingMember === member.userId}
+                                      className="text-sm text-red-600 hover:text-red-800 disabled:opacity-50"
+                                    >
+                                      {kickingMember === member.userId ? "Removing..." : "Remove"}
+                                    </button>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               )}

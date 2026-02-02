@@ -228,3 +228,32 @@ export const leaderboardApi = {
       predictionsMade: number;
     }>>(`/api/leaderboard/${leagueId}/gameweek/${gameweekId}`),
 };
+
+// Leagues Admin API
+export const leaguesAdminApi = {
+  // Update league name
+  updateLeague: (leagueId: string, name: string) =>
+    apiFetch<{ success: boolean; name: string }>(`/api/leagues/${leagueId}`, {
+      method: "PATCH",
+      body: JSON.stringify({ name }),
+    }),
+
+  // Get league members
+  getMembers: (leagueId: string) =>
+    apiFetch<Array<{
+      id: string;
+      userId: string;
+      username: string | null;
+      firstName: string | null;
+      lastName: string | null;
+      email: string;
+      role: string;
+      joinedAt: string;
+    }>>(`/api/leagues/${leagueId}/members`),
+
+  // Kick member from league
+  kickMember: (leagueId: string, userId: string) =>
+    apiFetch<{ success: boolean }>(`/api/leagues/${leagueId}/members/${userId}`, {
+      method: "DELETE",
+    }),
+};
