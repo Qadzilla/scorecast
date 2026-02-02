@@ -2,8 +2,6 @@ import "dotenv/config";
 import express from "express";
 import cors from "cors";
 import rateLimit from "express-rate-limit";
-import path from "path";
-import { fileURLToPath } from "url";
 import { toNodeHandler } from "better-auth/node";
 import { auth } from "./auth.js";
 import { queryOne } from "./db.js";
@@ -13,9 +11,6 @@ import predictionsRouter from "./routes/predictions.js";
 import leaderboardRouter from "./routes/leaderboard.js";
 import adminRouter from "./routes/admin.js";
 import userRouter from "./routes/user.js";
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 
 export const app = express();
 
@@ -138,12 +133,3 @@ app.use("/api/predictions", predictionsRouter);
 app.use("/api/leaderboard", leaderboardRouter);
 app.use("/api/admin", adminRouter);
 app.use("/api/user", userRouter);
-
-// Serve static files in production
-if (process.env.NODE_ENV === "production") {
-  const frontendDist = path.join(__dirname, "../../frontend/dist");
-  app.use(express.static(frontendDist));
-  app.get("*", (req, res) => {
-    res.sendFile(path.join(frontendDist, "index.html"));
-  });
-}

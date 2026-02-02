@@ -66,7 +66,7 @@ interface LeaderboardEntry {
   teamLogo: string | null;
 }
 
-const API_URL = import.meta.env.VITE_API_URL || "";
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
 // Admin email for UI visibility (set via VITE_ADMIN_EMAIL env var)
 const ADMIN_EMAIL = import.meta.env.VITE_ADMIN_EMAIL || "";
 
