@@ -1144,42 +1144,105 @@ export default function Dashboard({ demoMode = false, onExitDemo }: DashboardPro
           )}
 
           {activeNav === "join" && (
-            <div>
-              <h2 className="text-3xl font-extrabold text-gray-900 mb-8 tracking-tight">Join League</h2>
-              <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-8 border border-white/50 shadow-xl shadow-gray-200/50 transition-all duration-300 hover:shadow-2xl">
-                <div className="text-center">
-                  <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-[#00ff87]/20 flex items-center justify-center">
-                    <svg className="w-8 h-8 text-[#00915c]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+            <div className="max-w-4xl">
+              {/* Hero Section */}
+              <div className="text-center mb-10">
+                <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-gradient-to-br from-[#00ff87] to-[#60efff] shadow-lg shadow-[#00ff87]/30 mb-6">
+                  <svg className="w-10 h-10 text-gray-900" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+                  </svg>
+                </div>
+                <h2 className="text-4xl font-extrabold text-gray-900 mb-3 tracking-tight">Join a League</h2>
+                <p className="text-gray-500 text-lg max-w-md mx-auto">
+                  Got an invite code? Enter it below to join your friends and start competing!
+                </p>
+              </div>
+
+              {/* Main Join Card */}
+              <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-8 border border-white/50 shadow-xl shadow-gray-200/50 mb-8">
+                <form onSubmit={handleJoinLeague} className="max-w-md mx-auto">
+                  {joinError && (
+                    <div className="p-4 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm mb-6 flex items-center gap-3">
+                      <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      {joinError}
+                    </div>
+                  )}
+                  
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">Invite Code</label>
+                  <div className="relative mb-4">
+                    <input
+                      type="text"
+                      value={joinCode}
+                      onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
+                      placeholder="Enter code (e.g. ABC123)"
+                      className="w-full px-5 py-4 rounded-xl border-2 border-gray-200 focus:border-[#00ff87] focus:ring-4 focus:ring-[#00ff87]/20 outline-none transition-all font-mono text-center text-2xl tracking-[0.3em] uppercase bg-gray-50/50"
+                      maxLength={8}
+                    />
+                  </div>
+                  
+                  <button
+                    type="submit"
+                    disabled={joinLoading || !joinCode.trim()}
+                    className="w-full py-4 bg-gradient-to-r from-[#00ff87] to-[#60efff] text-gray-900 font-bold text-lg rounded-xl hover:opacity-90 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-[#00ff87]/20 hover:shadow-xl hover:shadow-[#00ff87]/30"
+                  >
+                    {joinLoading ? (
+                      <span className="flex items-center justify-center gap-2">
+                        <svg className="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                        </svg>
+                        Joining...
+                      </span>
+                    ) : "Join League"}
+                  </button>
+                </form>
+              </div>
+
+              {/* Benefits Section */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="bg-white/60 backdrop-blur-sm rounded-xl p-5 border border-white/50">
+                  <div className="w-10 h-10 rounded-lg bg-[#3d195b]/10 flex items-center justify-center mb-3">
+                    <svg className="w-5 h-5 text-[#3d195b]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                     </svg>
                   </div>
-                  <p className="text-gray-500 mb-6">Enter an invite code to join an existing league.</p>
-                  <form onSubmit={handleJoinLeague} className="max-w-sm mx-auto space-y-4">
-                    {joinError && (
-                      <div className="p-3 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm">
-                        {joinError}
-                      </div>
-                    )}
-                    <div>
-                      <input
-                        type="text"
-                        value={joinCode}
-                        onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
-                        placeholder="Invite Code"
-                        className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-[#00ff87] focus:ring-1 focus:ring-[#00ff87] outline-none transition-colors font-mono text-center text-lg tracking-wider"
-                        maxLength={8}
-                      />
-                    </div>
-                    <button
-                      type="submit"
-                      disabled={joinLoading}
-                      className="w-full py-3 bg-[#00ff87] text-gray-900 font-semibold rounded-lg hover:bg-[#00e67a] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {joinLoading ? "Joining..." : "Join League"}
-                    </button>
-                  </form>
+                  <h3 className="font-bold text-gray-900 mb-1">Compete with Friends</h3>
+                  <p className="text-gray-500 text-sm">Challenge your mates and see who knows football best.</p>
+                </div>
+
+                <div className="bg-white/60 backdrop-blur-sm rounded-xl p-5 border border-white/50">
+                  <div className="w-10 h-10 rounded-lg bg-[#00ff87]/20 flex items-center justify-center mb-3">
+                    <svg className="w-5 h-5 text-[#00915c]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                    </svg>
+                  </div>
+                  <h3 className="font-bold text-gray-900 mb-1">Climb the Leaderboard</h3>
+                  <p className="text-gray-500 text-sm">Earn points for correct predictions and rise to the top.</p>
+                </div>
+
+                <div className="bg-white/60 backdrop-blur-sm rounded-xl p-5 border border-white/50">
+                  <div className="w-10 h-10 rounded-lg bg-[#04065c]/10 flex items-center justify-center mb-3">
+                    <svg className="w-5 h-5 text-[#04065c]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+                    </svg>
+                  </div>
+                  <h3 className="font-bold text-gray-900 mb-1">Win Bragging Rights</h3>
+                  <p className="text-gray-500 text-sm">Become the champion of your league and prove your skills.</p>
                 </div>
               </div>
+
+              {/* Help Text */}
+              <p className="text-center text-gray-400 text-sm mt-8">
+                Don't have a code? Ask a friend who's already in a league, or{" "}
+                <button 
+                  onClick={() => setActiveNav("create")}
+                  className="text-[#3d195b] font-medium hover:underline"
+                >
+                  create your own league
+                </button>
+              </p>
             </div>
           )}
 
@@ -1617,163 +1680,254 @@ export default function Dashboard({ demoMode = false, onExitDemo }: DashboardPro
           )}
 
           {activeNav === "account" && (
-            <div>
-              <h2 className="text-3xl font-extrabold text-gray-900 mb-8 tracking-tight">Account Settings</h2>
-
-              {/* Profile Section */}
-              <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-8 border border-white/50 shadow-xl shadow-gray-200/50 transition-all duration-300 hover:shadow-2xl mb-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-6">Profile</h3>
-
-                {/* Favorite Team */}
-                <div className="mb-6">
-                  <label className="block text-gray-500 text-sm mb-2">Favorite Team</label>
-                  {editingTeam ? (
-                    <div className="bg-gray-50 rounded-lg p-4">
-                      <p className="text-sm text-gray-600 mb-3">Select your favorite team:</p>
-                      {teamsLoading ? (
-                        <div className="flex items-center justify-center py-8">
-                          <p className="text-gray-500">Loading teams...</p>
-                        </div>
-                      ) : (
-                        <div className="grid grid-cols-5 gap-3 max-h-72 overflow-y-auto p-1">
-                          {availableTeams.map((team) => (
-                            <button
-                              key={team.id}
-                              onClick={() => handleUpdateTeam(team.id)}
-                              className={`p-3 rounded-xl border-2 transition-all flex flex-col items-center gap-2 hover:shadow-md ${
-                                favoriteTeam?.id === team.id
-                                  ? "border-[#3d195b] bg-white shadow-md"
-                                  : "border-transparent bg-white hover:border-gray-200"
-                              }`}
-                            >
-                              {team.logo ? (
-                                <img src={team.logo} alt={team.name} className="w-12 h-12 object-contain" />
-                              ) : (
-                                <div className="w-12 h-12 rounded-full bg-gray-200" />
-                              )}
-                              <span className="text-xs text-gray-700 text-center line-clamp-2 leading-tight">{team.name}</span>
-                            </button>
-                          ))}
-                        </div>
-                      )}
-                      <button
-                        onClick={() => setEditingTeam(false)}
-                        className="mt-4 px-4 py-2 border border-gray-300 text-gray-700 text-sm font-medium rounded-lg hover:bg-white transition-colors"
-                      >
-                        Cancel
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-4">
-                      {favoriteTeam?.logo ? (
-                        <img src={favoriteTeam.logo} alt={favoriteTeam.name} className="w-14 h-14 object-contain" />
-                      ) : (
-                        <div className="w-14 h-14 rounded-full bg-gray-100 flex items-center justify-center text-gray-400">
-                          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                          </svg>
-                        </div>
-                      )}
-                      <div>
-                        <p className="text-gray-900 font-medium text-lg">{favoriteTeam?.name || "No team selected"}</p>
-                        <p className="text-gray-500 text-sm">Your favorite team badge</p>
+            <div className="max-w-4xl">
+              {/* Profile Header Card */}
+              <div className="bg-gradient-to-r from-[#3d195b] to-[#6b2d8a] rounded-2xl p-8 mb-6 shadow-xl">
+                <div className="flex items-center gap-6">
+                  {/* Avatar */}
+                  <div className="relative">
+                    {favoriteTeam?.logo ? (
+                      <div className="w-24 h-24 rounded-2xl bg-white/20 backdrop-blur-sm p-3 shadow-lg">
+                        <img src={favoriteTeam.logo} alt={favoriteTeam.name} className="w-full h-full object-contain" />
                       </div>
-                      <button
-                        onClick={() => {
-                          fetchTeams();
-                          setEditingTeam(true);
-                        }}
-                        className="px-4 py-2 bg-[#3d195b] text-white text-sm font-medium rounded-lg hover:bg-[#2d1245] transition-colors flex items-center gap-2"
-                      >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                        </svg>
-                        Change
-                      </button>
+                    ) : (
+                      <div className="w-24 h-24 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center shadow-lg">
+                        <span className="text-4xl font-bold text-white">
+                          {(user?.firstName?.[0] || user?.username?.[0] || "U").toUpperCase()}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                  
+                  {/* User Info */}
+                  <div className="flex-1">
+                    <h2 className="text-2xl font-bold text-white mb-1">
+                      {user?.firstName && user?.lastName 
+                        ? `${user.firstName} ${user.lastName}` 
+                        : user?.username || "User"}
+                    </h2>
+                    <p className="text-white/70 mb-3">@{user?.username || "username"}</p>
+                    <div className="flex items-center gap-2">
+                      <span className="px-3 py-1 rounded-full bg-white/20 text-white text-sm font-medium">
+                        {favoriteTeam?.name || "No team"}
+                      </span>
                     </div>
-                  )}
-                </div>
+                  </div>
 
-                {/* Username */}
-                <div className="mb-6">
-                  <label className="block text-gray-500 text-sm mb-2">Username</label>
-                  {editingUsername ? (
-                    <div className="bg-gray-50 rounded-lg p-4">
-                      <div className="flex gap-3">
+                  {/* Quick Stats */}
+                  <div className="flex gap-6">
+                    <div className="text-center">
+                      <p className="text-3xl font-bold text-white">{demoMode ? "1" : leagues.length}</p>
+                      <p className="text-white/70 text-sm">Leagues</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-3xl font-bold text-[#00ff87]">{demoMode ? "125" : "0"}</p>
+                      <p className="text-white/70 text-sm">Points</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-3xl font-bold text-white">{demoMode ? "42" : "0"}</p>
+                      <p className="text-white/70 text-sm">Predictions</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Settings Grid */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Profile Settings */}
+                <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 border border-white/50 shadow-xl shadow-gray-200/50">
+                  <div className="flex items-center gap-3 mb-6">
+                    <div className="w-10 h-10 rounded-xl bg-[#3d195b]/10 flex items-center justify-center">
+                      <svg className="w-5 h-5 text-[#3d195b]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                      </svg>
+                    </div>
+                    <h3 className="text-lg font-bold text-gray-900">Profile Settings</h3>
+                  </div>
+
+                  {/* Username */}
+                  <div className="mb-5">
+                    <div className="flex items-center justify-between mb-2">
+                      <label className="text-sm font-medium text-gray-700">Username</label>
+                      {!editingUsername && (
+                        <button
+                          onClick={() => {
+                            setNewUsername(user?.username || "");
+                            setEditingUsername(true);
+                          }}
+                          className="text-sm text-[#3d195b] font-medium hover:underline"
+                        >
+                          Edit
+                        </button>
+                      )}
+                    </div>
+                    {editingUsername ? (
+                      <div className="space-y-3">
                         <input
                           type="text"
                           value={newUsername}
                           onChange={(e) => setNewUsername(e.target.value)}
                           placeholder="Enter new username"
-                          className="flex-1 px-4 py-2.5 rounded-lg border border-gray-300 focus:border-[#3d195b] focus:ring-2 focus:ring-[#3d195b]/20 outline-none transition-all"
+                          className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-[#3d195b] focus:ring-4 focus:ring-[#3d195b]/10 outline-none transition-all"
                         />
-                        <button
-                          onClick={handleUpdateUsername}
-                          disabled={usernameLoading}
-                          className="px-5 py-2.5 bg-[#3d195b] text-white font-medium rounded-lg hover:bg-[#2d1245] disabled:opacity-50 transition-colors"
-                        >
-                          {usernameLoading ? "Saving..." : "Save"}
-                        </button>
+                        {usernameError && (
+                          <p className="text-red-500 text-sm">{usernameError}</p>
+                        )}
+                        <p className="text-gray-400 text-xs">3-20 characters, letters, numbers, and underscores only</p>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={handleUpdateUsername}
+                            disabled={usernameLoading}
+                            className="flex-1 py-2.5 bg-[#3d195b] text-white font-medium rounded-lg hover:bg-[#2d1245] disabled:opacity-50 transition-colors"
+                          >
+                            {usernameLoading ? "Saving..." : "Save"}
+                          </button>
+                          <button
+                            onClick={() => {
+                              setEditingUsername(false);
+                              setUsernameError("");
+                              setNewUsername("");
+                            }}
+                            className="px-4 py-2.5 border border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-50 transition-colors"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <p className="text-gray-900 font-medium py-2">@{user?.username || "Not set"}</p>
+                    )}
+                  </div>
+
+                  {/* Favorite Team */}
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <label className="text-sm font-medium text-gray-700">Favorite Team</label>
+                      {!editingTeam && (
                         <button
                           onClick={() => {
-                            setEditingUsername(false);
-                            setUsernameError("");
-                            setNewUsername("");
+                            fetchTeams();
+                            setEditingTeam(true);
                           }}
-                          className="px-5 py-2.5 border border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-100 transition-colors"
+                          className="text-sm text-[#3d195b] font-medium hover:underline"
+                        >
+                          Change
+                        </button>
+                      )}
+                    </div>
+                    {editingTeam ? (
+                      <div className="space-y-3">
+                        <p className="text-gray-500 text-sm">Select your favorite team:</p>
+                        {teamsLoading ? (
+                          <div className="flex items-center justify-center py-8">
+                            <p className="text-gray-500">Loading teams...</p>
+                          </div>
+                        ) : (
+                          <div className="grid grid-cols-4 gap-2 max-h-64 overflow-y-auto p-1">
+                            {availableTeams.map((team) => (
+                              <button
+                                key={team.id}
+                                onClick={() => handleUpdateTeam(team.id)}
+                                className={`p-2 rounded-lg border-2 transition-all flex flex-col items-center gap-1 hover:shadow-md ${
+                                  favoriteTeam?.id === team.id
+                                    ? "border-[#3d195b] bg-white shadow-md"
+                                    : "border-transparent bg-gray-50 hover:border-gray-200"
+                                }`}
+                              >
+                                {team.logo ? (
+                                  <img src={team.logo} alt={team.name} className="w-10 h-10 object-contain" />
+                                ) : (
+                                  <div className="w-10 h-10 rounded-full bg-gray-200" />
+                                )}
+                                <span className="text-xs text-gray-700 text-center line-clamp-1">{team.name}</span>
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                        <button
+                          onClick={() => setEditingTeam(false)}
+                          className="w-full py-2 border border-gray-300 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-50 transition-colors"
                         >
                           Cancel
                         </button>
                       </div>
-                      {usernameError && (
-                        <p className="mt-3 text-red-500 text-sm">{usernameError}</p>
-                      )}
-                      <p className="mt-3 text-gray-500 text-sm">3-20 characters, letters, numbers, and underscores only</p>
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-4">
-                      <div>
-                        <p className="text-gray-900 font-medium text-lg">{user?.username || "Not set"}</p>
-                        <p className="text-gray-500 text-sm">Your display name</p>
+                    ) : (
+                      <div className="flex items-center gap-3 py-2">
+                        {favoriteTeam?.logo ? (
+                          <img src={favoriteTeam.logo} alt={favoriteTeam.name} className="w-10 h-10 object-contain" />
+                        ) : (
+                          <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-400">
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                            </svg>
+                          </div>
+                        )}
+                        <span className="text-gray-900 font-medium">{favoriteTeam?.name || "No team selected"}</span>
                       </div>
-                      <button
-                        onClick={() => {
-                          setNewUsername(user?.username || "");
-                          setEditingUsername(true);
-                        }}
-                        className="px-4 py-2 bg-[#3d195b] text-white text-sm font-medium rounded-lg hover:bg-[#2d1245] transition-colors flex items-center gap-2"
-                      >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                        </svg>
-                        Edit
-                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {/* Account Information */}
+                <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 border border-white/50 shadow-xl shadow-gray-200/50">
+                  <div className="flex items-center gap-3 mb-6">
+                    <div className="w-10 h-10 rounded-xl bg-[#00ff87]/20 flex items-center justify-center">
+                      <svg className="w-5 h-5 text-[#00915c]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                      </svg>
                     </div>
-                  )}
+                    <h3 className="text-lg font-bold text-gray-900">Account Information</h3>
+                  </div>
+
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between py-3 border-b border-gray-100">
+                      <div>
+                        <p className="text-sm text-gray-500">First Name</p>
+                        <p className="text-gray-900 font-medium">{user?.firstName || "Not set"}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between py-3 border-b border-gray-100">
+                      <div>
+                        <p className="text-sm text-gray-500">Last Name</p>
+                        <p className="text-gray-900 font-medium">{user?.lastName || "Not set"}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between py-3 border-b border-gray-100">
+                      <div>
+                        <p className="text-sm text-gray-500">Email</p>
+                        <p className="text-gray-900 font-medium">{user?.email}</p>
+                      </div>
+                      <span className="px-2 py-1 rounded-full bg-green-100 text-green-700 text-xs font-medium">Verified</span>
+                    </div>
+                    <div className="flex items-center justify-between py-3">
+                      <div>
+                        <p className="text-sm text-gray-500">Member Since</p>
+                        <p className="text-gray-900 font-medium">{demoMode ? "January 2026" : "Recently"}</p>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
 
-              {/* Account Info Section */}
-              <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-8 border border-white/50 shadow-xl shadow-gray-200/50 transition-all duration-300 hover:shadow-2xl">
-                <h3 className="text-lg font-semibold text-gray-900 mb-6">Account Information</h3>
-                <div className="grid grid-cols-2 gap-6">
-                  <div>
-                    <label className="block text-gray-500 text-sm mb-1">First Name</label>
-                    <p className="text-gray-900">{user?.firstName || "Not set"}</p>
+              {/* Danger Zone */}
+              <div className="mt-6 bg-white/80 backdrop-blur-sm rounded-2xl p-6 border border-red-100 shadow-xl shadow-gray-200/50">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-10 h-10 rounded-xl bg-red-50 flex items-center justify-center">
+                    <svg className="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
                   </div>
                   <div>
-                    <label className="block text-gray-500 text-sm mb-1">Last Name</label>
-                    <p className="text-gray-900">{user?.lastName || "Not set"}</p>
-                  </div>
-                  <div>
-                    <label className="block text-gray-500 text-sm mb-1">Email</label>
-                    <p className="text-gray-900">{user?.email}</p>
-                  </div>
-                  <div>
-                    <label className="block text-gray-500 text-sm mb-1">User ID</label>
-                    <p className="text-gray-900 font-mono text-sm">{user?.id}</p>
+                    <h3 className="text-lg font-bold text-gray-900">Danger Zone</h3>
+                    <p className="text-gray-500 text-sm">Irreversible actions</p>
                   </div>
                 </div>
+                <button 
+                  className="px-4 py-2.5 border-2 border-red-200 text-red-600 font-medium rounded-xl hover:bg-red-50 transition-colors"
+                  onClick={() => {/* TODO: Delete account functionality */}}
+                >
+                  Delete Account
+                </button>
               </div>
             </div>
           )}
