@@ -1011,29 +1011,23 @@ export default function Dashboard({ demoMode = false, onExitDemo }: DashboardPro
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                             </svg>
                           </div>
-                          {/* User Standing */}
+                          {/* User Standing - horizontal layout */}
                           {userStandings[league.id] && (
-                            <div className="flex items-center gap-4 mb-4 p-3 bg-gradient-to-r from-gray-50 to-gray-100/50 rounded-xl">
-                              <div className="flex items-center gap-2">
-                                <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm shadow-md ${
+                            <div className="flex items-center justify-between mb-4 py-2 px-3 bg-gradient-to-r from-gray-50 to-transparent rounded-lg">
+                              <div className="flex items-center gap-3">
+                                <div className={`w-9 h-9 rounded-full flex items-center justify-center font-bold text-sm shadow-md ${
                                   userStandings[league.id].rank === 1 ? "bg-gradient-to-br from-yellow-300 to-yellow-500 text-yellow-900" :
                                   userStandings[league.id].rank === 2 ? "bg-gradient-to-br from-gray-200 to-gray-400 text-gray-700" :
                                   userStandings[league.id].rank === 3 ? "bg-gradient-to-br from-orange-300 to-orange-500 text-orange-900" :
                                   "bg-gradient-to-br from-[#00ff87]/80 to-[#60efff]/80 text-gray-900"
                                 }`}>
-                                  #{userStandings[league.id].rank}
+                                  {userStandings[league.id].rank}
                                 </div>
-                                <div>
-                                  <p className="text-xs text-gray-500">Your Rank</p>
-                                  <p className="font-bold text-gray-900">
-                                    {userStandings[league.id].rank} of {userStandings[league.id].totalMembers}
-                                  </p>
-                                </div>
+                                <span className="text-gray-600 text-sm">Your Position</span>
                               </div>
-                              <div className="h-8 w-px bg-gray-200" />
-                              <div>
-                                <p className="text-xs text-gray-500">Points</p>
-                                <p className="font-bold text-gray-900 text-lg">{userStandings[league.id].totalPoints}</p>
+                              <div className="flex items-center gap-1">
+                                <span className="font-bold text-gray-900 text-lg">{userStandings[league.id].totalPoints}</span>
+                                <span className="text-gray-500 text-sm">pts</span>
                               </div>
                             </div>
                           )}
