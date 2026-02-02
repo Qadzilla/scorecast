@@ -51,3 +51,15 @@ Auto-configured:
 - `DATABASE_URL`: PostgreSQL connection string
 - `CORS_ORIGIN`: Allowed origins for CORS
 - `VITE_API_URL`: Empty (uses relative URLs via proxy)
+- `VITE_DEV_BYPASS`: Set to "true" to bypass login and use demo mode
+
+## Recent Changes (Feb 2026)
+
+### Dashboard UI/UX Refresh
+- **Dark gradient sidebar**: Matches header theme with purple-to-dark gradient
+- **Glass-morphism cards**: Cards use backdrop blur, semi-transparent backgrounds, and enhanced shadows
+- **Improved typography**: Larger, bolder headings with better visual hierarchy
+- **Enhanced leaderboard**: Gradient rank badges (gold/silver/bronze) and user highlighting
+- **Smooth transitions**: Navigation and hover states have 200ms transitions
+- **Better buttons**: Gradient backgrounds with shadow and micro-interaction effects
+- **Updated content background**: Subtle gradient from slate to gray tones
