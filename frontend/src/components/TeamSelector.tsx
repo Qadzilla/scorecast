@@ -77,11 +77,11 @@ export default function TeamSelector({ onComplete }: { onComplete: () => void })
       <div className="w-full max-w-2xl px-6">
         {/* Header */}
         <div className="text-center mb-8">
-          <h1 className="text-5xl font-bold text-white">ScoreCast</h1>
+          <h1 className="text-5xl font-extrabold text-white">ScoreCast</h1>
         </div>
 
         {/* Card */}
-        <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6">
+        <div className="bg-white/10 backdrop-blur-sm rounded-2xl border border-white/20 p-6 shadow-xl">
           {loading ? (
             <div className="py-12 text-center">
               <p className="text-white/70">Loading teams...</p>
