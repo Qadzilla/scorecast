@@ -143,6 +143,9 @@ export default function Dashboard({ demoMode = false, onExitDemo }: DashboardPro
   const [loadingMembers, setLoadingMembers] = useState(false);
   const [kickingMember, setKickingMember] = useState<string | null>(null);
 
+  // Rules modal state
+  const [showRulesModal, setShowRulesModal] = useState(false);
+
   // Create league form state
   const [createName, setCreateName] = useState("");
   const [createType, setCreateType] = useState<"premier_league" | "champions_league">("premier_league");
@@ -1058,6 +1061,15 @@ export default function Dashboard({ demoMode = false, onExitDemo }: DashboardPro
                 }`}>
                   {selectedLeague.type === "premier_league" ? "Premier League" : "Champions League"}
                 </span>
+                <button
+                  onClick={() => setShowRulesModal(true)}
+                  className="ml-auto flex items-center gap-1.5 px-3 py-1.5 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  Rules
+                </button>
               </div>
 
               {loadingFixtures ? (
@@ -1712,6 +1724,89 @@ export default function Dashboard({ demoMode = false, onExitDemo }: DashboardPro
           </aside>
         )}
       </div>
+
+      {/* Rules Modal */}
+      {showRulesModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full shadow-2xl overflow-hidden">
+            <div
+              className="px-6 py-4 text-white"
+              style={{
+                background: selectedLeague?.type === "premier_league"
+                  ? "linear-gradient(135deg, #3d195b 0%, #6b2d8a 100%)"
+                  : "linear-gradient(135deg, #04065c 0%, #1a237e 100%)",
+              }}
+            >
+              <div className="flex items-center justify-between">
+                <h3 className="text-xl font-bold">How to Play</h3>
+                <button
+                  onClick={() => setShowRulesModal(false)}
+                  className="p-1 hover:bg-white/20 rounded-lg transition-colors"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            <div className="p-6">
+              <div className="space-y-4">
+                <div>
+                  <h4 className="font-semibold text-gray-900 mb-2">Predict Match Scores</h4>
+                  <p className="text-sm text-gray-600">
+                    Before each gameweek deadline, predict the final score for every match. You can update your predictions until the deadline passes.
+                  </p>
+                </div>
+
+                <div>
+                  <h4 className="font-semibold text-gray-900 mb-2">Scoring System</h4>
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-3">
+                      <span className="w-8 h-8 rounded-full bg-green-100 text-green-700 flex items-center justify-center font-bold text-sm">+3</span>
+                      <div>
+                        <p className="font-medium text-gray-900">Exact Score</p>
+                        <p className="text-xs text-gray-500">You predicted the exact final score</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <span className="w-8 h-8 rounded-full bg-yellow-100 text-yellow-700 flex items-center justify-center font-bold text-sm">+1</span>
+                      <div>
+                        <p className="font-medium text-gray-900">Correct Result</p>
+                        <p className="text-xs text-gray-500">Right outcome (home win, away win, or draw)</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <span className="w-8 h-8 rounded-full bg-gray-100 text-gray-500 flex items-center justify-center font-bold text-sm">+0</span>
+                      <div>
+                        <p className="font-medium text-gray-900">Incorrect</p>
+                        <p className="text-xs text-gray-500">Wrong result prediction</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <h4 className="font-semibold text-gray-900 mb-2">Compete & Climb</h4>
+                  <p className="text-sm text-gray-600">
+                    Your points accumulate across the season. Compete with other league members on the leaderboard to become the prediction champion!
+                  </p>
+                </div>
+              </div>
+
+              <button
+                onClick={() => setShowRulesModal(false)}
+                className="w-full mt-6 py-3 rounded-lg font-semibold text-white transition-colors"
+                style={{
+                  backgroundColor: selectedLeague?.type === "premier_league" ? "#3d195b" : "#04065c",
+                }}
+              >
+                Got it!
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );
