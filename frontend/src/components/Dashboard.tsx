@@ -1291,6 +1291,78 @@ export default function Dashboard({ demoMode = false, onExitDemo }: DashboardPro
                 </button>
               </div>
 
+              {/* Deadline Countdown Card */}
+              {selectedLeague.type === "premier_league" && plDeadline && (
+                <div className="bg-gradient-to-br from-[#3d195b] to-[#6b2d8a] rounded-2xl p-6 text-white shadow-xl mb-6">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center">
+                        <span className="text-lg">⚽</span>
+                      </div>
+                      <div>
+                        <p className="text-white/70 text-sm">{plIsNextDeadline ? "Next Deadline" : "Deadline"}</p>
+                        <p className="font-bold">
+                          {plGameweekNum ? `Gameweek ${plGameweekNum}` : "No upcoming gameweek"}
+                        </p>
+                      </div>
+                    </div>
+                    {plCountdown.days + plCountdown.hours + plCountdown.minutes > 0 ? (
+                      <div className="flex gap-3">
+                        <div className="bg-white/20 rounded-lg px-3 py-2 text-center min-w-[60px]">
+                          <p className="text-2xl font-bold">{plCountdown.days}</p>
+                          <p className="text-xs text-white/70">days</p>
+                        </div>
+                        <div className="bg-white/20 rounded-lg px-3 py-2 text-center min-w-[60px]">
+                          <p className="text-2xl font-bold">{plCountdown.hours}</p>
+                          <p className="text-xs text-white/70">hrs</p>
+                        </div>
+                        <div className="bg-white/20 rounded-lg px-3 py-2 text-center min-w-[60px]">
+                          <p className="text-2xl font-bold">{plCountdown.minutes}</p>
+                          <p className="text-xs text-white/70">min</p>
+                        </div>
+                      </div>
+                    ) : (
+                      <p className="text-white/70">No upcoming deadline</p>
+                    )}
+                  </div>
+                </div>
+              )}
+              {selectedLeague.type === "champions_league" && uclDeadline && (
+                <div className="bg-gradient-to-br from-[#04065c] to-[#1a237e] rounded-2xl p-6 text-white shadow-xl mb-6">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center">
+                        <span className="text-lg">🏆</span>
+                      </div>
+                      <div>
+                        <p className="text-white/70 text-sm">{uclIsNextDeadline ? "Next Deadline" : "Deadline"}</p>
+                        <p className="font-bold">
+                          {uclGameweekNum ? `Matchday ${uclGameweekNum}` : "No upcoming matchday"}
+                        </p>
+                      </div>
+                    </div>
+                    {uclCountdown.days + uclCountdown.hours + uclCountdown.minutes > 0 ? (
+                      <div className="flex gap-3">
+                        <div className="bg-white/20 rounded-lg px-3 py-2 text-center min-w-[60px]">
+                          <p className="text-2xl font-bold">{uclCountdown.days}</p>
+                          <p className="text-xs text-white/70">days</p>
+                        </div>
+                        <div className="bg-white/20 rounded-lg px-3 py-2 text-center min-w-[60px]">
+                          <p className="text-2xl font-bold">{uclCountdown.hours}</p>
+                          <p className="text-xs text-white/70">hrs</p>
+                        </div>
+                        <div className="bg-white/20 rounded-lg px-3 py-2 text-center min-w-[60px]">
+                          <p className="text-2xl font-bold">{uclCountdown.minutes}</p>
+                          <p className="text-xs text-white/70">min</p>
+                        </div>
+                      </div>
+                    ) : (
+                      <p className="text-white/70">No upcoming deadline</p>
+                    )}
+                  </div>
+                </div>
+              )}
+
               {loadingFixtures ? (
                 <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-8 text-center border border-white/50 shadow-xl shadow-gray-200/50 transition-all duration-300">
                   <p className="text-gray-500">Loading fixtures...</p>
@@ -1934,100 +2006,6 @@ export default function Dashboard({ demoMode = false, onExitDemo }: DashboardPro
             </div>
           )}
         </main>
-
-        {/* Right Sidebar - Countdown Timers (only for league sections, hidden on mobile) */}
-        {activeNav !== "account" && activeNav !== "join" && (
-          <aside className="hidden lg:block w-72 min-h-[calc(100vh-8rem)] bg-white border-l border-gray-200 p-6">
-            <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">
-              {activeNav === "league-detail"
-                ? (plIsNextDeadline || uclIsNextDeadline ? "Next Deadline" : "Deadline")
-                : "Deadlines"}
-            </h3>
-
-            {/* Premier League Countdown - show if not in league-detail OR if league is PL */}
-            {(activeNav !== "league-detail" || selectedLeague?.type === "premier_league") && plDeadline && (
-              <div className={activeNav !== "league-detail" ? "mb-6" : ""}>
-                {activeNav !== "league-detail" && (
-                  <div className="flex items-center gap-2 mb-3">
-                    <span className="w-3 h-3 rounded-full bg-[#3d195b]" />
-                    <span className="font-medium text-gray-900">Premier League</span>
-                    {plGameweekNum && <span className="text-xs text-gray-500">{plIsNextDeadline ? "Next: " : ""}GW{plGameweekNum}</span>}
-                  </div>
-                )}
-                {activeNav === "league-detail" && plIsNextDeadline && (
-                  <p className="text-sm text-gray-600 mb-3">Gameweek {plGameweekNum}</p>
-                )}
-                <div className="bg-[#3d195b] rounded-lg p-4">
-                  <div className="grid grid-cols-4 gap-2 text-center">
-                    <div>
-                      <p className="text-2xl font-bold text-white">{String(plCountdown.days).padStart(2, '0')}</p>
-                      <p className="text-xs text-white/70">days</p>
-                    </div>
-                    <div>
-                      <p className="text-2xl font-bold text-white">{String(plCountdown.hours).padStart(2, '0')}</p>
-                      <p className="text-xs text-white/70">hrs</p>
-                    </div>
-                    <div>
-                      <p className="text-2xl font-bold text-white">{String(plCountdown.minutes).padStart(2, '0')}</p>
-                      <p className="text-xs text-white/70">min</p>
-                    </div>
-                    <div>
-                      <p className="text-2xl font-bold text-white">{String(plCountdown.seconds).padStart(2, '0')}</p>
-                      <p className="text-xs text-white/70">sec</p>
-                    </div>
-                  </div>
-                  <p className="text-xs text-white/70 mt-3 text-center">
-                    {plDeadline.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })} at {plDeadline.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
-                  </p>
-                </div>
-              </div>
-            )}
-
-            {/* Champions League Countdown - show if not in league-detail OR if league is UCL */}
-            {(activeNav !== "league-detail" || selectedLeague?.type === "champions_league") && uclDeadline && (
-              <div>
-                {activeNav !== "league-detail" && (
-                  <div className="flex items-center gap-2 mb-3">
-                    <span className="w-3 h-3 rounded-full bg-[#04065c]" />
-                    <span className="font-medium text-gray-900">Champions League</span>
-                    {uclGameweekNum && <span className="text-xs text-gray-500">{uclIsNextDeadline ? "Next: " : ""}MD{uclGameweekNum}</span>}
-                  </div>
-                )}
-                {activeNav === "league-detail" && uclIsNextDeadline && (
-                  <p className="text-sm text-gray-600 mb-3">Matchday {uclGameweekNum}</p>
-                )}
-                <div className="bg-[#04065c] rounded-lg p-4">
-                  <div className="grid grid-cols-4 gap-2 text-center">
-                    <div>
-                      <p className="text-2xl font-bold text-white">{String(uclCountdown.days).padStart(2, '0')}</p>
-                      <p className="text-xs text-white/70">days</p>
-                    </div>
-                    <div>
-                      <p className="text-2xl font-bold text-white">{String(uclCountdown.hours).padStart(2, '0')}</p>
-                      <p className="text-xs text-white/70">hrs</p>
-                    </div>
-                    <div>
-                      <p className="text-2xl font-bold text-white">{String(uclCountdown.minutes).padStart(2, '0')}</p>
-                      <p className="text-xs text-white/70">min</p>
-                    </div>
-                    <div>
-                      <p className="text-2xl font-bold text-white">{String(uclCountdown.seconds).padStart(2, '0')}</p>
-                      <p className="text-xs text-white/70">sec</p>
-                    </div>
-                  </div>
-                  <p className="text-xs text-white/70 mt-3 text-center">
-                    {uclDeadline.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })} at {uclDeadline.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
-                  </p>
-                </div>
-              </div>
-            )}
-
-            {/* Show message if no upcoming deadlines */}
-            {!plDeadline && !uclDeadline && (
-              <p className="text-gray-500 text-sm">No upcoming deadlines</p>
-            )}
-          </aside>
-        )}
       </div>
 
       {/* Rules Modal */}
