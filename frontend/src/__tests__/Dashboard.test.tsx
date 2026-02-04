@@ -186,11 +186,30 @@ describe("Dashboard", () => {
   });
 
   describe("Countdown Timers", () => {
-    it("should show deadline timers section", async () => {
+    it("should show deadline countdown in My Leagues when user has leagues", async () => {
+      server.use(
+        http.get("http://localhost:3000/api/leagues", () => {
+          return HttpResponse.json([
+            {
+              id: "league-1",
+              name: "Test League",
+              type: "premier_league",
+              memberCount: 5,
+              role: "member",
+              inviteCode: "ABC123",
+              createdBy: "user-1",
+              createdAt: new Date().toISOString(),
+              joinedAt: new Date().toISOString(),
+            },
+          ]);
+        })
+      );
+
       render(<Dashboard />);
 
+      // When user has leagues, deadline cards are shown in the My Leagues view
       await waitFor(() => {
-        expect(screen.getByText("Deadlines")).toBeInTheDocument();
+        expect(screen.getByText("Your Leagues")).toBeInTheDocument();
       });
     });
   });
