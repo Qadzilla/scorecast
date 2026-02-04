@@ -140,8 +140,7 @@ export default function Dashboard({ demoMode = false, onExitDemo }: DashboardPro
   const [champion, setChampion] = useState<LeaderboardEntry | null>(null);
 
   // User standings per league (for My Leagues dashboard)
-  // Currently only populated in demo mode - real API integration TODO
-  const [userStandings] = useState<Record<string, { rank: number; totalPoints: number; totalMembers: number }>>(
+  const [userStandings, setUserStandings] = useState<Record<string, { rank: number; totalPoints: number; totalMembers: number }>>(
     demoMode ? DEMO_USER_STANDINGS : {}
   );
 
@@ -268,6 +267,31 @@ export default function Dashboard({ demoMode = false, onExitDemo }: DashboardPro
     return () => clearInterval(timer);
   }, [plDeadline, uclDeadline]);
 
+  // Fetch user standings for all leagues
+  const fetchUserStandings = async (leaguesList: League[], userId: string) => {
+    const standings: Record<string, { rank: number; totalPoints: number; totalMembers: number }> = {};
+
+    await Promise.all(
+      leaguesList.map(async (league) => {
+        try {
+          const data = await leaderboardApi.getLeaderboard(league.id);
+          const userEntry = data.entries.find(entry => entry.userId === userId);
+          if (userEntry) {
+            standings[league.id] = {
+              rank: userEntry.rank,
+              totalPoints: userEntry.totalPoints,
+              totalMembers: data.entries.length,
+            };
+          }
+        } catch (err) {
+          console.error(`Failed to fetch standings for league ${league.id}:`, err);
+        }
+      })
+    );
+
+    setUserStandings(standings);
+  };
+
   // Fetch user's leagues
   const fetchLeagues = async () => {
     if (demoMode) {
@@ -285,6 +309,10 @@ export default function Dashboard({ demoMode = false, onExitDemo }: DashboardPro
       if (res.ok) {
         const data = await res.json();
         setLeagues(data);
+        // Fetch user standings for all leagues
+        if (user?.id && data.length > 0) {
+          fetchUserStandings(data, user.id);
+        }
       }
     } catch (err) {
       console.error("Failed to fetch leagues:", err);
@@ -296,6 +324,13 @@ export default function Dashboard({ demoMode = false, onExitDemo }: DashboardPro
   useEffect(() => {
     fetchLeagues();
   }, [demoMode]);
+
+  // Refetch user standings when user becomes available or leagues change
+  useEffect(() => {
+    if (!demoMode && user?.id && leagues.length > 0) {
+      fetchUserStandings(leagues, user.id);
+    }
+  }, [user?.id, leagues.length, demoMode]);
 
   // Fetch league data when selecting a league
   const fetchLeagueData = useCallback(async (league: League) => {
