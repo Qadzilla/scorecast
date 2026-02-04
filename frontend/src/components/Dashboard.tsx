@@ -858,22 +858,6 @@ export default function Dashboard({ demoMode = false, onExitDemo }: DashboardPro
         <main className="flex-1 p-10">
           {activeNav === "leagues" && (
             <div className="space-y-8">
-              {/* Welcome Header */}
-              <div className="flex items-center justify-between">
-                <div>
-                  <h2 className="text-3xl font-extrabold text-gray-900 tracking-tight">
-                    Welcome back, {user?.firstName || user?.username || "Predictor"}!
-                  </h2>
-                  <p className="text-gray-500 mt-1">Ready to make some winning predictions?</p>
-                </div>
-                <button
-                  onClick={() => setActiveNav("join")}
-                  className="px-5 py-2.5 bg-gradient-to-r from-[#00ff87] to-[#60efff] text-gray-900 font-bold rounded-xl hover:opacity-90 transition-all duration-200 shadow-lg hover:shadow-xl"
-                >
-                  + Join League
-                </button>
-              </div>
-
               {loadingLeagues ? (
                 <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-8 text-center border border-white/50 shadow-xl shadow-gray-200/50 transition-all duration-300">
                   <p className="text-gray-500">Loading your leagues...</p>
