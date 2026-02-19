@@ -310,6 +310,13 @@ export async function syncMatches(
     for (const group of groups) {
       const { stage, matchday, matches } = group;
 
+      // Skip gameweeks where ALL matches have TBD teams (knockout rounds not yet drawn)
+      const hasRealMatches = matches.some(m => m.homeTeam?.name && m.awayTeam?.name);
+      if (!hasRealMatches) {
+        console.log(`Skipping ${stage || 'unknown'} MD${matchday} - all teams TBD`);
+        continue;
+      }
+
       // Sort matches by date to find first and last
       matches.sort((a, b) => new Date(a.utcDate).getTime() - new Date(b.utcDate).getTime());
 
