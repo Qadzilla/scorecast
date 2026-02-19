@@ -163,19 +163,72 @@ export async function syncSeason(competition: "premier_league" | "champions_leag
 
   // Insert/update current season
   await query(
-    `INSERT INTO season (id, name, competition, "startDate", "endDate", "isCurrent", "createdAt", "updatedAt")
-    VALUES ($1, $2, $3, $4, $5, true, $6, $7)
+    `INSERT INTO season (id, name, competition, "startDate", "endDate", "isCurrent", "currentMatchday", "createdAt", "updatedAt")
+    VALUES ($1, $2, $3, $4, $5, true, $6, $7, $8)
     ON CONFLICT(id) DO UPDATE SET
       name = EXCLUDED.name,
       "startDate" = EXCLUDED."startDate",
       "endDate" = EXCLUDED."endDate",
       "isCurrent" = true,
+      "currentMatchday" = EXCLUDED."currentMatchday",
       "updatedAt" = EXCLUDED."updatedAt"`,
-    [seasonId, seasonName, competition, season.startDate, season.endDate, now, now]
+    [seasonId, seasonName, competition, season.startDate, season.endDate, season.currentMatchday, now, now]
   );
 
   console.log(`Synced season ${seasonName} for ${competition}`);
   return seasonId;
+}
+
+// UCL stage ordering and display names
+const UCL_STAGE_ORDER: Record<string, number> = {
+  LEAGUE_STAGE: 0,
+  LEAGUE_STAGE_MATCHDAY_1: 0,
+  LEAGUE_STAGE_MATCHDAY_2: 0,
+  LEAGUE_STAGE_MATCHDAY_3: 0,
+  LEAGUE_STAGE_MATCHDAY_4: 0,
+  LEAGUE_STAGE_MATCHDAY_5: 0,
+  LEAGUE_STAGE_MATCHDAY_6: 0,
+  LEAGUE_STAGE_MATCHDAY_7: 0,
+  LEAGUE_STAGE_MATCHDAY_8: 0,
+  PLAYOFFS: 1,
+  LAST_16: 2,
+  QUARTER_FINALS: 3,
+  SEMI_FINALS: 4,
+  FINAL: 5,
+};
+
+// How many matchdays precede each stage (for sequential numbering)
+const UCL_STAGE_NUMBER_OFFSET: Record<string, number> = {
+  LEAGUE_STAGE: 0,       // matchdays 1-8 → numbers 1-8
+  PLAYOFFS: 8,           // matchdays 1-2 → numbers 9-10
+  LAST_16: 10,           // matchdays 1-2 → numbers 11-12
+  QUARTER_FINALS: 12,    // matchdays 1-2 → numbers 13-14
+  SEMI_FINALS: 14,       // matchdays 1-2 → numbers 15-16
+  FINAL: 16,             // matchday 1 → number 17
+};
+
+const UCL_STAGE_DISPLAY: Record<string, string> = {
+  LEAGUE_STAGE: "League Phase",
+  PLAYOFFS: "Playoffs",
+  LAST_16: "Round of 16",
+  QUARTER_FINALS: "Quarter-Finals",
+  SEMI_FINALS: "Semi-Finals",
+  FINAL: "Final",
+};
+
+function normalizeUclStage(stage: string): string {
+  // football-data.org may return LEAGUE_STAGE_MATCHDAY_1..8 — normalize to LEAGUE_STAGE
+  if (stage.startsWith("LEAGUE_STAGE")) return "LEAGUE_STAGE";
+  return stage;
+}
+
+function getUclGameweekName(stage: string, matchday: number, totalMatchdaysInStage: number): string {
+  const display = UCL_STAGE_DISPLAY[stage] || stage;
+  if (stage === "FINAL") return display;
+  if (stage === "SEMI_FINALS" && totalMatchdaysInStage <= 1) return display;
+  if (stage === "LEAGUE_STAGE") return `${display} - MD ${matchday}`;
+  // Knockout rounds with legs
+  return `${display} - Leg ${matchday}`;
 }
 
 // Sync matches for a competition (creates gameweeks and matchdays as needed)
@@ -189,26 +242,74 @@ export async function syncMatches(
     `/competitions/${competitionCode}/matches`
   );
 
-  // Group matches by matchday (gameweek)
-  // Filter out matches without a matchday (TBD knockout rounds)
-  const matchesByGameweek = new Map<number, ApiMatch[]>();
+  const isUcl = competition === "champions_league";
+
+  // Group matches by (stage, matchday) for UCL, or just matchday for PL
+  interface GameweekGroup {
+    stage: string | null;
+    matchday: number;
+    matches: ApiMatch[];
+  }
+
+  const groupKey = (stage: string | null, matchday: number) =>
+    isUcl ? `${stage}::${matchday}` : `${matchday}`;
+
+  const groupMap = new Map<string, GameweekGroup>();
+
   for (const match of data.matches) {
-    const gw = match.matchday;
-    if (!gw) {
+    const matchday = match.matchday;
+    const rawStage = match.stage;
+
+    // Handle FINAL with no matchday
+    if (isUcl && !matchday && rawStage === "FINAL") {
+      const key = groupKey("FINAL", 1);
+      if (!groupMap.has(key)) {
+        groupMap.set(key, { stage: "FINAL", matchday: 1, matches: [] });
+      }
+      groupMap.get(key)!.matches.push(match);
+      continue;
+    }
+
+    if (!matchday) {
       console.log(`Skipping match ${match.id} - no matchday assigned`);
       continue;
     }
-    if (!matchesByGameweek.has(gw)) {
-      matchesByGameweek.set(gw, []);
+
+    const stage = isUcl ? normalizeUclStage(rawStage) : null;
+    const key = groupKey(stage, matchday);
+
+    if (!groupMap.has(key)) {
+      groupMap.set(key, { stage, matchday, matches: [] });
     }
-    matchesByGameweek.get(gw)!.push(match);
+    groupMap.get(key)!.matches.push(match);
+  }
+
+  // Sort groups: PL by matchday, UCL by stage order then matchday
+  const groups = [...groupMap.values()].sort((a, b) => {
+    if (isUcl) {
+      const stageOrderA = UCL_STAGE_ORDER[a.stage!] ?? 99;
+      const stageOrderB = UCL_STAGE_ORDER[b.stage!] ?? 99;
+      if (stageOrderA !== stageOrderB) return stageOrderA - stageOrderB;
+    }
+    return a.matchday - b.matchday;
+  });
+
+  // Count matchdays per stage (for UCL name generation)
+  const matchdaysPerStage = new Map<string, number>();
+  if (isUcl) {
+    for (const g of groups) {
+      const count = matchdaysPerStage.get(g.stage!) ?? 0;
+      matchdaysPerStage.set(g.stage!, count + 1);
+    }
   }
 
   let matchCount = 0;
   const timestamp = new Date().toISOString();
 
   await withTransaction(async (client) => {
-    for (const [gameweekNum, matches] of matchesByGameweek) {
+    for (const group of groups) {
+      const { stage, matchday, matches } = group;
+
       // Sort matches by date to find first and last
       matches.sort((a, b) => new Date(a.utcDate).getTime() - new Date(b.utcDate).getTime());
 
@@ -234,12 +335,31 @@ export async function syncMatches(
         status = "completed";
       }
 
+      // Compute gameweek number and ID
+      let gameweekNum: number;
+      let gameweekId: string;
+      let gameweekName: string;
+
+      if (isUcl) {
+        const offset = UCL_STAGE_NUMBER_OFFSET[stage!] ?? 0;
+        gameweekNum = offset + matchday;
+        gameweekId = `${seasonId}-${stage}-gw${matchday}`;
+        const totalInStage = matchdaysPerStage.get(stage!) ?? 1;
+        gameweekName = getUclGameweekName(stage!, matchday, totalInStage);
+      } else {
+        gameweekNum = matchday;
+        gameweekId = `${seasonId}-gw${matchday}`;
+        gameweekName = `Gameweek ${matchday}`;
+      }
+
       // Create gameweek
-      const gameweekId = `${seasonId}-gw${gameweekNum}`;
       await client.query(
-        `INSERT INTO gameweek (id, "seasonId", number, name, deadline, "startsAt", "endsAt", status, "createdAt", "updatedAt")
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+        `INSERT INTO gameweek (id, "seasonId", number, name, stage, deadline, "startsAt", "endsAt", status, "createdAt", "updatedAt")
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
         ON CONFLICT(id) DO UPDATE SET
+          number = EXCLUDED.number,
+          name = EXCLUDED.name,
+          stage = EXCLUDED.stage,
           deadline = EXCLUDED.deadline,
           "startsAt" = EXCLUDED."startsAt",
           "endsAt" = EXCLUDED."endsAt",
@@ -249,7 +369,8 @@ export async function syncMatches(
           gameweekId,
           seasonId,
           gameweekNum,
-          `Gameweek ${gameweekNum}`,
+          gameweekName,
+          stage,
           deadline.toISOString(),
           firstKickoff.toISOString(),
           endsAt.toISOString(),
@@ -353,6 +474,7 @@ export async function syncMatches(
             `INSERT INTO match (id, "matchdayId", "homeTeamId", "awayTeamId", "kickoffTime", "homeScore", "awayScore", status, venue, "homeRedCards", "awayRedCards", "createdAt", "updatedAt")
             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
             ON CONFLICT(id) DO UPDATE SET
+              "matchdayId" = EXCLUDED."matchdayId",
               "kickoffTime" = EXCLUDED."kickoffTime",
               "homeScore" = EXCLUDED."homeScore",
               "awayScore" = EXCLUDED."awayScore",

@@ -100,7 +100,7 @@ export default function Predictions({
       <div className="flex items-center justify-between mb-6">
         <div>
           <h3 className="text-lg font-semibold text-gray-900">
-            Gameweek {gameweek.number}
+            {gameweek.name || `Gameweek ${gameweek.number}`}
           </h3>
           <p className="text-sm text-gray-500">
             {matches.length} matches • {isDeadlinePassed ? "Predictions locked" : "Predictions open"}
