@@ -84,12 +84,12 @@ async function start() {
       console.log(`Server running on http://localhost:${PORT}`);
     });
 
-    // Run immediate sync on startup (don't wait)
-    console.log("[Startup] Running immediate sync...");
-    runResultsUpdate().then(() => {
-      console.log("[Startup] Initial results sync completed");
+    // Run full sync on startup (don't wait)
+    console.log("[Startup] Running initial full sync...");
+    runSync().then(() => {
+      console.log("[Startup] Initial full sync completed");
     }).catch(err => {
-      console.error("[Startup] Initial sync failed:", err);
+      console.error("[Startup] Initial full sync failed:", err);
     });
 
     // Schedule full sync every 6 hours (at minute 0)
