@@ -307,6 +307,44 @@ export async function syncMatches(
   const timestamp = new Date().toISOString();
 
   await withTransaction(async (client) => {
+    // For UCL: clean up old-format gameweeks (seasonId-gw1..gw8) that don't include stage in the ID.
+    // These were created by the previous sync logic and conflict with new stage-aware IDs.
+    if (isUcl) {
+      // Collect old-format gameweek IDs (pattern: seasonId-gwN, NOT seasonId-STAGE-gwN)
+      const oldGameweeks = await client.query(
+        `SELECT id FROM gameweek WHERE "seasonId" = $1 AND id LIKE $2`,
+        [seasonId, `${seasonId}-gw%`]
+      );
+      if (oldGameweeks.rows.length > 0) {
+        const oldIds = oldGameweeks.rows.map((r: { id: string }) => r.id);
+        console.log(`Cleaning up ${oldIds.length} old-format UCL gameweeks: ${oldIds.join(', ')}`);
+
+        // Delete in FK order: predictions → user_gameweek_scores → matches → matchdays → gameweeks
+        await client.query(
+          `DELETE FROM prediction WHERE "matchId" IN (
+            SELECT m.id FROM match m
+            JOIN matchday md ON m."matchdayId" = md.id
+            WHERE md."gameweekId" = ANY($1)
+          )`, [oldIds]
+        );
+        await client.query(
+          `DELETE FROM user_gameweek_score WHERE "gameweekId" = ANY($1)`, [oldIds]
+        );
+        await client.query(
+          `DELETE FROM match WHERE "matchdayId" IN (
+            SELECT md.id FROM matchday md WHERE md."gameweekId" = ANY($1)
+          )`, [oldIds]
+        );
+        await client.query(
+          `DELETE FROM matchday WHERE "gameweekId" = ANY($1)`, [oldIds]
+        );
+        await client.query(
+          `DELETE FROM gameweek WHERE id = ANY($1)`, [oldIds]
+        );
+        console.log(`Cleaned up old-format UCL gameweeks for season ${seasonId}`);
+      }
+    }
+
     for (const group of groups) {
       const { stage, matchday, matches } = group;
 
