@@ -28,7 +28,7 @@ router.get("/gameweek/current/:competition", async (req, res) => {
 
     const now = new Date().toISOString();
 
-    // Priority 1: Get active gameweek (matches in progress, deadline passed but not all finished)
+    // Priority 1: Upcoming gameweek with open deadline (what users should predict for)
     let displayGameweek = await queryOne<{
       id: string;
       seasonId: string;
@@ -49,13 +49,13 @@ router.get("/gameweek/current/:competition", async (req, res) => {
         g."endsAt",
         g.status
       FROM gameweek g
-      WHERE g."seasonId" = $1 AND g.status = 'active'
-      ORDER BY g.number DESC
+      WHERE g."seasonId" = $1 AND g.deadline > $2
+      ORDER BY g.number ASC
       LIMIT 1`,
-      [season.id]
+      [season.id, now]
     );
 
-    // Priority 2: If no active gameweek, get the one with open deadline (upcoming)
+    // Priority 2: Active gameweek (deadline passed but not all finished) — prefer lowest number
     if (!displayGameweek) {
       displayGameweek = await queryOne<{
         id: string;
@@ -77,10 +77,10 @@ router.get("/gameweek/current/:competition", async (req, res) => {
           g."endsAt",
           g.status
         FROM gameweek g
-        WHERE g."seasonId" = $1 AND g.deadline > $2
+        WHERE g."seasonId" = $1 AND g.status = 'active'
         ORDER BY g.number ASC
         LIMIT 1`,
-        [season.id, now]
+        [season.id]
       );
     }
 
@@ -122,9 +122,10 @@ router.get("/gameweek/current/:competition", async (req, res) => {
     const nextGameweek = await queryOne<{
       id: string;
       number: number;
+      name: string;
       deadline: string;
     }>(
-      `SELECT g.id, g.number, g.deadline
+      `SELECT g.id, g.number, g.name, g.deadline
       FROM gameweek g
       WHERE g."seasonId" = $1 AND g.number > $2
       ORDER BY g.number ASC
@@ -155,6 +156,7 @@ router.get("/gameweek/current/:competition", async (req, res) => {
       nextDeadline: nextGameweek ? {
         gameweekId: nextGameweek.id,
         gameweekNumber: nextGameweek.number,
+        gameweekName: nextGameweek.name,
         deadline: nextGameweek.deadline,
       } : null,
     });

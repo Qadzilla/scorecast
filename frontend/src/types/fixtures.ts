@@ -64,7 +64,8 @@ export interface Gameweek {
   id: string;
   seasonId: string;
   number: number; // Gameweek 1, 2, 3...
-  name?: string; // Optional custom name (e.g., "Boxing Day", "Final Matchday")
+  name?: string; // Display name (e.g., "Gameweek 1", "Playoffs - Leg 1")
+  stage?: string; // UCL stage (e.g., "LEAGUE_STAGE", "PLAYOFFS"), null for PL
   deadline: string; // ISO datetime - 1 hour before first match
   startsAt: string; // ISO datetime - kickoff of first match
   endsAt: string; // ISO datetime - end of last match (estimated)

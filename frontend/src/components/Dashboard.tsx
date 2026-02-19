@@ -176,6 +176,8 @@ export default function Dashboard({ demoMode = false, onExitDemo }: DashboardPro
   const [uclDeadline, setUclDeadline] = useState<Date | null>(null);
   const [plGameweekNum, setPlGameweekNum] = useState<number | null>(null);
   const [uclGameweekNum, setUclGameweekNum] = useState<number | null>(null);
+  const [plGameweekName, setPlGameweekName] = useState<string | null>(null);
+  const [uclGameweekName, setUclGameweekName] = useState<string | null>(null);
   const [plCountdown, setPlCountdown] = useState(getTimeRemaining(null));
   const [uclCountdown, setUclCountdown] = useState(getTimeRemaining(null));
   const [plIsNextDeadline, setPlIsNextDeadline] = useState(false);
@@ -205,10 +207,12 @@ export default function Dashboard({ demoMode = false, onExitDemo }: DashboardPro
         if (currentDeadline <= now && plGameweek.nextDeadline) {
           setPlDeadline(new Date(plGameweek.nextDeadline.deadline));
           setPlGameweekNum(plGameweek.nextDeadline.gameweekNumber);
+          setPlGameweekName(plGameweek.nextDeadline.gameweekName || `Gameweek ${plGameweek.nextDeadline.gameweekNumber}`);
           setPlIsNextDeadline(true);
         } else {
           setPlDeadline(currentDeadline);
           setPlGameweekNum(plGameweek.number);
+          setPlGameweekName(plGameweek.name || `Gameweek ${plGameweek.number}`);
           setPlIsNextDeadline(false);
         }
       } catch (err) {
@@ -224,10 +228,12 @@ export default function Dashboard({ demoMode = false, onExitDemo }: DashboardPro
         if (currentDeadline <= now && uclGameweek.nextDeadline) {
           setUclDeadline(new Date(uclGameweek.nextDeadline.deadline));
           setUclGameweekNum(uclGameweek.nextDeadline.gameweekNumber);
+          setUclGameweekName(uclGameweek.nextDeadline.gameweekName || `Matchday ${uclGameweek.nextDeadline.gameweekNumber}`);
           setUclIsNextDeadline(true);
         } else {
           setUclDeadline(currentDeadline);
           setUclGameweekNum(uclGameweek.number);
+          setUclGameweekName(uclGameweek.name || `Matchday ${uclGameweek.number}`);
           setUclIsNextDeadline(false);
         }
       } catch (err) {
@@ -975,7 +981,7 @@ export default function Dashboard({ demoMode = false, onExitDemo }: DashboardPro
                         <div>
                           <p className="text-white/70 text-sm">Premier League</p>
                           <p className="font-bold">
-                            {plGameweekNum ? `Gameweek ${plGameweekNum}` : "No upcoming gameweek"}
+                            {plGameweekName || (plGameweekNum ? `Gameweek ${plGameweekNum}` : "No upcoming gameweek")}
                           </p>
                         </div>
                       </div>
@@ -1006,7 +1012,7 @@ export default function Dashboard({ demoMode = false, onExitDemo }: DashboardPro
                         <div>
                           <p className="text-white/70 text-sm">Champions League</p>
                           <p className="font-bold">
-                            {uclGameweekNum ? `Matchday ${uclGameweekNum}` : "No upcoming matchday"}
+                            {uclGameweekName || (uclGameweekNum ? `Matchday ${uclGameweekNum}` : "No upcoming matchday")}
                           </p>
                         </div>
                       </div>
@@ -1302,7 +1308,7 @@ export default function Dashboard({ demoMode = false, onExitDemo }: DashboardPro
                       <div>
                         <p className="text-white/70 text-sm">{plIsNextDeadline ? "Next Deadline" : "Deadline"}</p>
                         <p className="font-bold">
-                          {plGameweekNum ? `Gameweek ${plGameweekNum}` : "No upcoming gameweek"}
+                          {plGameweekName || (plGameweekNum ? `Gameweek ${plGameweekNum}` : "No upcoming gameweek")}
                         </p>
                       </div>
                     </div>
@@ -1337,7 +1343,7 @@ export default function Dashboard({ demoMode = false, onExitDemo }: DashboardPro
                       <div>
                         <p className="text-white/70 text-sm">{uclIsNextDeadline ? "Next Deadline" : "Deadline"}</p>
                         <p className="font-bold">
-                          {uclGameweekNum ? `Matchday ${uclGameweekNum}` : "No upcoming matchday"}
+                          {uclGameweekName || (uclGameweekNum ? `Matchday ${uclGameweekNum}` : "No upcoming matchday")}
                         </p>
                       </div>
                     </div>
@@ -1576,7 +1582,7 @@ export default function Dashboard({ demoMode = false, onExitDemo }: DashboardPro
                     {/* Gameweek Fixtures */}
                     <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-4 sm:p-6 border border-white/50 shadow-xl shadow-gray-200/50 min-h-[350px] lg:min-h-[600px] max-h-[70vh] lg:max-h-[600px] overflow-y-auto transition-all duration-300 hover:shadow-2xl hover:shadow-gray-300/50 md:col-span-2 lg:col-span-1">
                       <h3 className="text-xl font-bold text-gray-900 mb-4">
-                        {currentGameweek ? `Gameweek ${currentGameweek.number}` : "Fixtures"}
+                        {currentGameweek ? (currentGameweek.name || `Gameweek ${currentGameweek.number}`) : "Fixtures"}
                       </h3>
                       {matches.length === 0 ? (
                         <p className="text-gray-500 text-sm">No fixtures available</p>
