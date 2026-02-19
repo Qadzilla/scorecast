@@ -38,6 +38,7 @@ export const fixturesApi = {
       nextDeadline: {
         gameweekId: string;
         gameweekNumber: number;
+        gameweekName: string;
         deadline: string;
       } | null;
     }>(`/api/fixtures/gameweek/current/${competition}`),
