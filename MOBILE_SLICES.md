@@ -51,7 +51,8 @@ No upgrade needed: `@better-auth/expo@1.4.17` exists as an exact peer match for 
 
 ### MS3 — Email verification OTP ✅ *(§4.2)* — shipped 2026-07-15
 Done: `emailOTP` plugin (6-digit, 10-min expiry, 5 allowed attempts) wired into `better-auth`; branded OTP email via `sendEmail()` (same visual family as the link email, code in a `data-otp` span); the legacy link flow stays enabled in parallel for the web app. Endpoints: `POST /api/auth/email-otp/send-verification-otp` and `.../verify-email`. **MS1 finding fixed**: `sendEmail` now captures to an in-memory `testOutbox` under `NODE_ENV === "test"` instead of calling Resend — the suite no longer burns the daily quota. `.env.example` documents the rate-limit knobs from MS1.
-**Exit (met):** 139 backend tests green incl. 5 new (happy path incl. post-verify sign-in unlocked, wrong code, expiry, attempt lockout, resend-invalidates-previous, legacy-link-still-sent) — and zero Resend traffic in test output. Prod verified post-deploy: OTP send returns 200 and delivers a real code.
+**Exit (met):** 139 backend tests green incl. 5 new (happy path incl. post-verify sign-in unlocked, wrong code, expiry, attempt lockout, resend-invalidates-previous, legacy-link-still-sent) — and zero Resend traffic in test output. Prod verified 2026-07-15: `POST /api/auth/email-otp/send-verification-otp` → 200 post-deploy.
+**Cleanup owed:** prod-verify created one throwaway unverified user (`otp-prodcheck-1784156177@example.com`, an `@example.com` address so no real email was sent). No deletion endpoint exists yet — remove it when MS5 lands (or via a quick manual `DELETE FROM "user"`).
 
 ### MS4 — `/api/user/me` + admin consolidation  *(§4.4)*
 New `GET /api/user/me` returning profile + server-computed `isAdmin`; consolidate `ADMIN_EMAIL`/`ADMIN_EMAILS` onto the plural with a deprecation fallback.
