@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { requireAuth } from "../middleware/auth.js";
-import type { AuthenticatedRequest } from "../middleware/auth.js";
+import { requireAdmin } from "../lib/admin.js";
 import {
   syncCompetition,
   syncAll,
@@ -11,19 +11,6 @@ import { scorePredictionsForMatch } from "./predictions.js";
 import { queryAll, queryOne } from "../db.js";
 
 const router = Router();
-
-// Simple admin check - in production you'd want proper role-based auth
-const requireAdmin = (req: any, res: any, next: any) => {
-  const { user } = req as AuthenticatedRequest;
-  // For now, check against an env variable for admin emails
-  const adminEmails = (process.env.ADMIN_EMAILS || "").split(",").map(e => e.trim().toLowerCase());
-
-  if (!adminEmails.includes(user.email.toLowerCase())) {
-    res.status(403).json({ error: "Admin access required" });
-    return;
-  }
-  next();
-};
 
 // Sync all competitions
 router.post("/sync/all", requireAuth, requireAdmin, async (req, res) => {

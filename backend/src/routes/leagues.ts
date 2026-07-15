@@ -2,12 +2,10 @@ import { Router } from "express";
 import { queryAll, queryOne, query } from "../db.js";
 import { requireAuth } from "../middleware/auth.js";
 import type { AuthenticatedRequest } from "../middleware/auth.js";
+import { isAdmin } from "../lib/admin.js";
 import crypto from "crypto";
 
 const router = Router();
-
-// Admin email - only this user can create leagues (set via ADMIN_EMAIL env var)
-const ADMIN_EMAIL = process.env.ADMIN_EMAIL || "";
 
 // Valid league types
 const LEAGUE_TYPES = ["premier_league", "champions_league"] as const;
@@ -24,7 +22,7 @@ router.post("/", requireAuth, async (req, res) => {
   const { name, description, type } = req.body;
 
   // Only admin can create leagues
-  if (user.email !== ADMIN_EMAIL) {
+  if (!isAdmin(user.email)) {
     res.status(403).json({ error: "Only the admin can create leagues" });
     return;
   }
@@ -186,7 +184,7 @@ router.patch("/:leagueId", requireAuth, async (req, res) => {
   const { name } = req.body;
 
   // Only admin can update leagues
-  if (user.email !== ADMIN_EMAIL) {
+  if (!isAdmin(user.email)) {
     res.status(403).json({ error: "Only the admin can update leagues" });
     return;
   }
@@ -225,7 +223,7 @@ router.get("/:leagueId/members", requireAuth, async (req, res) => {
   const { leagueId } = req.params;
 
   // Only admin can view member list
-  if (user.email !== ADMIN_EMAIL) {
+  if (!isAdmin(user.email)) {
     res.status(403).json({ error: "Only the admin can view members" });
     return;
   }
@@ -270,7 +268,7 @@ router.delete("/:leagueId/members/:userId", requireAuth, async (req, res) => {
   const { leagueId, userId } = req.params;
 
   // Only admin can kick members
-  if (user.email !== ADMIN_EMAIL) {
+  if (!isAdmin(user.email)) {
     res.status(403).json({ error: "Only the admin can remove members" });
     return;
   }

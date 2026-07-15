@@ -105,8 +105,8 @@ Today: the web "Delete Account" button is a `TODO` no-op and **no backend endpoi
 
 The web app gates the Create-League and league-admin UI on `VITE_ADMIN_EMAIL` — an env var **baked into the client bundle**. Don't replicate that in a shipped binary (it's both leaky and unchangeable without an app update).
 
-- Add `GET /api/user/me` (requireAuth): returns profile fields + `isAdmin` computed server-side from `ADMIN_EMAIL`.
-- While here, fix the existing env split: `ADMIN_EMAIL` (singular, used by `routes/leagues.ts`) vs `ADMIN_EMAILS` (plural, used by `routes/admin.ts`). Consolidate on `ADMIN_EMAILS` (comma-separated) everywhere; keep reading the old var with a deprecation fallback for one deploy.
+- ✅ (MS4) `GET /api/user/me` (requireAuth): returns profile fields + `isAdmin` computed server-side.
+- ✅ (MS4) Fixed the env split: `ADMIN_EMAIL` (singular, `routes/leagues.ts`) vs `ADMIN_EMAILS` (plural, `routes/admin.ts`). Consolidated onto `ADMIN_EMAILS` via `src/lib/admin.ts` (`isAdmin` + `requireAdmin`), `ADMIN_EMAIL` kept as a one-deploy deprecation fallback, now case-insensitive (leagues.ts was case-sensitive — a latent lockout bug).
 
 ### 4.5 Push notification infrastructure
 

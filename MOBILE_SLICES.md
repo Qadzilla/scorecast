@@ -1,6 +1,6 @@
 # ScoreCast Mobile — Slice Roadmap
 
-**Status:** MS0–MS3 + PS1 shipped (2026-07-15); `DS1–DS9` registered from `MOBILE_DESIGN_SPEC.md`. Next: MS4/MS5/MS6 (Stage A, order-flexible) — or MS7+DS1 to open Stage B.
+**Status:** MS0–MS4 + PS1 shipped (2026-07-15); `DS1–DS9` registered from `MOBILE_DESIGN_SPEC.md`. Next: MS5/MS6 (Stage A, order-flexible) — or MS7+DS1 to open Stage B.
 **Parent document:** `MOBILE_PLAN.md` — all decisions, rationale, and specs live there; section references below (§) point into it. This document adds exactly one thing: **execution order**, cut into slices. When the two disagree, MOBILE_PLAN.md wins and this file gets fixed.
 
 ---
@@ -54,10 +54,9 @@ Done: `emailOTP` plugin (6-digit, 10-min expiry, 5 allowed attempts) wired into 
 **Exit (met):** 139 backend tests green incl. 5 new (happy path incl. post-verify sign-in unlocked, wrong code, expiry, attempt lockout, resend-invalidates-previous, legacy-link-still-sent) — and zero Resend traffic in test output. Prod verified 2026-07-15: `POST /api/auth/email-otp/send-verification-otp` → 200 post-deploy.
 **Cleanup owed:** prod-verify created one throwaway unverified user (`otp-prodcheck-1784156177@example.com`, an `@example.com` address so no real email was sent). No deletion endpoint exists yet — remove it when MS5 lands (or via a quick manual `DELETE FROM "user"`).
 
-### MS4 — `/api/user/me` + admin consolidation  *(§4.4)*
-New `GET /api/user/me` returning profile + server-computed `isAdmin`; consolidate `ADMIN_EMAIL`/`ADMIN_EMAILS` onto the plural with a deprecation fallback.
-**Depends on:** MS1.
-**Exit:** `/me` returns `isAdmin: true` only for admin emails; leagues + admin routes both honor `ADMIN_EMAILS`; tests updated.
+### MS4 — `/api/user/me` + admin consolidation ✅ *(§4.4)* — shipped 2026-07-15
+Done: new `GET /api/user/me` (requireAuth) returns the full profile (id, email, name, username, first/last, emailVerified, favoriteTeamId) + server-computed `isAdmin`, never leaking credential material. New `src/lib/admin.ts` is the single source of truth: `isAdmin(email)` + `requireAdmin` middleware, reading `ADMIN_EMAILS` (canonical) with `ADMIN_EMAIL` as a one-deploy deprecation fallback, **case-insensitive**. Rewired both call sites: `admin.ts` (dropped its inline `requireAdmin`) and `leagues.ts` (all four `user.email !== ADMIN_EMAIL` checks — previously case-*sensitive*, a latent lockout bug).
+**Exit (met):** 143 backend tests green incl. 4 new (`/me` 401 unauth, isAdmin false/true, no password leak, helper honors both vars case-insensitively); existing admin + leagues tests still pass. Prod verified post-deploy: `/api/user/me` returns the profile with `isAdmin`.
 
 ### MS5 — Account deletion  *(§4.3)*
 FK-cascade audit across `prediction`, `league_member`, `league.createdBy`, `session`, `account`, `verification`; migration for any missing `ON DELETE` actions; deletion endpoint (better-auth `deleteUser` or custom `DELETE /api/user/account`) in one transaction.
@@ -215,8 +214,8 @@ Planning slices register their children here (PS1 → `DS*`, PS2 → `NS*`, PS3 
 | MS0 | Security check & repo scrub | A | ✅ 2026-07-15 | 7234062 |
 | MS1 | Backend hygiene | A | ✅ 2026-07-15 | f83738d |
 | MS2 | Native auth transport | A | ✅ 2026-07-15 | bb64b5f |
-| MS3 | Email verification OTP | A | ✅ 2026-07-15 | (this commit) |
-| MS4 | `/api/user/me` + admin consolidation | A | ☐ | |
+| MS3 | Email verification OTP | A | ✅ 2026-07-15 | 0046c2f |
+| MS4 | `/api/user/me` + admin consolidation | A | ✅ 2026-07-15 | (this commit) |
 | MS5 | Account deletion | A | ☐ | |
 | MS6 | Push-token registry | A | ☐ | |
 | PS1 🗎 | MOBILE_DESIGN_SPEC.md (→ registers `DS*`) | B | ✅ 2026-07-15 | (this commit) |

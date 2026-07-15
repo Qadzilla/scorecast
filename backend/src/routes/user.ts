@@ -2,8 +2,45 @@ import { Router } from "express";
 import { queryAll, queryOne, query } from "../db.js";
 import { requireAuth } from "../middleware/auth.js";
 import type { AuthenticatedRequest } from "../middleware/auth.js";
+import { isAdmin } from "../lib/admin.js";
 
 const router = Router();
+
+// Current user's profile + server-computed admin flag.
+// The mobile app gates admin UI on `isAdmin` from here rather than a
+// client-baked env var (MOBILE_PLAN.md §4.4).
+router.get("/me", requireAuth, async (req, res) => {
+  const authReq = req as AuthenticatedRequest;
+  const userId = authReq.user.id;
+
+  try {
+    const user = await queryOne<{
+      id: string;
+      email: string;
+      name: string;
+      username: string | null;
+      firstName: string | null;
+      lastName: string | null;
+      emailVerified: boolean;
+      favoriteTeamId: string | null;
+    }>(
+      `SELECT id, email, name, username, "firstName", "lastName",
+              "emailVerified", "favoriteTeamId"
+       FROM "user" WHERE id = $1`,
+      [userId]
+    );
+
+    if (!user) {
+      res.status(404).json({ error: "User not found" });
+      return;
+    }
+
+    res.json({ ...user, isAdmin: isAdmin(user.email) });
+  } catch (err) {
+    console.error("Failed to fetch current user:", err);
+    res.status(500).json({ error: "Failed to fetch current user" });
+  }
+});
 
 // Get all teams (for team selection) - deduplicated by name
 router.get("/teams", requireAuth, async (_req, res) => {
