@@ -1,6 +1,6 @@
 # ScoreCast Mobile — Slice Roadmap
 
-**Status:** Stage A COMPLETE (MS0–MS6) + PS1; Stage B underway — **MS7 + DS1 shipped** (2026-07-15). Next: **MS8 = DS2+DS3+DS4** (component library), then Stage C auth screens (MS9).
+**Status:** Stage A COMPLETE (MS0–MS6) + PS1; **Stage B COMPLETE** (MS7, MS8, DS1–DS4) — shipped 2026-07-15. Next: **Stage C — auth & onboarding** (MS9 login → MS10 signup/OTP → MS11 team-select; DS5 visual pass closes the stage).
 **Parent document:** `MOBILE_PLAN.md` — all decisions, rationale, and specs live there; section references below (§) point into it. This document adds exactly one thing: **execution order**, cut into slices. When the two disagree, MOBILE_PLAN.md wins and this file gets fixed.
 
 ---
@@ -86,10 +86,12 @@ Done: `mobile/` Expo app, **TS strict**, Expo Router with `(auth)`/`(tabs)` grou
 **⚠ Deviation from plan §5.1:** scaffolded on **Expo SDK 57 / RN 0.86 / React 19.2** (current `create-expo-app` stable), not SDK 54 — latest-stable is the right call for a new app and still satisfies better-auth's Expo peer ranges. Routes live under `src/app/` (template's `src/` convention), a cleaner variant of the plan's `app/`+`src/` split. Docs (§5.1) updated to match.
 **Exit (met, code-verified):** strict `tsc --noEmit` clean; **full iOS bundle via `expo export` succeeds** (whole module graph + Hermes compile); `expo-doctor` 18/18. `app/debug.tsx` fetches `/health` via Query and renders it. *On-simulator visual boot is the user's step (first `expo run:ios` native build — Xcode/CocoaPods — best on the Mac).*
 
-### MS8 — Component library  *(§6.3, executes early `DS*` slices)*
-Build the core components per the design spec, each demoed in a dev-only gallery route. This slice (or slices — follow the `DS*` cut from PS1) covers: Button, Card, TextField, ScreenHeader, SegmentedControl, CountdownCard, MatchRow, ScoreInput, PointsBadge, TeamCrest (expo-image + SVG fallback decision verified against real crest URLs), LeaderboardRow, EmptyState, Sheet, StatTile, Banner.
-**Depends on:** MS7, PS1.
-**Exit:** gallery renders every component in every designed state; TeamCrest verified against ≥5 real `crests.football-data.org` URLs including at least one SVG.
+### MS8 — Component library ✅ *(§6.3 = DS2+DS3+DS4)* — shipped 2026-07-15
+All 15 components built to spec, token-only, each demoed in `app/gallery.tsx` in its documented states:
+- **DS2 (form & feedback):** `Button` (5 variants × default/pressed/disabled/loading), `TextField` (focus ring, error line, secure toggle), `Banner` (error/offline/success/info), `EmptyState`, `Sheet` (Modal bottom sheet, backdrop-close).
+- **DS3 (layout):** `Card` (+rail, pressable), `ScreenHeader` (large + nav variants), `SegmentedControl` (animated active pill, selection haptic), `StatTile`.
+- **DS4 (domain):** `TeamCrest` (expo-image + initials fallback), `CountdownCard` (6 states: normal/<24h warning/<1h danger/passed/live/loading, live tick), `MatchRow` (scheduled/live/finished + red cards + points slot), `ScoreInput` (single-digit gate, locked/final states, ref-based auto-advance), `PointsBadge` (exact/result/incorrect/pending — replaces the web's Tailwind color helper), `LeaderboardRow` (top-3 tint, own-row highlight, champion trophy). Ported the pure domain types/helpers (`getTimeRemaining`, `calculatePredictionPoints`, `formatRank`, `POINTS`) to `src/types/`.
+**Exit (met, code-verified):** strict `tsc` clean; full iOS `expo export` bundles the whole component graph; TeamCrest's SVG assumption confirmed — 5 real `crests.football-data.org` crest URLs all return `image/svg+xml` (+ a PNG variant). On-device visual pass is folded into DS5–DS7 as the screens land.
 
 **Stage B gate:** an empty but branded, navigable app shell with a complete component kit.
 
@@ -224,10 +226,10 @@ Planning slices register their children here (PS1 → `DS*`, PS2 → `NS*`, PS3 
 | PS1 🗎 | MOBILE_DESIGN_SPEC.md (→ registers `DS*`) | B | ✅ 2026-07-15 | f48f4d4 |
 | DS1 | Design foundations (tokens, fonts, Skeleton, haptics) | B | ✅ 2026-07-15 | (this commit) |
 | MS7 | Expo scaffold (incl. DS1) | B | ✅ 2026-07-15 | (this commit) |
-| DS2 | Form & feedback primitives | B | ☐ | |
-| DS3 | Layout primitives | B | ☐ | |
-| DS4 | Domain components | B | ☐ | |
-| MS8 | Component library = DS2+DS3+DS4 complete | B | ☐ | |
+| DS2 | Form & feedback primitives | B | ✅ 2026-07-15 | (this commit) |
+| DS3 | Layout primitives | B | ✅ 2026-07-15 | (this commit) |
+| DS4 | Domain components | B | ✅ 2026-07-15 | (this commit) |
+| MS8 | Component library = DS2+DS3+DS4 complete | B | ✅ 2026-07-15 | (this commit) |
 | DS5 | Auth & onboarding visual pass | C | ☐ | |
 | DS6 | Core screens visual pass | D | ☐ | |
 | DS7 | Predictions & account visual pass | D | ☐ | |
