@@ -43,7 +43,7 @@ As cut, this slice assumed leaked secrets. Verification (step one of the slice) 
 
 ### MS1 — Backend hygiene ✅ *(§4.6)* — shipped 2026-07-15
 Done: `GET /health` (registered before the limiters so platform probes are never throttled); general limiter 100 → 1000/15min and auth limiter 100 → 300/15min (covers frequent `get-session` traffic), both env-overridable (`RATE_LIMIT_GENERAL_MAX` / `RATE_LIMIT_AUTH_MAX`) and now returning JSON errors; deleted `middleware/sanitize.ts` (orphaned — never mounted, and the better-auth `user.create.before` hook already does its job); new `hygiene.test.ts` exercises both limiters for real via `TEST_ENABLE_RATE_LIMIT` + dynamic app import.
-**Exit (met):** 131 backend tests green incl. 4 new (health 200, auth-limit 429, general-limit 429, health exemption); sanitize.ts gone. Prod `/health` check pending next Railway deploy (verify when pushing).
+**Exit (met):** 131 backend tests green incl. 4 new (health 200, auth-limit 429, general-limit 429, health exemption); sanitize.ts gone. Prod verified 2026-07-15: `https://api.scorecast.club/health` → 200 `{"status":"ok"}` and auth lookup smoke test passes post-deploy.
 
 ### MS2 — Native auth transport  *(§4.1)*
 Add `@better-auth/expo`'s `expo()` plugin server-side; `scorecast://` in `trustedOrigins`; upgrade better-auth if the plugin requires it (this is the version-drift spike from §12 — do it now, while the web app exists to catch regressions).
