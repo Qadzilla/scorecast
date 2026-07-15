@@ -1,6 +1,6 @@
 # ScoreCast Mobile — Slice Roadmap
 
-**Status:** MS0–MS2 shipped (2026-07-15). PS1 in progress. Next build slice: MS3.
+**Status:** MS0–MS2 + PS1 shipped (2026-07-15); `DS1–DS9` registered from `MOBILE_DESIGN_SPEC.md`. Next: MS3 (Stage A) — or MS7+DS1 to open Stage B.
 **Parent document:** `MOBILE_PLAN.md` — all decisions, rationale, and specs live there; section references below (§) point into it. This document adds exactly one thing: **execution order**, cut into slices. When the two disagree, MOBILE_PLAN.md wins and this file gets fixed.
 
 ---
@@ -76,10 +76,9 @@ Migration `007_push_tokens`; `POST/DELETE /api/push/register`; token pruning hoo
 
 ## Stage B — App foundation
 
-### PS1 — Write `MOBILE_DESIGN_SPEC.md` 🗎  *(§6, §10)*
-**Planning slice.** Take §6's tokens and rules and produce the screen-by-screen visual spec: exact layouts and every component state (loading / empty / error / locked / finished / offline) for all screens in §5.4, the auth-screen light redesign, and app-icon direction. **The spec must end in a `DS*` slice table** — expected shape (PS1 may cut it differently, that's its job): tokens+fonts foundation → component slices grouped by screen cluster → per-screen polish slices. Register `DS*` into the tracker.
-**Depends on:** nothing (can run parallel to Stage A).
-**Exit:** `MOBILE_DESIGN_SPEC.md` exists, covers every §5.4 screen and §6.3 component, ends in a `DS*` slice table, and the tracker below lists `DS*`.
+### PS1 — Write `MOBILE_DESIGN_SPEC.md` ✅ 🗎 *(§6, §10)* — shipped 2026-07-15
+Done: `MOBILE_DESIGN_SPEC.md` — final token set (color incl. per-competition tints, 9-style type scale, geometry/motion/haptics), all 15 §6.3 components specced with anatomy + every state, all 12 §5.4 screens specced with layouts/states/copy, app icon + splash direction, a11y checklist. Cut into **DS1–DS9**: DS1 foundations (lands in MS7), DS2–DS4 the concrete decomposition of MS8, DS5–DS7 visual passes closing Stages C/D, DS8–DS9 icon/splash + motion/a11y audit gating TestFlight.
+**Exit (met):** spec covers every screen and component; `DS*` registered in the tracker below.
 
 ### MS7 — Expo scaffold  *(§5.1, §5.2)*
 `mobile/` app: Expo SDK 54, TS strict, Expo Router skeleton with `(auth)`/`(tabs)` groups and placeholder screens, Plus Jakarta Sans loading, `theme.ts` tokens (from PS1's final values), QueryClient + API client (`lib/api.ts` port) pointed at local backend, `EXPO_PUBLIC_API_URL` wiring.
@@ -216,14 +215,23 @@ Planning slices register their children here (PS1 → `DS*`, PS2 → `NS*`, PS3 
 |---|---|---|---|---|
 | MS0 | Security check & repo scrub | A | ✅ 2026-07-15 | 7234062 |
 | MS1 | Backend hygiene | A | ✅ 2026-07-15 | f83738d |
-| MS2 | Native auth transport | A | ✅ 2026-07-15 | (this commit) |
+| MS2 | Native auth transport | A | ✅ 2026-07-15 | bb64b5f |
 | MS3 | Email verification OTP | A | ☐ | |
 | MS4 | `/api/user/me` + admin consolidation | A | ☐ | |
 | MS5 | Account deletion | A | ☐ | |
 | MS6 | Push-token registry | A | ☐ | |
-| PS1 🗎 | MOBILE_DESIGN_SPEC.md (→ registers `DS*`) | B | ☐ | |
-| MS7 | Expo scaffold | B | ☐ | |
-| MS8 | Component library (executes `DS*`) | B | ☐ | |
+| PS1 🗎 | MOBILE_DESIGN_SPEC.md (→ registers `DS*`) | B | ✅ 2026-07-15 | (this commit) |
+| DS1 | Design foundations (tokens, fonts, Skeleton, haptics) | B | ☐ | |
+| MS7 | Expo scaffold (incl. DS1) | B | ☐ | |
+| DS2 | Form & feedback primitives | B | ☐ | |
+| DS3 | Layout primitives | B | ☐ | |
+| DS4 | Domain components | B | ☐ | |
+| MS8 | Component library = DS2+DS3+DS4 complete | B | ☐ | |
+| DS5 | Auth & onboarding visual pass | C | ☐ | |
+| DS6 | Core screens visual pass | D | ☐ | |
+| DS7 | Predictions & account visual pass | D | ☐ | |
+| DS8 | App icon + splash | F | ☐ | |
+| DS9 | Motion, haptics & a11y audit | F | ☐ | |
 | MS9 | Auth client + login | C | ☐ | |
 | MS10 | Signup + OTP verify | C | ☐ | |
 | MS11 | Team-select gate | C | ☐ | |
