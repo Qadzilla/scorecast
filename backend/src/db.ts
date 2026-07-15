@@ -6,6 +6,8 @@ import { up as favoriteTeamMigration } from "./db/migrations/003_favorite_team.j
 import { up as redCardsMigration } from "./db/migrations/004_red_cards.js";
 import { up as stageAndMatchdayMigration } from "./db/migrations/005_stage_and_matchday.js";
 import { up as uclCleanupMigration } from "./db/migrations/006_ucl_cleanup.js";
+import { up as userDeleteCascadeMigration } from "./db/migrations/007_user_delete_cascade.js";
+import { up as pushTokensMigration } from "./db/migrations/008_push_tokens.js";
 
 const { Pool } = pg;
 
@@ -137,6 +139,8 @@ export async function runMigrations(): Promise<void> {
     await redCardsMigration(client);
     await stageAndMatchdayMigration(client);
     await uclCleanupMigration(client);
+    await userDeleteCascadeMigration(client);
+    await pushTokensMigration(client);
   } finally {
     client.release();
   }

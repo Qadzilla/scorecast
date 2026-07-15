@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { queryAll, queryOne, query } from "../db.js";
+import { queryAll, queryOne, query, withTransaction } from "../db.js";
 import { requireAuth } from "../middleware/auth.js";
 import type { AuthenticatedRequest } from "../middleware/auth.js";
 import { isAdmin } from "../lib/admin.js";
@@ -185,6 +185,33 @@ router.post("/favorite-team", requireAuth, async (req, res) => {
   } catch (err) {
     console.error("Failed to set favorite team:", err);
     res.status(500).json({ error: "Failed to set favorite team" });
+  }
+});
+
+// Delete the current user's account (App Store requirement, MOBILE_PLAN.md §4.3).
+// The FK cascades from migration 007 do the heavy lifting: deleting the user
+// row removes their predictions, memberships, cached scores, push tokens,
+// sessions and auth accounts, and nulls out `createdBy` on leagues they made
+// (leagues survive). verification rows are keyed by email, not a user FK, so
+// they're cleared explicitly.
+router.delete("/account", requireAuth, async (req, res) => {
+  const authReq = req as AuthenticatedRequest;
+  const userId = authReq.user.id;
+  const email = authReq.user.email;
+
+  try {
+    await withTransaction(async (client) => {
+      await client.query(
+        `DELETE FROM verification WHERE identifier = $1 OR identifier LIKE '%' || $1`,
+        [email]
+      );
+      await client.query(`DELETE FROM "user" WHERE id = $1`, [userId]);
+    });
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error("Failed to delete account:", err);
+    res.status(500).json({ error: "Failed to delete account" });
   }
 });
 

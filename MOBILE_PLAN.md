@@ -92,14 +92,14 @@ The RN app cannot use browser cookie sessions. better-auth has first-party Expo 
 
 Today: the web "Delete Account" button is a `TODO` no-op and **no backend endpoint exists**. Apple rejects apps with sign-up but no in-app account deletion. This is mandatory, not nice-to-have.
 
-- Enable better-auth's `user.deleteUser` (`deleteUser: { enabled: true }`) **or** a custom `DELETE /api/user/account` under `requireAuth` — decide during implementation based on how much cascade control better-auth gives; custom is fine.
-- Deletion semantics (single transaction):
-  - `prediction` rows (userId) — delete.
-  - `league_member` rows — delete. Leagues the user *created* survive (they're admin-created anyway; `league.createdBy` FK needs `ON DELETE SET NULL` or the column made nullable — **verify current FK actions in migrations and add a migration if any lack cascades**).
-  - `session`, `account`, `verification` rows — delete (session already cascades).
-  - `push_token` rows (new table, §4.5) — delete.
-  - `user` row — delete last.
-- Client: destructive confirmation (type-to-confirm or double alert), then sign-out + return to auth stack.
+- ✅ (MS5) Custom `DELETE /api/user/account` under `requireAuth`, single `withTransaction`. Chosen over better-auth `deleteUser` for direct cascade control.
+- ✅ (MS5) FK-cascade audit done in migration `007_user_delete_cascade` — **every** app FK to `user(id)` lacked an ON DELETE action (default NO ACTION, which blocked deletion):
+  - `prediction`, `league_member`, `user_gameweek_score`, `user_league_standing` (userId) → CASCADE.
+  - `league.createdBy` → SET NULL (leagues survive their creator; column made nullable).
+  - `session`, `account` (userId) → CASCADE enforced defensively (db.ts creates them cascading, but a pre-cascade DB / the test fixture would block deletion).
+  - `verification` — no user FK (email-keyed); the endpoint clears it explicitly.
+  - `push_token` — created with CASCADE in migration `008` (§4.5).
+- Client: destructive confirmation (type-to-confirm or double alert), then sign-out + return to auth stack. Note: better-auth `cookieCache` (5 min) means the stale cookie may still pass `requireAuth` briefly post-delete — the client signs out locally, so this is benign.
 
 ### 4.4 `GET /api/user/me` + admin flag
 
@@ -112,9 +112,9 @@ The web app gates the Create-League and league-admin UI on `VITE_ADMIN_EMAIL` �
 
 See §7 for the product spec. Backend pieces:
 
-- **Migration `007_push_tokens`**: `push_token (id, user_id → user ON DELETE CASCADE, token UNIQUE, platform CHECK('ios','android'), created_at, updated_at)`. One user may have several devices.
-- **Routes** (requireAuth): `POST /api/push/register {token, platform}` (upsert), `DELETE /api/push/register {token}` (on logout / opt-out).
-- **Sender service** (`backend/src/services/push.ts`): `expo-server-sdk` — chunked sends, receipt checking, and pruning of tokens Expo reports as `DeviceNotRegistered`.
+- ✅ (MS6) **Migration `008_push_tokens`** (renumbered from the plan's tentative `007`, which became the cascade migration): `push_token (id, "userId" → user ON DELETE CASCADE, token UNIQUE, platform CHECK('ios','android'), "createdAt", "updatedAt")` + index on userId. One user may have several devices.
+- ✅ (MS6) **Routes** (requireAuth): `POST /api/push/register {token, platform}` (upsert on token — Expo tokens rotate/move between devices), `DELETE /api/push/register {token}` (scoped to caller, on logout / opt-out). `pruneToken`/`tokensForUser` helpers exported for the sender.
+- **Sender service** (`backend/src/services/push.ts`): `expo-server-sdk` — chunked sends, receipt checking, and pruning of tokens Expo reports as `DeviceNotRegistered`. *(Deferred to NS\* per §7 — schema + registry only in MS6.)*
 - **Triggers wired into existing jobs** (no new cron schedules needed except reminders):
   1. *Deadline reminder*: new cron every 30 min — find gameweeks with `deadline` between now+23.5h/now+24h and now+0.5h/now+1h (two reminder windows: ~24h and ~1h before); notify members of leagues of that competition **who have not yet submitted predictions** for that gameweek. Dedup via a `push_log` table or a `remindedAt` marker — decide in PUSH_SPEC.md (§10).
   2. *Results/points*: at the end of `scorePredictionsForMatch(...)` batches inside the existing 15-min results cron — after a match is scored, notify users who predicted it: "FT: ARS 2–1 CHE — you scored 3 pts".

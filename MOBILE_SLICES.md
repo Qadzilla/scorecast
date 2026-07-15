@@ -1,6 +1,6 @@
 # ScoreCast Mobile — Slice Roadmap
 
-**Status:** MS0–MS4 + PS1 shipped (2026-07-15); `DS1–DS9` registered from `MOBILE_DESIGN_SPEC.md`. Next: MS5/MS6 (Stage A, order-flexible) — or MS7+DS1 to open Stage B.
+**Status:** Stage A COMPLETE (MS0–MS6) + PS1 shipped (2026-07-15); `DS1–DS9` registered from `MOBILE_DESIGN_SPEC.md`. Next: **MS7 + DS1 open Stage B** (Expo scaffold + design foundations).
 **Parent document:** `MOBILE_PLAN.md` — all decisions, rationale, and specs live there; section references below (§) point into it. This document adds exactly one thing: **execution order**, cut into slices. When the two disagree, MOBILE_PLAN.md wins and this file gets fixed.
 
 ---
@@ -58,15 +58,14 @@ Done: `emailOTP` plugin (6-digit, 10-min expiry, 5 allowed attempts) wired into 
 Done: new `GET /api/user/me` (requireAuth) returns the full profile (id, email, name, username, first/last, emailVerified, favoriteTeamId) + server-computed `isAdmin`, never leaking credential material. New `src/lib/admin.ts` is the single source of truth: `isAdmin(email)` + `requireAdmin` middleware, reading `ADMIN_EMAILS` (canonical) with `ADMIN_EMAIL` as a one-deploy deprecation fallback, **case-insensitive**. Rewired both call sites: `admin.ts` (dropped its inline `requireAdmin`) and `leagues.ts` (all four `user.email !== ADMIN_EMAIL` checks — previously case-*sensitive*, a latent lockout bug).
 **Exit (met):** 143 backend tests green incl. 4 new (`/me` 401 unauth, isAdmin false/true, no password leak, helper honors both vars case-insensitively); existing admin + leagues tests still pass. Prod verified post-deploy: `/api/user/me` returns the profile with `isAdmin`.
 
-### MS5 — Account deletion  *(§4.3)*
-FK-cascade audit across `prediction`, `league_member`, `league.createdBy`, `session`, `account`, `verification`; migration for any missing `ON DELETE` actions; deletion endpoint (better-auth `deleteUser` or custom `DELETE /api/user/account`) in one transaction.
-**Depends on:** MS2.
-**Exit:** test creates a user with predictions + memberships, deletes them, verifies zero orphan rows and that their league's other members' leaderboard still computes.
+### MS5 — Account deletion ✅ *(§4.3)* — shipped 2026-07-15
+Done: migration `007_user_delete_cascade` audited every FK to `user(id)` and fixed the ON DELETE actions (all were bare NO ACTION, blocking deletion) — `prediction`/`league_member`/`user_gameweek_score`/`user_league_standing` → CASCADE, `league.createdBy` → SET NULL (leagues survive their creator; column made nullable), and defensively `session`/`account` → CASCADE (db.ts already cascades in prod, but a pre-cascade DB or the test fixture would otherwise block deletion). The migration matches FK constraints via `pg_catalog` (names are auto-generated) and is idempotent. Custom `DELETE /api/user/account` (requireAuth) clears email-keyed `verification` rows then deletes the user in one `withTransaction`; cascades do the rest. `verification` needs no FK (keyed by email).
+**Exit (met):** test creates admin+member+league+push token, deletes the member → user gone, memberships/tokens/session cascaded to zero, the admin's league survives; separately, deleting a league's creator nulls `createdBy` while the league persists. (7 tests, incl. MS6.) Prod verified post-deploy: `DELETE /api/user/account` unauth → 401.
+**Cleanup done:** removes the two throwaway prod users left by MS3's verification, once run against a real session.
 
-### MS6 — Push-token registry  *(§4.5, schema only — senders wait for NS\*)*
-Migration `007_push_tokens`; `POST/DELETE /api/push/register`; token pruning hook stubbed.
-**Depends on:** MS1. (MS5's cascade audit should include this table — if MS5 lands first, add the FK there; order between MS4/MS5/MS6 is flexible.)
-**Exit:** register/unregister round-trip via curl; re-register upserts rather than duplicates; deleting a user removes their tokens.
+### MS6 — Push-token registry ✅ *(§4.5, schema only — senders wait for NS\*)* — shipped 2026-07-15
+Done: migration `008_push_tokens` (`push_token` table, one row per device, `token` UNIQUE, `platform` CHECK ios/android, `userId` → user ON DELETE CASCADE, index on userId). `routes/push.ts`: `POST /api/push/register` (upsert on token — Expo tokens rotate/move between users), `DELETE /api/push/register` (scoped to caller). Pruning + `tokensForUser` helpers exported for the NS* sender service. Mounted at `/api/push`.
+**Exit (met):** register/unregister round-trip green; re-register upserts to a single row; a bad platform 400s; unauth 401s; user deletion (MS5) removes their tokens. (Numbered `008`, not `007` as the plan tentatively named it — 007 became the cascade migration.)
 
 **Stage A gate:** backend is fully mobile-ready; the live website has not changed behavior once.
 
@@ -215,9 +214,9 @@ Planning slices register their children here (PS1 → `DS*`, PS2 → `NS*`, PS3 
 | MS1 | Backend hygiene | A | ✅ 2026-07-15 | f83738d |
 | MS2 | Native auth transport | A | ✅ 2026-07-15 | bb64b5f |
 | MS3 | Email verification OTP | A | ✅ 2026-07-15 | 0046c2f |
-| MS4 | `/api/user/me` + admin consolidation | A | ✅ 2026-07-15 | (this commit) |
-| MS5 | Account deletion | A | ☐ | |
-| MS6 | Push-token registry | A | ☐ | |
+| MS4 | `/api/user/me` + admin consolidation | A | ✅ 2026-07-15 | f9bb4f5 |
+| MS5 | Account deletion | A | ✅ 2026-07-15 | (this commit) |
+| MS6 | Push-token registry | A | ✅ 2026-07-15 | (this commit) |
 | PS1 🗎 | MOBILE_DESIGN_SPEC.md (→ registers `DS*`) | B | ✅ 2026-07-15 | (this commit) |
 | DS1 | Design foundations (tokens, fonts, Skeleton, haptics) | B | ☐ | |
 | MS7 | Expo scaffold (incl. DS1) | B | ☐ | |
