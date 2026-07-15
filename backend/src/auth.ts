@@ -1,6 +1,11 @@
 import { betterAuth, type User } from "better-auth";
+import { expo } from "@better-auth/expo";
 import { pool } from "./db.js";
 import { sendEmail } from "./email.js";
+
+// Custom URL scheme of the iOS app (see MOBILE_PLAN.md §4.1) — must be a
+// trusted origin so better-auth accepts requests from the Expo auth client
+export const APP_SCHEME_ORIGIN = "scorecast://";
 
 const isProduction = process.env.NODE_ENV === "production";
 
@@ -16,7 +21,8 @@ export const auth: ReturnType<typeof betterAuth> = betterAuth({
   database: pool,
   secret: process.env.BETTER_AUTH_SECRET,
   basePath: "/api/auth",
-  trustedOrigins: corsOrigins,
+  plugins: [expo()],
+  trustedOrigins: [...corsOrigins, APP_SCHEME_ORIGIN],
   user: {
     additionalFields: {
       username: {

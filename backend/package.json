@@ -17,6 +17,7 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "@better-auth/expo": "1.4.17",
     "better-auth": "^1.4.17",
     "cors": "^2.8.6",
     "dotenv": "^17.2.3",

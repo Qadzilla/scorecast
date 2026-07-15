@@ -3,7 +3,7 @@ import express from "express";
 import cors from "cors";
 import rateLimit from "express-rate-limit";
 import { toNodeHandler } from "better-auth/node";
-import { auth } from "./auth.js";
+import { auth, APP_SCHEME_ORIGIN } from "./auth.js";
 import { queryOne } from "./db.js";
 import leaguesRouter from "./routes/leagues.js";
 import fixturesRouter from "./routes/fixtures.js";
@@ -23,10 +23,13 @@ app.get("/health", (_req, res) => {
   res.json({ status: "ok" });
 });
 
-// CORS - allow requests from configured origins
+// CORS - allow requests from configured origins.
+// Native app requests usually send no Origin header (allowed below), but any
+// that do carry the app scheme must not be rejected at this layer either.
 const allowedOrigins = (process.env.CORS_ORIGIN || "http://localhost:5173,http://localhost:5174")
   .split(",")
-  .map(o => o.trim());
+  .map(o => o.trim())
+  .concat(APP_SCHEME_ORIGIN);
 
 app.use(cors({
   origin: (origin, callback) => {

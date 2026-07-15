@@ -1,6 +1,6 @@
 # ScoreCast Mobile — Slice Roadmap
 
-**Status:** MS0 + MS1 shipped (2026-07-15). Next up: MS2 (or PS1 in parallel).
+**Status:** MS0–MS2 shipped (2026-07-15). PS1 in progress. Next build slice: MS3.
 **Parent document:** `MOBILE_PLAN.md` — all decisions, rationale, and specs live there; section references below (§) point into it. This document adds exactly one thing: **execution order**, cut into slices. When the two disagree, MOBILE_PLAN.md wins and this file gets fixed.
 
 ---
@@ -45,10 +45,9 @@ As cut, this slice assumed leaked secrets. Verification (step one of the slice) 
 Done: `GET /health` (registered before the limiters so platform probes are never throttled); general limiter 100 → 1000/15min and auth limiter 100 → 300/15min (covers frequent `get-session` traffic), both env-overridable (`RATE_LIMIT_GENERAL_MAX` / `RATE_LIMIT_AUTH_MAX`) and now returning JSON errors; deleted `middleware/sanitize.ts` (orphaned — never mounted, and the better-auth `user.create.before` hook already does its job); new `hygiene.test.ts` exercises both limiters for real via `TEST_ENABLE_RATE_LIMIT` + dynamic app import.
 **Exit (met):** 131 backend tests green incl. 4 new (health 200, auth-limit 429, general-limit 429, health exemption); sanitize.ts gone. Prod verified 2026-07-15: `https://api.scorecast.club/health` → 200 `{"status":"ok"}` and auth lookup smoke test passes post-deploy.
 
-### MS2 — Native auth transport  *(§4.1)*
-Add `@better-auth/expo`'s `expo()` plugin server-side; `scorecast://` in `trustedOrigins`; upgrade better-auth if the plugin requires it (this is the version-drift spike from §12 — do it now, while the web app exists to catch regressions).
-**Depends on:** MS1.
-**Exit:** better-auth upgraded/pinned; all backend auth tests pass; **web login/signup still works in prod** (the regression canary).
+### MS2 — Native auth transport ✅ *(§4.1)* — shipped 2026-07-15
+No upgrade needed: `@better-auth/expo@1.4.17` exists as an exact peer match for the pinned `better-auth@1.4.17` (installed `--save-exact --legacy-peer-deps`; its Expo peer deps are client-side only). Wired `expo()` into the betterAuth plugins; `scorecast://` (exported as `APP_SCHEME_ORIGIN`) added to both `trustedOrigins` and the Express CORS allowlist — the CORS layer would otherwise 500 any request carrying the scheme origin before better-auth saw it. New `native-auth.test.ts` proves scheme-origin requests pass both gates (and unknown origins still get rejected).
+**Exit (met):** 134 backend tests green incl. 3 new; prod verified post-deploy — scheme-origin sign-in reaches credential validation (401, not 403/500) and web auth path unchanged.
 
 ### MS3 — Email verification OTP  *(§4.2)*
 `emailOTP` plugin, OTP email template via existing `sendEmail()`, link flow left enabled in parallel. Vitest coverage: send, verify, expiry, resend rate-limit.
@@ -216,8 +215,8 @@ Planning slices register their children here (PS1 → `DS*`, PS2 → `NS*`, PS3 
 | Slice | Title | Stage | Status | Commit |
 |---|---|---|---|---|
 | MS0 | Security check & repo scrub | A | ✅ 2026-07-15 | 7234062 |
-| MS1 | Backend hygiene | A | ✅ 2026-07-15 | (this commit) |
-| MS2 | Native auth transport | A | ☐ | |
+| MS1 | Backend hygiene | A | ✅ 2026-07-15 | f83738d |
+| MS2 | Native auth transport | A | ✅ 2026-07-15 | (this commit) |
 | MS3 | Email verification OTP | A | ☐ | |
 | MS4 | `/api/user/me` + admin consolidation | A | ☐ | |
 | MS5 | Account deletion | A | ☐ | |
