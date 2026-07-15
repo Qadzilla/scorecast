@@ -1,6 +1,6 @@
 # ScoreCast Mobile — Slice Roadmap
 
-**Status:** MS0–MS2 + PS1 shipped (2026-07-15); `DS1–DS9` registered from `MOBILE_DESIGN_SPEC.md`. Next: MS3 (Stage A) — or MS7+DS1 to open Stage B.
+**Status:** MS0–MS3 + PS1 shipped (2026-07-15); `DS1–DS9` registered from `MOBILE_DESIGN_SPEC.md`. Next: MS4/MS5/MS6 (Stage A, order-flexible) — or MS7+DS1 to open Stage B.
 **Parent document:** `MOBILE_PLAN.md` — all decisions, rationale, and specs live there; section references below (§) point into it. This document adds exactly one thing: **execution order**, cut into slices. When the two disagree, MOBILE_PLAN.md wins and this file gets fixed.
 
 ---
@@ -49,11 +49,9 @@ Done: `GET /health` (registered before the limiters so platform probes are never
 No upgrade needed: `@better-auth/expo@1.4.17` exists as an exact peer match for the pinned `better-auth@1.4.17` (installed `--save-exact --legacy-peer-deps`; its Expo peer deps are client-side only). Wired `expo()` into the betterAuth plugins; `scorecast://` (exported as `APP_SCHEME_ORIGIN`) added to both `trustedOrigins` and the Express CORS allowlist — the CORS layer would otherwise 500 any request carrying the scheme origin before better-auth saw it. New `native-auth.test.ts` proves scheme-origin requests pass both gates (and unknown origins still get rejected).
 **Exit (met):** 134 backend tests green incl. 3 new; prod verified post-deploy — scheme-origin sign-in reaches credential validation (401, not 403/500) and web auth path unchanged.
 
-### MS3 — Email verification OTP  *(§4.2)*
-`emailOTP` plugin, OTP email template via existing `sendEmail()`, link flow left enabled in parallel. Vitest coverage: send, verify, expiry, resend rate-limit.
-**Also fix here (found during MS1):** the test suite currently sends **real emails through Resend** on every signup (Resend quota headers show up in test output; free daily quota is 15). Stub/no-op `sendEmail` when `NODE_ENV === "test"` as part of this slice's email work.
-**Depends on:** MS2.
-**Exit:** curl-driven signup → OTP email arrives → verify endpoint flips `emailVerified`; web link flow still works.
+### MS3 — Email verification OTP ✅ *(§4.2)* — shipped 2026-07-15
+Done: `emailOTP` plugin (6-digit, 10-min expiry, 5 allowed attempts) wired into `better-auth`; branded OTP email via `sendEmail()` (same visual family as the link email, code in a `data-otp` span); the legacy link flow stays enabled in parallel for the web app. Endpoints: `POST /api/auth/email-otp/send-verification-otp` and `.../verify-email`. **MS1 finding fixed**: `sendEmail` now captures to an in-memory `testOutbox` under `NODE_ENV === "test"` instead of calling Resend — the suite no longer burns the daily quota. `.env.example` documents the rate-limit knobs from MS1.
+**Exit (met):** 139 backend tests green incl. 5 new (happy path incl. post-verify sign-in unlocked, wrong code, expiry, attempt lockout, resend-invalidates-previous, legacy-link-still-sent) — and zero Resend traffic in test output. Prod verified post-deploy: OTP send returns 200 and delivers a real code.
 
 ### MS4 — `/api/user/me` + admin consolidation  *(§4.4)*
 New `GET /api/user/me` returning profile + server-computed `isAdmin`; consolidate `ADMIN_EMAIL`/`ADMIN_EMAILS` onto the plural with a deprecation fallback.
@@ -216,7 +214,7 @@ Planning slices register their children here (PS1 → `DS*`, PS2 → `NS*`, PS3 
 | MS0 | Security check & repo scrub | A | ✅ 2026-07-15 | 7234062 |
 | MS1 | Backend hygiene | A | ✅ 2026-07-15 | f83738d |
 | MS2 | Native auth transport | A | ✅ 2026-07-15 | bb64b5f |
-| MS3 | Email verification OTP | A | ☐ | |
+| MS3 | Email verification OTP | A | ✅ 2026-07-15 | (this commit) |
 | MS4 | `/api/user/me` + admin consolidation | A | ☐ | |
 | MS5 | Account deletion | A | ☐ | |
 | MS6 | Push-token registry | A | ☐ | |

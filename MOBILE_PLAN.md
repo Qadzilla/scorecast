@@ -128,7 +128,7 @@ See §7 for the product spec. Backend pieces:
 - ✅ `middleware/sanitize.ts` (MS1) — deleted; it was never mounted and the better-auth `user.create.before` hook already sanitizes.
 - ✅ Stray SQLite artifacts deleted (MS0).
 - `EMAIL_FROM` fallback hardcodes `noreply@scorecast.club` — fine (the domain stays for email + privacy page), just ensure the Railway var is set explicitly.
-- Found during MS1, fix in MS3: the vitest suite sends **real Resend emails** on signup — stub `sendEmail` under `NODE_ENV === "test"`.
+- ✅ Found during MS1, fixed in MS3: the vitest suite sent **real Resend emails** on signup — `sendEmail` now captures to an in-memory `testOutbox` under `NODE_ENV === "test"`.
 
 ### 4.7 Explicitly unchanged
 

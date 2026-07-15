@@ -2,7 +2,21 @@ import { Resend } from "resend";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
+// Under test, emails are captured here instead of hitting Resend — the free
+// tier has a small daily quota and every vitest run was burning it.
+export interface OutboxEntry {
+  to: string;
+  subject: string;
+  html: string;
+}
+export const testOutbox: OutboxEntry[] = [];
+
 export async function sendEmail(to: string, subject: string, html: string) {
+  if (process.env.NODE_ENV === "test") {
+    testOutbox.push({ to, subject, html });
+    return { id: `test-${testOutbox.length}` };
+  }
+
   console.log(`[Email] Sending to: ${to}, subject: ${subject}`);
   try {
     const result = await resend.emails.send({

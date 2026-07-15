@@ -1,6 +1,7 @@
 import { betterAuth, type User } from "better-auth";
+import { emailOTP } from "better-auth/plugins";
 import { expo } from "@better-auth/expo";
-import { pool } from "./db.js";
+import { pool, queryOne } from "./db.js";
 import { sendEmail } from "./email.js";
 
 // Custom URL scheme of the iOS app (see MOBILE_PLAN.md §4.1) — must be a
@@ -17,11 +18,75 @@ const corsOrigins = (process.env.CORS_ORIGIN || "http://localhost:5173,http://lo
 // Use the first origin as the primary frontend URL
 const frontendURL = corsOrigins[0];
 
+// Branded OTP email — same visual family as the link-verification email.
+// The code sits in a <span data-otp> so tests can extract it from the outbox.
+function otpEmailHtml(firstName: string, otp: string): string {
+  return `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f4f4f5;">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width: 600px; margin: 0 auto; padding: 40px 20px;">
+    <tr>
+      <td style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); border-radius: 16px; padding: 40px; text-align: center;">
+        <h1 style="color: #ffffff; font-size: 28px; font-weight: 700; margin: 0 0 8px 0;">ScoreCast</h1>
+        <p style="color: rgba(255,255,255,0.7); font-size: 14px; margin: 0 0 32px 0;">Premier League &amp; UCL Predictions</p>
+
+        <div style="background: rgba(255,255,255,0.1); border-radius: 12px; padding: 32px; margin-bottom: 32px;">
+          <h2 style="color: #ffffff; font-size: 20px; font-weight: 600; margin: 0 0 16px 0;">Hey ${firstName}!</h2>
+          <p style="color: rgba(255,255,255,0.8); font-size: 16px; line-height: 1.6; margin: 0 0 24px 0;">
+            Enter this code in the ScoreCast app to verify your email address. It expires in 10 minutes.
+          </p>
+
+          <span data-otp style="display: inline-block; background: linear-gradient(135deg, #00ff87 0%, #60efff 100%); color: #1a1a2e; font-size: 32px; font-weight: 700; letter-spacing: 8px; padding: 14px 24px 14px 32px; border-radius: 8px;">${otp}</span>
+        </div>
+
+        <p style="color: rgba(255,255,255,0.5); font-size: 13px; margin: 0;">
+          If you didn't request this code, you can safely ignore this email.
+        </p>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+  `;
+}
+
 export const auth: ReturnType<typeof betterAuth> = betterAuth({
   database: pool,
   secret: process.env.BETTER_AUTH_SECRET,
   basePath: "/api/auth",
-  plugins: [expo()],
+  plugins: [
+    expo(),
+    // Mobile email verification: the app requests a 6-digit code and the
+    // user types it in — no web redirect involved (MOBILE_PLAN.md §4.2).
+    // The link-based flow below stays enabled in parallel for the web app
+    // until decommission; a mobile signup may therefore receive both emails
+    // during the transition (the link still works, so this is harmless).
+    emailOTP({
+      otpLength: 6,
+      expiresIn: 600, // seconds — 10 minutes
+      allowedAttempts: 5,
+      async sendVerificationOTP({ email, otp, type }) {
+        if (type !== "email-verification") {
+          // Password reset / OTP sign-in are not offered anywhere yet
+          return;
+        }
+        const user = await queryOne<{ firstName: string | null }>(
+          `SELECT "firstName" FROM "user" WHERE email = $1`,
+          [email]
+        );
+        await sendEmail(
+          email,
+          "Your ScoreCast verification code",
+          otpEmailHtml(user?.firstName || "there", otp)
+        );
+      },
+    }),
+  ],
   trustedOrigins: [...corsOrigins, APP_SCHEME_ORIGIN],
   user: {
     additionalFields: {
