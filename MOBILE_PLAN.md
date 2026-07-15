@@ -142,7 +142,7 @@ Fixtures/predictions/leaderboard/leagues route logic, deadline enforcement, scor
 
 | Concern | Choice | Notes |
 |---|---|---|
-| Framework | Expo SDK 54, RN 0.81, React 19, **TypeScript strict** | Matches MalaaBi; no `any` without a justifying comment. |
+| Framework | **Expo SDK 57, RN 0.86, React 19.2, TypeScript strict** (updated in MS7 from the originally-planned SDK 54 — latest-stable is right for a new app and satisfies better-auth's Expo peers) | No `any` without a justifying comment. Routes live under `src/app/`. |
 | Navigation | **Expo Router** (file-based, `mobile/app/`) | Route groups: `(auth)` stack + `(tabs)`. |
 | Server state | **TanStack Query** | Hook layer in `src/lib/queries/` — components never call `fetch`/the API client directly (same convention as MalaaBi). |
 | UI state | **Zustand** (sparingly) | Never caches server data. Likely only needed for transient prediction-entry drafts. |

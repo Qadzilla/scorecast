@@ -1,6 +1,6 @@
 # ScoreCast Mobile — Slice Roadmap
 
-**Status:** Stage A COMPLETE (MS0–MS6) + PS1 shipped (2026-07-15); `DS1–DS9` registered from `MOBILE_DESIGN_SPEC.md`. Next: **MS7 + DS1 open Stage B** (Expo scaffold + design foundations).
+**Status:** Stage A COMPLETE (MS0–MS6) + PS1; Stage B underway — **MS7 + DS1 shipped** (2026-07-15). Next: **MS8 = DS2+DS3+DS4** (component library), then Stage C auth screens (MS9).
 **Parent document:** `MOBILE_PLAN.md` — all decisions, rationale, and specs live there; section references below (§) point into it. This document adds exactly one thing: **execution order**, cut into slices. When the two disagree, MOBILE_PLAN.md wins and this file gets fixed.
 
 ---
@@ -73,14 +73,18 @@ Done: migration `008_push_tokens` (`push_token` table, one row per device, `toke
 
 ## Stage B — App foundation
 
+### DS1 — Design foundations ✅ *(design spec §2)* — shipped 2026-07-15 (with MS7)
+Done: `src/constants/theme.ts` — every §2 token (color incl. per-competition tint sets + `competition` map, 9-style type scale, `tabularNums`, spacing/layout/radius/shadow/motion, `MAX_FONT_SCALE`). Plus the DS1 primitives: `constants/fonts.ts` (Plus Jakarta Sans load map), `components/Text.tsx` (variant+color text primitive with Dynamic-Type clamp + auto tabular numerals), `components/Skeleton.tsx` (Reduce-Motion-aware pulse + `SkeletonLines`), `utils/haptics.ts` (the §2.3 intent map). Ionicons wired.
+**Exit (met):** `app/gallery.tsx` renders the token sheet — all 21 palette swatches, all 9 type styles, the spacing/radius/shadow samples, and the Skeleton — bundled into the iOS build (verified via `expo export`).
+
 ### PS1 — Write `MOBILE_DESIGN_SPEC.md` ✅ 🗎 *(§6, §10)* — shipped 2026-07-15
 Done: `MOBILE_DESIGN_SPEC.md` — final token set (color incl. per-competition tints, 9-style type scale, geometry/motion/haptics), all 15 §6.3 components specced with anatomy + every state, all 12 §5.4 screens specced with layouts/states/copy, app icon + splash direction, a11y checklist. Cut into **DS1–DS9**: DS1 foundations (lands in MS7), DS2–DS4 the concrete decomposition of MS8, DS5–DS7 visual passes closing Stages C/D, DS8–DS9 icon/splash + motion/a11y audit gating TestFlight.
 **Exit (met):** spec covers every screen and component; `DS*` registered in the tracker below.
 
-### MS7 — Expo scaffold  *(§5.1, §5.2)*
-`mobile/` app: Expo SDK 54, TS strict, Expo Router skeleton with `(auth)`/`(tabs)` groups and placeholder screens, Plus Jakarta Sans loading, `theme.ts` tokens (from PS1's final values), QueryClient + API client (`lib/api.ts` port) pointed at local backend, `EXPO_PUBLIC_API_URL` wiring.
-**Depends on:** PS1 (tokens finalized), MS1 (`/health` to hit).
-**Exit:** simulator boots to a placeholder login screen in the brand font; a debug screen fetches `/health` and renders the response.
+### MS7 — Expo scaffold ✅ *(§5.1, §5.2)* — shipped 2026-07-15
+Done: `mobile/` Expo app, **TS strict**, Expo Router with `(auth)`/`(tabs)` groups + placeholder screens (login lockup, Leagues, Account), root layout wiring fonts/splash/`QueryClientProvider`/`SafeAreaProvider`/`GestureHandlerRootView`, `lib/config.ts` (`EXPO_PUBLIC_API_URL` → falls back to prod), `lib/api.ts` (ported `apiFetch` — RN-adapted, session via header not cookie), `lib/auth.ts` (better-auth Expo client + SecureStore, **pinned 1.4.17 to match backend**), `lib/queryClient.ts`. Bundle id `club.scorecast.app`, scheme `scorecast`.
+**⚠ Deviation from plan §5.1:** scaffolded on **Expo SDK 57 / RN 0.86 / React 19.2** (current `create-expo-app` stable), not SDK 54 — latest-stable is the right call for a new app and still satisfies better-auth's Expo peer ranges. Routes live under `src/app/` (template's `src/` convention), a cleaner variant of the plan's `app/`+`src/` split. Docs (§5.1) updated to match.
+**Exit (met, code-verified):** strict `tsc --noEmit` clean; **full iOS bundle via `expo export` succeeds** (whole module graph + Hermes compile); `expo-doctor` 18/18. `app/debug.tsx` fetches `/health` via Query and renders it. *On-simulator visual boot is the user's step (first `expo run:ios` native build — Xcode/CocoaPods — best on the Mac).*
 
 ### MS8 — Component library  *(§6.3, executes early `DS*` slices)*
 Build the core components per the design spec, each demoed in a dev-only gallery route. This slice (or slices — follow the `DS*` cut from PS1) covers: Button, Card, TextField, ScreenHeader, SegmentedControl, CountdownCard, MatchRow, ScoreInput, PointsBadge, TeamCrest (expo-image + SVG fallback decision verified against real crest URLs), LeaderboardRow, EmptyState, Sheet, StatTile, Banner.
@@ -217,9 +221,9 @@ Planning slices register their children here (PS1 → `DS*`, PS2 → `NS*`, PS3 
 | MS4 | `/api/user/me` + admin consolidation | A | ✅ 2026-07-15 | f9bb4f5 |
 | MS5 | Account deletion | A | ✅ 2026-07-15 | (this commit) |
 | MS6 | Push-token registry | A | ✅ 2026-07-15 | (this commit) |
-| PS1 🗎 | MOBILE_DESIGN_SPEC.md (→ registers `DS*`) | B | ✅ 2026-07-15 | (this commit) |
-| DS1 | Design foundations (tokens, fonts, Skeleton, haptics) | B | ☐ | |
-| MS7 | Expo scaffold (incl. DS1) | B | ☐ | |
+| PS1 🗎 | MOBILE_DESIGN_SPEC.md (→ registers `DS*`) | B | ✅ 2026-07-15 | f48f4d4 |
+| DS1 | Design foundations (tokens, fonts, Skeleton, haptics) | B | ✅ 2026-07-15 | (this commit) |
+| MS7 | Expo scaffold (incl. DS1) | B | ✅ 2026-07-15 | (this commit) |
 | DS2 | Form & feedback primitives | B | ☐ | |
 | DS3 | Layout primitives | B | ☐ | |
 | DS4 | Domain components | B | ☐ | |
