@@ -17,6 +17,12 @@ export const app = express();
 // Trust proxy (Railway, Vercel, etc. use reverse proxies)
 app.set('trust proxy', 1);
 
+// Health check — registered before the rate limiters so platform probes
+// are never throttled and never count against a shared IP's budget
+app.get("/health", (_req, res) => {
+  res.json({ status: "ok" });
+});
+
 // CORS - allow requests from configured origins
 const allowedOrigins = (process.env.CORS_ORIGIN || "http://localhost:5173,http://localhost:5174")
   .split(",")
@@ -35,23 +41,30 @@ app.use(cors({
   credentials: true,
 }));
 
-// General rate limit - 100 requests per 15 minutes
+// Rate limits are keyed per IP, and mobile carriers put many users behind
+// shared CGNAT IPs — so these are abuse backstops, not per-user fairness.
+// The auth limiter covers ALL of /api/auth/* including frequent get-session
+// calls, hence higher than a classic credential-guessing limit.
+// Skipped under test unless TEST_ENABLE_RATE_LIMIT=true (see hygiene.test.ts).
+const skipRateLimit = () =>
+  process.env.NODE_ENV === "test" && process.env.TEST_ENABLE_RATE_LIMIT !== "true";
+
 const generalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  limit: 100,
+  limit: Number(process.env.RATE_LIMIT_GENERAL_MAX) || 1000,
   standardHeaders: true,
   legacyHeaders: false,
-  skip: () => process.env.NODE_ENV === "test",
+  message: { error: "Too many requests, please try again later" },
+  skip: skipRateLimit,
 });
 
-// Auth rate limit - 100 requests per 15 minutes (high for testing, reduce in production)
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  limit: 100,
+  limit: Number(process.env.RATE_LIMIT_AUTH_MAX) || 300,
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: "Too many auth attempts, please try again later" },
-  skip: () => process.env.NODE_ENV === "test",
+  skip: skipRateLimit,
 });
 
 app.use(generalLimiter);

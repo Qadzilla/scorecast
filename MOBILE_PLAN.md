@@ -123,11 +123,12 @@ See §7 for the product spec. Backend pieces:
 
 ### 4.6 Hygiene (small, do in Phase 1 while touching the code)
 
-- **Rate limiting**: the global 100 req/15 min limiter is **per IP**, and mobile carriers put thousands of users behind shared CGNAT IPs. Raise the general limiter substantially (e.g. 1000/15min) or key it by session user where available; keep the stricter auth limiter per-IP.
-- Add `GET /health` (Railway has no health endpoint today).
-- `middleware/sanitize.ts` is defined but never wired into `app.ts` — either mount it on the auth routes or delete the file.
-- Delete the stray SQLite artifacts (`data.db`, `sqlite.db`, `test-data.db`) — Postgres-only.
+- ✅ **Rate limiting** (MS1): the global limiter was 100 req/15 min **per IP**, and mobile carriers put thousands of users behind shared CGNAT IPs. Raised general to 1000/15min and auth to 300/15min (the auth limiter covers all of `/api/auth/*` including frequent `get-session`); both env-overridable via `RATE_LIMIT_GENERAL_MAX` / `RATE_LIMIT_AUTH_MAX`.
+- ✅ `GET /health` (MS1) — registered before the limiters so probes are never throttled.
+- ✅ `middleware/sanitize.ts` (MS1) — deleted; it was never mounted and the better-auth `user.create.before` hook already sanitizes.
+- ✅ Stray SQLite artifacts deleted (MS0).
 - `EMAIL_FROM` fallback hardcodes `noreply@scorecast.club` — fine (the domain stays for email + privacy page), just ensure the Railway var is set explicitly.
+- Found during MS1, fix in MS3: the vitest suite sends **real Resend emails** on signup — stub `sendEmail` under `NODE_ENV === "test"`.
 
 ### 4.7 Explicitly unchanged
 

@@ -1,6 +1,6 @@
 # ScoreCast Mobile — Slice Roadmap
 
-**Status:** MS0 shipped (2026-07-15). Next up: MS1.
+**Status:** MS0 + MS1 shipped (2026-07-15). Next up: MS2 (or PS1 in parallel).
 **Parent document:** `MOBILE_PLAN.md` — all decisions, rationale, and specs live there; section references below (§) point into it. This document adds exactly one thing: **execution order**, cut into slices. When the two disagree, MOBILE_PLAN.md wins and this file gets fixed.
 
 ---
@@ -41,10 +41,9 @@ Build slices that depend on a child series say so (e.g. MS8 executes `DS*` slice
 As cut, this slice assumed leaked secrets. Verification (step one of the slice) disproved the premise: `backend/.env` was never tracked, the live secret values appear nowhere in git history, and the tracked `.env.example` files hold placeholders only — checked against the full history of the **public** GitHub repo. Rotation and history purge therefore dropped. Done instead: history-wide secret-value grep + credential-pattern sweep of tracked files (clean), deleted the untracked SQLite artifacts (`data.db`, `sqlite.db`, `test-data.db`), confirmed `.gitignore` coverage. §2 of MOBILE_PLAN.md rewritten to match reality.
 **Exit (met):** zero secret-value occurrences in `git rev-list --all`; `git ls-files` shows only `.env.example`; SQLite artifacts gone; plan docs corrected.
 
-### MS1 — Backend hygiene  *(§4.6)*
-`GET /health`; raise/re-key the general rate limiter (CGNAT problem); wire or delete `middleware/sanitize.ts`.
-**Depends on:** MS0.
-**Exit:** `/health` returns 200 in prod; limiter change covered by a test; sanitize.ts either mounted in `app.ts` or gone.
+### MS1 — Backend hygiene ✅ *(§4.6)* — shipped 2026-07-15
+Done: `GET /health` (registered before the limiters so platform probes are never throttled); general limiter 100 → 1000/15min and auth limiter 100 → 300/15min (covers frequent `get-session` traffic), both env-overridable (`RATE_LIMIT_GENERAL_MAX` / `RATE_LIMIT_AUTH_MAX`) and now returning JSON errors; deleted `middleware/sanitize.ts` (orphaned — never mounted, and the better-auth `user.create.before` hook already does its job); new `hygiene.test.ts` exercises both limiters for real via `TEST_ENABLE_RATE_LIMIT` + dynamic app import.
+**Exit (met):** 131 backend tests green incl. 4 new (health 200, auth-limit 429, general-limit 429, health exemption); sanitize.ts gone. Prod `/health` check pending next Railway deploy (verify when pushing).
 
 ### MS2 — Native auth transport  *(§4.1)*
 Add `@better-auth/expo`'s `expo()` plugin server-side; `scorecast://` in `trustedOrigins`; upgrade better-auth if the plugin requires it (this is the version-drift spike from §12 — do it now, while the web app exists to catch regressions).
@@ -53,6 +52,7 @@ Add `@better-auth/expo`'s `expo()` plugin server-side; `scorecast://` in `truste
 
 ### MS3 — Email verification OTP  *(§4.2)*
 `emailOTP` plugin, OTP email template via existing `sendEmail()`, link flow left enabled in parallel. Vitest coverage: send, verify, expiry, resend rate-limit.
+**Also fix here (found during MS1):** the test suite currently sends **real emails through Resend** on every signup (Resend quota headers show up in test output; free daily quota is 15). Stub/no-op `sendEmail` when `NODE_ENV === "test"` as part of this slice's email work.
 **Depends on:** MS2.
 **Exit:** curl-driven signup → OTP email arrives → verify endpoint flips `emailVerified`; web link flow still works.
 
@@ -215,8 +215,8 @@ Planning slices register their children here (PS1 → `DS*`, PS2 → `NS*`, PS3 
 
 | Slice | Title | Stage | Status | Commit |
 |---|---|---|---|---|
-| MS0 | Security check & repo scrub | A | ✅ 2026-07-15 | (this commit) |
-| MS1 | Backend hygiene | A | ☐ | |
+| MS0 | Security check & repo scrub | A | ✅ 2026-07-15 | 7234062 |
+| MS1 | Backend hygiene | A | ✅ 2026-07-15 | (this commit) |
 | MS2 | Native auth transport | A | ☐ | |
 | MS3 | Email verification OTP | A | ☐ | |
 | MS4 | `/api/user/me` + admin consolidation | A | ☐ | |
