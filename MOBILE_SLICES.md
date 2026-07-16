@@ -162,9 +162,9 @@ Done: `PUSH_SPEC.md` resolves every §7 open decision — Expo Push transport; *
 Done: `expo-server-sdk@6`; migrations `009_notification_pref` (per-user, all-on default) + `010_push_log` (UNIQUE(user,kind,subject,league) = dedup); `services/pushCopy.ts` (copy fns); `services/push.ts` — `notifyIfAllowed` choke point (pref-gate → `push_log` insert-or-skip → send) with a `pushTestOutbox` (test-mode capture, like the email module) + real Expo chunked send + `DeviceNotRegistered` prune; `routes/notifications.ts` `GET/PUT /api/notifications/prefs`. Test DB fixture drops the two new tables so their FKs regenerate.
 **Exit (met):** 6 new tests green (156 total) — dedup (double send → 1), per-league separation, disabled-category gating, prefs defaults/upsert/round-trip, 401 unauth. `tsc` build clean.
 
-### NS2 — Deadline reminder cron *(PUSH_SPEC §4)*
-`*/30` cron; 24h + 1h window queries; unsubmitted-members filter; per-member `notifyIfAllowed`.
-**Depends on:** NS1. **Exit:** test seeds gameweeks in each window + members with/without predictions → only unsubmitted notified once each; re-run sends nothing new.
+### NS2 — Deadline reminder cron ✅ *(PUSH_SPEC §4)* — shipped 2026-07-15
+Done: `services/notifications.ts` `runDeadlineReminders()` — scans gameweeks with a deadline in [now+23.5h, now+24h] (`deadline_24h`) or [now+0.5h, now+1h] (`deadline_1h`), and for each league of that competition, `notifyIfAllowed`s only members with **zero predictions** for the gameweek. Deadline times shown in Jordan time (Asia/Amman). Scheduled `*/30 * * * *` in `index.ts`.
+**Exit (met):** 2 tests — only the unsubmitted member is notified (once), correct kind per window, re-run dedups (one `push_log` row). Full suite 158 green (caught + fixed a test-isolation bug: the seed must use `isCurrent=false` to avoid colliding with other tests' current-season queries).
 
 ### NS3 — Results + GW-complete triggers *(PUSH_SPEC §4)*
 Hook into `runResultsUpdate`: per-user-per-league results batching; full-gameweek detection → `gw_complete`.
@@ -267,7 +267,7 @@ Planning slices register their children here (PS1 → `DS*`, PS2 → `NS*`, PS3 
 | MS16 | Account screen | D | ✅ 2026-07-15 | (this commit) |
 | PS2 🗎 | PUSH_SPEC.md (→ registers `NS*`) | E | ✅ 2026-07-15 | (this commit) |
 | NS1 | Push infra + prefs | E | ✅ 2026-07-15 | (this commit) |
-| NS2 | Deadline reminder cron | E | ☐ | |
+| NS2 | Deadline reminder cron | E | ✅ 2026-07-15 | (this commit) |
 | NS3 | Results + GW-complete triggers | E | ☐ | |
 | NS4 | Client register + tap-routing | E | ☐ | |
 | NS5 | Preference toggles | E | ☐ | |

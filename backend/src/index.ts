@@ -2,6 +2,7 @@ import { app } from "./app.js";
 import { initializeDatabase, queryAll } from "./db.js";
 import { syncAll, updateMatchResults } from "./services/footballData.js";
 import { scorePredictionsForMatch } from "./routes/predictions.js";
+import { runDeadlineReminders } from "./services/notifications.js";
 import cron from "node-cron";
 
 const PORT = process.env.PORT || 3000;
@@ -98,7 +99,10 @@ async function start() {
     // Schedule results update every 15 minutes for faster updates
     cron.schedule("*/15 * * * *", runResultsUpdate);
 
-    console.log("[Cron] Scheduled: full sync every 6 hours, results update every 15 minutes");
+    // Deadline reminder push notifications every 30 minutes (NS2)
+    cron.schedule("*/30 * * * *", runDeadlineReminders);
+
+    console.log("[Cron] Scheduled: full sync 6h, results 15min, deadline reminders 30min");
   } catch (error) {
     console.error("Failed to start server:", error);
     process.exit(1);
