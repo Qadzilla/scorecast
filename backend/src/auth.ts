@@ -145,8 +145,10 @@ export const auth: ReturnType<typeof betterAuth> = betterAuth({
     callbackURL: frontendURL,
     sendVerificationEmail: async ({ user, url }: { user: User & { firstName?: string }; url: string }) => {
       const firstName = user.firstName || "there";
-      // Replace or add callbackURL to redirect to frontend after verification (with verified flag)
-      const urlObj = new URL(url);
+      // Replace or add callbackURL to redirect to frontend after verification (with verified flag).
+      // Pass frontendURL as base so a relative url (e.g. from a script with no HTTP
+      // request context) still parses instead of throwing ERR_INVALID_URL.
+      const urlObj = new URL(url, frontendURL);
       urlObj.searchParams.set("callbackURL", `${frontendURL}?verified=true`);
       const verifyURL = urlObj.toString();
       await sendEmail(
