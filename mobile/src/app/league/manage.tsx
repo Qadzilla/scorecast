@@ -48,7 +48,7 @@ export default function ManageLeagueScreen() {
           <TextField label="League name" value={name} onChangeText={setName} maxLength={40} />
           <Button
             label="Save name"
-            onPress={() => nameChanged && update.mutate(name)}
+            onPress={() => nameChanged && update.mutate({ name })}
             loading={update.isPending}
             disabled={!nameChanged}
           />

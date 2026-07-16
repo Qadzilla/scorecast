@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { View, StyleSheet, ScrollView, type TextInput } from "react-native";
+import { View, StyleSheet, ScrollView, Switch, type TextInput } from "react-native";
 import Animated, { FadeInDown } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -37,6 +37,13 @@ export default function PredictScreen() {
   );
 
   const [entries, setEntries] = useState<Record<string, Entry>>({});
+  // Hide these picks from other members until the deadline. Defaults to visible;
+  // the player can flip it on. Seeded from the last submission if one exists.
+  const [hidden, setHidden] = useState(false);
+  // Once the player touches the slider we stop re-seeding it from server data —
+  // but until then we keep it in sync with the latest fetch (so a stale cache
+  // followed by a fresh refetch doesn't leave it stuck on the old value).
+  const hiddenTouched = useRef(false);
   const inputRefs = useRef<(TextInput | null)[]>([]);
 
   // Seed from existing predictions once both queries resolve.
@@ -47,7 +54,15 @@ export default function PredictScreen() {
       seed[p.matchId] = { home: String(p.predictedHome), away: String(p.predictedAway) };
     }
     setEntries((prev) => ({ ...seed, ...prev }));
+    if (!hiddenTouched.current && existing.data.length > 0) {
+      setHidden(existing.data[0]!.hidden ?? false);
+    }
   }, [existing.data]);
+
+  const onToggleHidden = (v: boolean) => {
+    hiddenTouched.current = true;
+    setHidden(v);
+  };
 
   const deadlineOpen = gameweek.data ? isPredictionWindowOpen(gameweek.data.deadline) : true;
   const filledCount = orderedMatches.filter((m) => {
@@ -76,7 +91,7 @@ export default function PredictScreen() {
         awayScore: Number(e!.away),
       }));
     if (predictions.length === 0) return;
-    submit.mutate(predictions, {
+    submit.mutate({ predictions, hidden }, {
       onSuccess: () => {
         haptics.success();
         // Contextual push opt-in — the ideal moment (they just engaged and
@@ -152,17 +167,35 @@ export default function PredictScreen() {
           </ScrollView>
 
           <View style={styles.submitBar}>
-            <View style={styles.count}>
-              <Text style={styles.countNum} tabular>{filledCount}</Text>
-              <Text variant="caption" color="textTertiary" tabular>/{orderedMatches.length} entered</Text>
-            </View>
-            <View style={styles.submitBtn}>
-              <SolidButton
-                label="Submit predictions"
-                onPress={onSubmit}
-                loading={submit.isPending}
-                disabled={!deadlineOpen || filledCount === 0}
+            <View style={styles.hideRow}>
+              <View style={styles.hideText}>
+                <Text variant="bodyMedium">Hide my picks until deadline</Text>
+                <Text variant="caption" color="textTertiary">
+                  {hidden
+                    ? "Others won't be able to see your predictions until after the deadline."
+                    : "Others can see your predictions as soon as you submit."}
+                </Text>
+              </View>
+              <Switch
+                value={hidden}
+                onValueChange={onToggleHidden}
+                disabled={!deadlineOpen}
+                trackColor={{ true: colors.accent }}
               />
+            </View>
+            <View style={styles.submitRow}>
+              <View style={styles.count}>
+                <Text style={styles.countNum} tabular>{filledCount}</Text>
+                <Text variant="caption" color="textTertiary" tabular>/{orderedMatches.length} entered</Text>
+              </View>
+              <View style={styles.submitBtn}>
+                <SolidButton
+                  label="Submit predictions"
+                  onPress={onSubmit}
+                  loading={submit.isPending}
+                  disabled={!deadlineOpen || filledCount === 0}
+                />
+              </View>
             </View>
           </View>
         </>
@@ -247,15 +280,15 @@ const styles = StyleSheet.create({
   teamName: { flexShrink: 1 },
   scores: { flexDirection: "row", alignItems: "center", gap: spacing.xs },
   submitBar: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
     padding: layout.gutter,
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: colors.border,
     backgroundColor: colors.surface,
-    gap: spacing.lg,
+    gap: spacing.md,
   },
+  hideRow: { flexDirection: "row", alignItems: "center", gap: spacing.md },
+  hideText: { flex: 1, gap: 2 },
+  submitRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: spacing.lg },
   count: { flexDirection: "row", alignItems: "baseline", gap: 2 },
   countNum: { fontFamily: fontFamily.bold, fontSize: 20, color: colors.textPrimary },
   submitBtn: { flex: 1 },

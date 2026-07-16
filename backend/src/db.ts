@@ -10,7 +10,7 @@ import { up as userDeleteCascadeMigration } from "./db/migrations/007_user_delet
 import { up as pushTokensMigration } from "./db/migrations/008_push_tokens.js";
 import { up as notificationPrefMigration } from "./db/migrations/009_notification_pref.js";
 import { up as pushLogMigration } from "./db/migrations/010_push_log.js";
-import { up as hidePredictionsMigration } from "./db/migrations/011_league_hide_predictions.js";
+import { up as predictionHiddenMigration } from "./db/migrations/011_prediction_hidden.js";
 
 const { Pool } = pg;
 
@@ -146,7 +146,7 @@ export async function runMigrations(): Promise<void> {
     await pushTokensMigration(client);
     await notificationPrefMigration(client);
     await pushLogMigration(client);
-    await hidePredictionsMigration(client);
+    await predictionHiddenMigration(client);
   } finally {
     client.release();
   }

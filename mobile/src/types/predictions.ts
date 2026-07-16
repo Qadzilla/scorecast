@@ -47,6 +47,9 @@ export interface UserPrediction {
   predictedHome: number;
   predictedAway: number;
   points: number | null;
+  // Whether this submission is hidden from other members until the deadline.
+  // Present on your own predictions (seeds the predict-screen slider).
+  hidden?: boolean;
   match: {
     id: string;
     kickoffTime: string;

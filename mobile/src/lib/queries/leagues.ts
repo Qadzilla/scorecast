@@ -61,10 +61,10 @@ export function useCreateLeague() {
 export function useUpdateLeague(leagueId: string) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (name: string) =>
+    mutationFn: (input: { name: string }) =>
       apiFetch<{ success: boolean; name: string }>(`/api/leagues/${leagueId}`, {
         method: "PATCH",
-        body: JSON.stringify({ name: name.trim() }),
+        body: JSON.stringify({ name: input.name.trim() }),
       }),
     onSuccess: () => qc.invalidateQueries({ queryKey: leagueKeys.all }),
   });

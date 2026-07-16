@@ -4,7 +4,9 @@ import request from "supertest";
 import { app } from "../app.js";
 import { query, queryOne, initializeDatabase } from "../db.js";
 
-// View-a-player's-predictions endpoint + the hidePredictions privacy gate.
+// View-a-player's-predictions endpoint + the per-prediction hidden gate. The
+// hide/show choice rides on each submission (chosen on the predict screen), not
+// on the league.
 
 let teamA: string;
 let teamB: string;
@@ -65,12 +67,12 @@ async function seedGameweek(deadlineInterval: string): Promise<{ gameweekId: str
   return { gameweekId, matchIds };
 }
 
-async function makeLeague(hide: boolean): Promise<string> {
+async function makeLeague(): Promise<string> {
   const id = crypto.randomUUID();
   await query(
-    `INSERT INTO league (id, name, type, "inviteCode", "createdBy", "hidePredictions", "createdAt", "updatedAt")
-     VALUES ($1, 'PP League', 'premier_league', $2, NULL, $3, NOW(), NOW())`,
-    [id, crypto.randomBytes(4).toString("hex").toUpperCase(), hide]
+    `INSERT INTO league (id, name, type, "inviteCode", "createdBy", "createdAt", "updatedAt")
+     VALUES ($1, 'PP League', 'premier_league', $2, NULL, NOW(), NOW())`,
+    [id, crypto.randomBytes(4).toString("hex").toUpperCase()]
   );
   return id;
 }
@@ -82,12 +84,12 @@ async function addMember(leagueId: string, userId: string) {
   );
 }
 
-async function predict(leagueId: string, userId: string, matchIds: string[]) {
+async function predict(leagueId: string, userId: string, matchIds: string[], hidden = false) {
   for (const m of matchIds) {
     await query(
-      `INSERT INTO prediction (id, "userId", "matchId", "leagueId", "homeScore", "awayScore", "createdAt", "updatedAt")
-       VALUES ($1, $2, $3, $4, 2, 1, NOW(), NOW())`,
-      [crypto.randomUUID(), userId, m, leagueId]
+      `INSERT INTO prediction (id, "userId", "matchId", "leagueId", "homeScore", "awayScore", "hidden", "createdAt", "updatedAt")
+       VALUES ($1, $2, $3, $4, 2, 1, $5, NOW(), NOW())`,
+      [crypto.randomUUID(), userId, m, leagueId, hidden]
     );
   }
 }
@@ -102,47 +104,53 @@ describe("view player predictions + hide gate", () => {
     teamB = await makeTeam(`PA${Date.now() % 1000}`);
   });
 
-  it("hidden league, deadline in future: others 403 locked, own visible", async () => {
+  it("hidden picks filtered per-pick for others before deadline; own sees all", async () => {
     const a = await signUpVerified("ha");
     const b = await signUpVerified("hb");
     const { gameweekId, matchIds } = await seedGameweek("10 hours");
-    const league = await makeLeague(true);
+    const league = await makeLeague();
     await addMember(league, a.id);
     await addMember(league, b.id);
-    await predict(league, b.id, matchIds);
-    await predict(league, a.id, matchIds);
+    const [m0, m1] = matchIds;
+    await predict(league, b.id, [m0!], true); // b hid this pick
+    await predict(league, b.id, [m1!], false); // b shared this pick
+    await predict(league, a.id, matchIds, true);
 
+    // a sees only b's visible pick — the hidden one is filtered, nothing locks
+    // the whole gameweek
     const others = await request(app).get(url(league, gameweekId, b.id)).set("Cookie", a.cookie);
-    expect(others.status).toBe(403);
-    expect(others.body.locked).toBe(true);
+    expect(others.status).toBe(200);
+    expect(others.body.length).toBe(1);
+    expect(others.body[0].matchId).toBe(m1);
 
+    // own picks are always visible to yourself, hidden or not
     const own = await request(app).get(url(league, gameweekId, a.id)).set("Cookie", a.cookie);
     expect(own.status).toBe(200);
     expect(own.body.length).toBe(2);
   });
 
-  it("hidden league, deadline passed: others visible", async () => {
+  it("hidden picks, deadline passed: others visible", async () => {
     const a = await signUpVerified("pa");
     const b = await signUpVerified("pb");
     const { gameweekId, matchIds } = await seedGameweek("-2 hours"); // already passed
-    const league = await makeLeague(true);
+    const league = await makeLeague();
     await addMember(league, a.id);
     await addMember(league, b.id);
-    await predict(league, b.id, matchIds);
+    await predict(league, b.id, matchIds, true);
 
     const res = await request(app).get(url(league, gameweekId, b.id)).set("Cookie", a.cookie);
     expect(res.status).toBe(200);
     expect(res.body.length).toBe(2);
   });
 
-  it("non-hidden league: others visible before deadline", async () => {
+  it("visible submission: others visible before deadline", async () => {
     const a = await signUpVerified("na");
     const b = await signUpVerified("nb");
     const { gameweekId, matchIds } = await seedGameweek("10 hours");
-    const league = await makeLeague(false);
+    const league = await makeLeague();
     await addMember(league, a.id);
     await addMember(league, b.id);
-    await predict(league, b.id, matchIds);
+    await predict(league, b.id, matchIds, false); // b shared their picks
 
     const res = await request(app).get(url(league, gameweekId, b.id)).set("Cookie", a.cookie);
     expect(res.status).toBe(200);
@@ -153,7 +161,7 @@ describe("view player predictions + hide gate", () => {
     const a = await signUpVerified("xa");
     const b = await signUpVerified("xb");
     const { gameweekId } = await seedGameweek("-2 hours");
-    const league = await makeLeague(false);
+    const league = await makeLeague();
     await addMember(league, b.id);
     // a is NOT a member
     const res = await request(app).get(url(league, gameweekId, b.id)).set("Cookie", a.cookie);

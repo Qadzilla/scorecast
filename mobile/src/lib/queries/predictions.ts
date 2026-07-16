@@ -18,21 +18,37 @@ export function usePredictions(leagueId: string, gameweekId: string | undefined)
   });
 }
 
+// Another player's predictions for a gameweek. The server filters out any picks
+// they hid until the deadline passes (per pick), so this may return fewer rows
+// than they actually made — or none if they hid everything.
+export function usePlayerPredictions(leagueId: string, gameweekId: string | undefined, userId: string) {
+  return useQuery({
+    queryKey: ["player-predictions", leagueId, gameweekId ?? "none", userId],
+    queryFn: () =>
+      apiFetch<UserPrediction[]>(`/api/predictions/${leagueId}/gameweek/${gameweekId}/user/${userId}`),
+    enabled: !!gameweekId,
+    retry: false,
+    staleTime: 60 * 1000,
+  });
+}
+
 export interface PredictionInput {
   matchId: string;
   homeScore: number;
   awayScore: number;
 }
 
-// Upsert predictions. Server re-checks the deadline and returns 400 if passed —
-// the screen surfaces that. Invalidates predictions + the league leaderboard.
+// Upsert predictions. `hidden` rides on the whole submission (the predict-screen
+// slider) — it keeps these picks hidden from other members until the deadline.
+// Server re-checks the deadline and returns 400 if passed — the screen surfaces
+// that. Invalidates predictions + the league leaderboard.
 export function useSubmitPredictions(leagueId: string, gameweekId: string) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (predictions: PredictionInput[]) =>
+    mutationFn: (input: { predictions: PredictionInput[]; hidden: boolean }) =>
       apiFetch<{ success: boolean; message: string }>(
         `/api/predictions/${leagueId}/gameweek/${gameweekId}`,
-        { method: "POST", body: JSON.stringify({ predictions }) }
+        { method: "POST", body: JSON.stringify({ predictions: input.predictions, hidden: input.hidden }) }
       ),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: predictionKeys.byGameweek(leagueId, gameweekId) });

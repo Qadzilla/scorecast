@@ -14,7 +14,7 @@ const router = Router();
 // team detail). Shared by the own-predictions and view-a-player endpoints.
 type PredRow = {
   id: string; matchId: string; predictedHome: number; predictedAway: number;
-  points: number | null; createdAt: string; updatedAt: string; kickoffTime: string;
+  points: number | null; hidden: boolean; createdAt: string; updatedAt: string; kickoffTime: string;
   actualHome: number | null; actualAway: number | null; matchStatus: string; venue: string | null;
   homeTeamId: string; homeTeamName: string; homeTeamShortName: string; homeTeamCode: string; homeTeamLogo: string | null;
   awayTeamId: string; awayTeamName: string; awayTeamShortName: string; awayTeamCode: string; awayTeamLogo: string | null;
@@ -24,7 +24,7 @@ async function fetchGameweekPredictions(userId: string, leagueId: string, gamewe
   const rows = await queryAll<PredRow>(
     `SELECT
         p.id, p."matchId", p."homeScore" as "predictedHome", p."awayScore" as "predictedAway",
-        p.points, p."createdAt", p."updatedAt",
+        p.points, p.hidden, p."createdAt", p."updatedAt",
         m."kickoffTime", m."homeScore" as "actualHome", m."awayScore" as "actualAway",
         m.status as "matchStatus", m.venue,
         ht.id as "homeTeamId", ht.name as "homeTeamName", ht."shortName" as "homeTeamShortName", ht.code as "homeTeamCode", ht.logo as "homeTeamLogo",
@@ -40,7 +40,7 @@ async function fetchGameweekPredictions(userId: string, leagueId: string, gamewe
   );
   return rows.map((p) => ({
     id: p.id, matchId: p.matchId, predictedHome: p.predictedHome, predictedAway: p.predictedAway,
-    points: p.points, createdAt: p.createdAt, updatedAt: p.updatedAt,
+    points: p.points, hidden: p.hidden, createdAt: p.createdAt, updatedAt: p.updatedAt,
     match: {
       id: p.matchId, kickoffTime: p.kickoffTime, homeScore: p.actualHome, awayScore: p.actualAway,
       status: p.matchStatus, venue: p.venue,
@@ -74,6 +74,7 @@ router.get("/:leagueId/gameweek/:gameweekId", requireAuth, async (req, res) => {
       predictedHome: number;
       predictedAway: number;
       points: number | null;
+      hidden: boolean;
       createdAt: string;
       updatedAt: string;
       kickoffTime: string;
@@ -98,6 +99,7 @@ router.get("/:leagueId/gameweek/:gameweekId", requireAuth, async (req, res) => {
         p."homeScore" as "predictedHome",
         p."awayScore" as "predictedAway",
         p.points,
+        p.hidden,
         p."createdAt",
         p."updatedAt",
         m."kickoffTime",
@@ -132,6 +134,7 @@ router.get("/:leagueId/gameweek/:gameweekId", requireAuth, async (req, res) => {
       predictedHome: p.predictedHome,
       predictedAway: p.predictedAway,
       points: p.points,
+      hidden: p.hidden,
       createdAt: p.createdAt,
       updatedAt: p.updatedAt,
       match: {
@@ -165,9 +168,11 @@ router.get("/:leagueId/gameweek/:gameweekId", requireAuth, async (req, res) => {
   }
 });
 
-// View ANOTHER member's predictions for a gameweek. Gated: unless it's your own,
-// a league with hidePredictions=true keeps picks hidden until the deadline
-// passes. After the deadline everyone's are always visible.
+// View ANOTHER member's predictions for a gameweek. Any pick the player marked
+// hidden (via the predict-screen slider) is filtered out for other viewers until
+// the deadline passes — per pick, so their visible picks still show and nothing
+// locks the whole gameweek. Your own picks are always visible to you. After the
+// deadline everyone's picks are always visible.
 router.get("/:leagueId/gameweek/:gameweekId/user/:userId", requireAuth, async (req, res) => {
   const { user } = req as AuthenticatedRequest;
   const { leagueId, gameweekId, userId } = req.params;
@@ -195,23 +200,21 @@ router.get("/:leagueId/gameweek/:gameweekId/user/:userId", requireAuth, async (r
       return;
     }
 
+    let deadlinePassed = true;
     if (userId !== user.id) {
-      const league = await queryOne<{ hidePredictions: boolean }>(
-        `SELECT "hidePredictions" FROM league WHERE id = $1`,
-        [leagueId]
-      );
       const gw = await queryOne<{ deadline: string }>(
         `SELECT deadline FROM gameweek WHERE id = $1`,
         [gameweekId]
       );
-      const deadlinePassed = gw ? new Date(gw.deadline) <= new Date() : false;
-      if (league?.hidePredictions && !deadlinePassed) {
-        res.status(403).json({ error: "hidden", locked: true });
-        return;
-      }
+      deadlinePassed = gw ? new Date(gw.deadline) <= new Date() : false;
     }
 
-    const predictions = await fetchGameweekPredictions(String(userId), String(leagueId), String(gameweekId));
+    let predictions = await fetchGameweekPredictions(String(userId), String(leagueId), String(gameweekId));
+    // Drop the player's hidden picks for other viewers until the deadline. Per
+    // pick — visible picks still show; nothing locks the whole gameweek.
+    if (userId !== user.id && !deadlinePassed) {
+      predictions = predictions.filter((p) => !p.hidden);
+    }
     res.json(predictions);
   } catch (err) {
     console.error("Failed to fetch player predictions:", err);
@@ -223,7 +226,10 @@ router.get("/:leagueId/gameweek/:gameweekId/user/:userId", requireAuth, async (r
 router.post("/:leagueId/gameweek/:gameweekId", requireAuth, async (req, res) => {
   const { user } = req as AuthenticatedRequest;
   const { leagueId, gameweekId } = req.params;
-  const { predictions } = req.body;
+  const { predictions, hidden } = req.body;
+  // Per-submission privacy flag chosen on the predict screen slider. Default
+  // false (visible) unless the client explicitly hides.
+  const hide = hidden === true;
 
   if (!Array.isArray(predictions) || predictions.length === 0) {
     res.status(400).json({ error: "Predictions array is required" });
@@ -288,13 +294,14 @@ router.post("/:leagueId/gameweek/:gameweekId", requireAuth, async (req, res) => 
       for (const pred of predictions) {
         const id = crypto.randomUUID();
         await client.query(
-          `INSERT INTO prediction (id, "userId", "matchId", "leagueId", "homeScore", "awayScore", "createdAt", "updatedAt")
-          VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+          `INSERT INTO prediction (id, "userId", "matchId", "leagueId", "homeScore", "awayScore", "hidden", "createdAt", "updatedAt")
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
           ON CONFLICT("userId", "matchId", "leagueId") DO UPDATE SET
             "homeScore" = EXCLUDED."homeScore",
             "awayScore" = EXCLUDED."awayScore",
+            "hidden" = EXCLUDED."hidden",
             "updatedAt" = EXCLUDED."updatedAt"`,
-          [id, user.id, pred.matchId, leagueId, pred.homeScore, pred.awayScore, now, now]
+          [id, user.id, pred.matchId, leagueId, pred.homeScore, pred.awayScore, hide, now, now]
         );
       }
     });

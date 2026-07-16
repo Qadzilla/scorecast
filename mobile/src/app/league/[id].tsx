@@ -14,6 +14,7 @@ import { SegmentedControl } from "@/components/SegmentedControl";
 import { CountdownCard } from "@/components/CountdownCard";
 import { MatchRow } from "@/components/MatchRow";
 import { LeaderboardRow } from "@/components/LeaderboardRow";
+import { PredictionRow } from "@/components/PredictionRow";
 import { PointsBadge } from "@/components/PointsBadge";
 import { TeamCrest } from "@/components/TeamCrest";
 import { Button } from "@/components/Button";
@@ -164,6 +165,19 @@ export default function LeagueDetailScreen() {
             isSeasonComplete={board.data?.isSeasonComplete ?? false}
             userId={session?.user?.id}
             competitionKey={league.type}
+            onPlayer={(e) =>
+              router.push({
+                pathname: "/league/player",
+                params: {
+                  leagueId: league.id,
+                  gameweekId: current.data?.id ?? "",
+                  userId: e.userId,
+                  username: e.username,
+                  teamLogo: e.teamLogo ?? "",
+                  gwLabel: gameweek.data?.name ?? (current.data ? `Gameweek ${current.data.number}` : ""),
+                },
+              })
+            }
           />
         )}
         </Animated.View>
@@ -234,25 +248,11 @@ function PredictionsList({ leagueId, gameweekId }: { leagueId: string; gameweekI
   }
   return (
     <Card padded={false} style={styles.predCard}>
-      {preds.data.map((p: UserPrediction, i) => {
-        const settled = p.match.status === "finished";
-        return (
-          <Animated.View key={p.id} entering={FadeInDown.duration(240).delay(i * 40)} style={[styles.predRow, i === 0 && styles.noBorder]}>
-            <TeamCrest name={p.match.homeTeam.name} code={p.match.homeTeam.code} logo={p.match.homeTeam.logo} size={36} />
-            <View style={styles.predScoreChip}>
-              <Text variant="heading" color="textOnBrand" tabular>
-                {p.predictedHome}–{p.predictedAway}
-              </Text>
-            </View>
-            <TeamCrest name={p.match.awayTeam.name} code={p.match.awayTeam.code} logo={p.match.awayTeam.logo} size={36} />
-            {settled ? (
-              <View style={styles.predBadge}>
-                <PointsBadge outcome={outcomeFromPoints(p.points)} points={p.points ?? 0} />
-              </View>
-            ) : null}
-          </Animated.View>
-        );
-      })}
+      {preds.data.map((p: UserPrediction, i) => (
+        <Animated.View key={p.id} entering={FadeInDown.duration(240).delay(i * 40)}>
+          <PredictionRow p={p} first={i === 0} />
+        </Animated.View>
+      ))}
     </Card>
   );
 }
@@ -264,6 +264,7 @@ function TablePane({
   isSeasonComplete,
   userId,
   competitionKey,
+  onPlayer,
 }: {
   loading: boolean;
   error: boolean;
@@ -271,6 +272,7 @@ function TablePane({
   isSeasonComplete: boolean;
   userId?: string;
   competitionKey: "premier_league" | "champions_league";
+  onPlayer: (e: { userId: string; username: string; teamLogo: string | null }) => void;
 }) {
   if (loading) {
     return (
@@ -296,15 +298,17 @@ function TablePane({
       </View>
       {entries.map((e, i) => (
         <Animated.View key={e.userId} entering={FadeInDown.duration(220).delay(i * 30)} style={i > 0 ? styles.rowDivider : undefined}>
-          <LeaderboardRow
-            rank={e.rank}
-            username={e.username}
-            points={e.totalPoints}
-            teamLogo={e.teamLogo}
-            isCurrentUser={e.userId === userId}
-            isChampion={isSeasonComplete && e.rank === 1}
-            competitionKey={competitionKey}
-          />
+          <Pressable onPress={() => onPlayer(e)} style={({ pressed }) => pressed && styles.rowPressed}>
+            <LeaderboardRow
+              rank={e.rank}
+              username={e.username}
+              points={e.totalPoints}
+              teamLogo={e.teamLogo}
+              isCurrentUser={e.userId === userId}
+              isChampion={isSeasonComplete && e.rank === 1}
+              competitionKey={competitionKey}
+            />
+          </Pressable>
         </Animated.View>
       ))}
     </Card>
@@ -354,6 +358,7 @@ const styles = StyleSheet.create({
   colPlayer: { flex: 1, marginLeft: 30 + spacing.md },
   colPts: { width: 44, textAlign: "right" },
   rowDivider: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border },
+  rowPressed: { backgroundColor: colors.surfaceAlt },
   codeBox: {
     flexDirection: "row",
     alignItems: "center",

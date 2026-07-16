@@ -19,8 +19,7 @@ function generateInviteCode(): string {
 // Create a new league
 router.post("/", requireAuth, async (req, res) => {
   const { user } = req as AuthenticatedRequest;
-  const { name, description, type, hidePredictions } = req.body;
-  const hide = hidePredictions === undefined ? true : !!hidePredictions;
+  const { name, description, type } = req.body;
 
   // Only admin can create leagues
   if (!isAdmin(user.email)) {
@@ -55,9 +54,9 @@ router.post("/", requireAuth, async (req, res) => {
   try {
     // Create the league
     await query(
-      `INSERT INTO league (id, name, description, type, "inviteCode", "createdBy", "hidePredictions", "createdAt", "updatedAt")
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
-      [leagueId, name.trim(), description?.trim() || null, type, inviteCode, user.id, hide, now, now]
+      `INSERT INTO league (id, name, description, type, "inviteCode", "createdBy", "createdAt", "updatedAt")
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+      [leagueId, name.trim(), description?.trim() || null, type, inviteCode, user.id, now, now]
     );
 
     // Add creator as admin member
@@ -75,7 +74,6 @@ router.post("/", requireAuth, async (req, res) => {
       type,
       inviteCode,
       createdBy: user.id,
-      hidePredictions: hide,
       createdAt: now,
       role: "admin",
     });
@@ -161,7 +159,6 @@ router.get("/", requireAuth, async (req, res) => {
         l.type,
         l."inviteCode",
         l."createdBy",
-        l."hidePredictions",
         l."createdAt",
         lm.role,
         lm."joinedAt",
@@ -184,7 +181,7 @@ router.get("/", requireAuth, async (req, res) => {
 router.patch("/:leagueId", requireAuth, async (req, res) => {
   const { user } = req as AuthenticatedRequest;
   const { leagueId } = req.params;
-  const { name, hidePredictions } = req.body;
+  const { name } = req.body;
 
   // Only admin can update leagues
   if (!isAdmin(user.email)) {
@@ -203,14 +200,9 @@ router.patch("/:leagueId", requireAuth, async (req, res) => {
   }
 
   try {
-    const hide = typeof hidePredictions === "boolean" ? hidePredictions : null;
     const result = await query(
-      `UPDATE league
-         SET name = $1,
-             "hidePredictions" = COALESCE($2, "hidePredictions"),
-             "updatedAt" = $3
-       WHERE id = $4`,
-      [name.trim(), hide, new Date().toISOString(), leagueId]
+      `UPDATE league SET name = $1, "updatedAt" = $2 WHERE id = $3`,
+      [name.trim(), new Date().toISOString(), leagueId]
     );
 
     if (result.rowCount === 0) {
