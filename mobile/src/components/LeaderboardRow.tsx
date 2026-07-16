@@ -1,7 +1,7 @@
 import { View, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { Text } from "./Text";
-import { colors, spacing, radius, layout, competition, type CompetitionKey } from "@/constants/theme";
+import { colors, spacing, radius, competition, fontFamily, type CompetitionKey } from "@/constants/theme";
 
 type LeaderboardRowProps = {
   rank: number;
@@ -30,9 +30,9 @@ export function LeaderboardRow({
     <View style={[styles.row, isCurrentUser && { backgroundColor: comp.tint }]}>
       <View style={styles.rankCell}>
         {isChampion ? (
-          <Ionicons name="trophy" size={18} color={colors.warning} />
+          <Ionicons name="trophy" size={16} color={colors.warning} />
         ) : (
-          <Text variant="numeral" style={{ fontSize: 17, color: topThree ? comp.main : colors.textPrimary }}>
+          <Text variant="numeral" tabular style={{ fontSize: 15, color: topThree ? comp.main : colors.textSecondary }}>
             {rank}
           </Text>
         )}
@@ -49,13 +49,11 @@ export function LeaderboardRow({
       </Text>
       {isCurrentUser ? (
         <View style={styles.youChip}>
-          <Text variant="caption" color="accent">
-            You
-          </Text>
+          <Text style={styles.youText}>You</Text>
         </View>
       ) : null}
 
-      <Text variant="numeral" style={styles.points} tabular>
+      <Text variant="numeral" tabular style={styles.points}>
         {points}
       </Text>
     </View>
@@ -66,19 +64,25 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: "row",
     alignItems: "center",
-    minHeight: layout.rowMinHeight,
+    minHeight: 52,
     paddingHorizontal: spacing.md,
     gap: spacing.md,
-    borderRadius: radius.sm,
   },
-  rankCell: { width: 32, alignItems: "center" },
-  avatar: { width: 32, height: 32, borderRadius: 16, alignItems: "center", justifyContent: "center" },
+  rankCell: { width: 28, alignItems: "center" },
+  avatar: { width: 30, height: 30, borderRadius: radius.sm, alignItems: "center", justifyContent: "center" },
   name: { flex: 1 },
   youChip: {
     backgroundColor: colors.accentTint,
-    borderRadius: radius.pill,
+    borderRadius: radius.sm,
     paddingHorizontal: spacing.sm,
     paddingVertical: 2,
   },
-  points: { fontSize: 17 },
+  youText: {
+    fontFamily: fontFamily.semibold,
+    fontSize: 10,
+    letterSpacing: 0.5,
+    textTransform: "uppercase",
+    color: colors.accent,
+  },
+  points: { fontSize: 16, width: 44, textAlign: "right", color: colors.textPrimary },
 });

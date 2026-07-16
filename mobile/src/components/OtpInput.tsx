@@ -1,7 +1,8 @@
 import { useRef, useState } from "react";
 import { View, TextInput, Pressable, StyleSheet } from "react-native";
 import { Text } from "./Text";
-import { colors, radius, spacing } from "@/constants/theme";
+import { brand } from "@/constants/brand";
+import { radius, spacing, fontFamily } from "@/constants/theme";
 
 type OtpInputProps = {
   value: string;
@@ -40,7 +41,7 @@ export function OtpInput({ value, onChange, length = 6, error, onComplete, autoF
               error ? styles.error : null,
             ]}
           >
-            <Text variant="numeral">{char}</Text>
+            <Text style={styles.digit}>{char}</Text>
           </View>
         );
       })}
@@ -72,14 +73,15 @@ const styles = StyleSheet.create({
     height: 56,
     maxWidth: BOX + 8,
     borderRadius: radius.sm,
-    backgroundColor: colors.surfaceAlt,
+    backgroundColor: "#ffffff",
     borderWidth: 2,
-    borderColor: colors.border,
+    borderColor: brand.faint,
     alignItems: "center",
     justifyContent: "center",
   },
-  filled: { borderColor: colors.textTertiary },
-  active: { borderColor: colors.accent },
-  error: { borderColor: colors.danger },
+  filled: { borderColor: brand.line },
+  active: { borderColor: brand.line },
+  error: { borderColor: brand.danger },
+  digit: { fontFamily: fontFamily.bold, fontSize: 24, color: brand.ink },
   hidden: { position: "absolute", width: 1, height: 1, opacity: 0 },
 });

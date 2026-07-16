@@ -53,8 +53,8 @@ export interface UserPrediction {
     homeScore: number | null;
     awayScore: number | null;
     status: string;
-    homeTeam: { id: string; name: string; shortName: string; code: string };
-    awayTeam: { id: string; name: string; shortName: string; code: string };
+    homeTeam: { id: string; name: string; shortName: string; code: string; logo?: string | null };
+    awayTeam: { id: string; name: string; shortName: string; code: string; logo?: string | null };
   };
 }
 

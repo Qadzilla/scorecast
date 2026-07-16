@@ -1,27 +1,31 @@
 import { useEffect, useState } from "react";
 import { View, StyleSheet } from "react-native";
-import { Card } from "./Card";
 import { Text } from "./Text";
-import { Skeleton } from "./Skeleton";
 import { getTimeRemaining } from "@/types/fixtures";
-import { colors, spacing, competition, type CompetitionKey, type ColorToken } from "@/constants/theme";
+import { colors, spacing, radius, layout, competition, fontFamily, type CompetitionKey } from "@/constants/theme";
 
 type CountdownCardProps = {
   competitionKey: CompetitionKey;
   deadline: string; // ISO
   gameweekName?: string;
-  /** Force a non-time state. */
   state?: "loading" | "live";
 };
 
-// CountdownCard — competition-railed card with a DD:HH:MM:SS tick and threshold
-// states (spec §3): normal, <24h (warning), <1h (danger), passed, live, loading.
+// Dark-navy hero — a piece of the app icon dropped into the light UI. Off-white
+// mono digits, a bright-blue competition dot, small-caps mono label. Urgency
+// (<24h / <1h) shows in the digit + dot color. The focal element of the home.
+const NAVY = "#1d2d3d";
+const NAVY_BORDER = "#2c4056";
+const ON = colors.textOnBrand; // off-white
+const DIM = "#8ba0b6"; // muted light (units, gw name)
+const ACCENT = colors.neon; // bright line-blue
+
 export function CountdownCard({ competitionKey, deadline, gameweekName, state }: CountdownCardProps) {
   const comp = competition[competitionKey];
   const [remaining, setRemaining] = useState(() => getTimeRemaining(deadline));
 
   useEffect(() => {
-    if (state) return; // no ticking for loading/live
+    if (state) return;
     setRemaining(getTimeRemaining(deadline));
     const id = setInterval(() => setRemaining(getTimeRemaining(deadline)), 1000);
     return () => clearInterval(id);
@@ -29,84 +33,83 @@ export function CountdownCard({ competitionKey, deadline, gameweekName, state }:
 
   if (state === "loading") {
     return (
-      <Card railColor={comp.main}>
-        <Skeleton width="40%" height={12} />
-        <View style={{ height: spacing.sm }} />
-        <Skeleton width="70%" height={30} />
-      </Card>
+      <View style={styles.card}>
+        <View style={styles.head}>
+          <View style={[styles.dot, { backgroundColor: DIM }]} />
+          <Text style={styles.label}>{comp.label}</Text>
+        </View>
+        <View style={styles.loadingBar} />
+      </View>
     );
   }
 
   const passed = state !== "live" && remaining.total <= 0;
-  const urgent: { rail?: string; digit: ColorToken } =
+  const urgentColor =
     remaining.total > 0 && remaining.total < 60 * 60 * 1000
-      ? { rail: colors.danger, digit: "danger" }
+      ? colors.danger
       : remaining.total > 0 && remaining.total < 24 * 60 * 60 * 1000
-        ? { rail: colors.warning, digit: "warning" }
-        : { digit: "textPrimary" };
-
-  const railColor = state === "live" ? colors.accent : urgent.rail ?? comp.main;
+        ? colors.warning
+        : null;
+  const dotColor = state === "live" ? colors.accent : passed ? DIM : urgentColor ?? ACCENT;
+  const digitColor = urgentColor ?? ON;
 
   return (
-    <Card railColor={railColor}>
-      <Text variant="label" style={{ color: railColor }}>
-        {comp.label}
-      </Text>
+    <View style={styles.card}>
+      <View style={styles.head}>
+        <View style={[styles.dot, { backgroundColor: dotColor }]} />
+        <Text style={styles.label}>{comp.label}</Text>
+        {gameweekName ? <Text style={styles.gw}>{gameweekName}</Text> : null}
+      </View>
 
       {state === "live" ? (
-        <Text variant="title" color="accent" style={styles.body}>
-          Matches in play
-        </Text>
+        <Text style={[styles.state, { color: colors.accent }]}>Matches in play</Text>
       ) : passed ? (
-        <Text variant="title" color="textSecondary" style={styles.body}>
-          Deadline passed — GW locked
-        </Text>
+        <Text style={[styles.state, { color: DIM }]}>Deadline passed — locked</Text>
       ) : (
-        <View style={[styles.body, styles.digits]}>
-          <TimeGroup value={remaining.days} unit="days" color={urgent.digit} />
+        <View style={styles.digits}>
+          <TimeGroup value={remaining.days} unit="days" color={digitColor} />
           <Colon />
-          <TimeGroup value={remaining.hours} unit="hrs" color={urgent.digit} />
+          <TimeGroup value={remaining.hours} unit="hrs" color={digitColor} />
           <Colon />
-          <TimeGroup value={remaining.minutes} unit="min" color={urgent.digit} />
+          <TimeGroup value={remaining.minutes} unit="min" color={digitColor} />
           <Colon />
-          <TimeGroup value={remaining.seconds} unit="sec" color={urgent.digit} />
+          <TimeGroup value={remaining.seconds} unit="sec" color={digitColor} />
         </View>
       )}
-
-      {gameweekName ? (
-        <Text variant="caption" color="textSecondary" style={styles.footer}>
-          {gameweekName}
-        </Text>
-      ) : null}
-    </Card>
+    </View>
   );
 }
 
-function TimeGroup({ value, unit, color }: { value: number; unit: string; color: ColorToken }) {
+function TimeGroup({ value, unit, color }: { value: number; unit: string; color: string }) {
   return (
     <View style={styles.group}>
-      <Text variant="numeralLg" color={color}>
-        {String(value).padStart(2, "0")}
-      </Text>
-      <Text variant="caption" color="textTertiary">
-        {unit}
-      </Text>
+      <Text style={[styles.digit, { color }]}>{String(value).padStart(2, "0")}</Text>
+      <Text style={styles.unit}>{unit}</Text>
     </View>
   );
 }
 
 function Colon() {
-  return (
-    <Text variant="numeralLg" color="textTertiary" style={styles.colon}>
-      :
-    </Text>
-  );
+  return <Text style={styles.colon}>:</Text>;
 }
 
 const styles = StyleSheet.create({
-  body: { marginTop: spacing.sm },
-  digits: { flexDirection: "row", alignItems: "flex-start" },
+  card: {
+    backgroundColor: NAVY,
+    borderRadius: radius.md,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: NAVY_BORDER,
+    padding: layout.cardPadding,
+  },
+  head: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
+  dot: { width: 7, height: 7, borderRadius: 4 },
+  label: { fontFamily: fontFamily.mono, fontSize: 11, letterSpacing: 0.5, textTransform: "uppercase", color: ON },
+  gw: { marginLeft: "auto", fontFamily: fontFamily.mono, fontSize: 11, color: DIM },
+  state: { marginTop: spacing.md, fontFamily: fontFamily.bold, fontSize: 17 },
+  digits: { flexDirection: "row", alignItems: "flex-start", marginTop: spacing.md },
   group: { alignItems: "center" },
-  colon: { marginHorizontal: spacing.sm, marginTop: -2 },
-  footer: { marginTop: spacing.sm },
+  digit: { fontFamily: fontFamily.monoBold, fontSize: 32, lineHeight: 36 },
+  unit: { fontFamily: fontFamily.mono, fontSize: 10, color: DIM, marginTop: 2, textTransform: "uppercase" },
+  colon: { fontFamily: fontFamily.monoBold, fontSize: 32, lineHeight: 36, color: DIM, marginHorizontal: spacing.sm },
+  loadingBar: { marginTop: spacing.md, height: 32, width: "70%", borderRadius: radius.sm, backgroundColor: NAVY_BORDER },
 });

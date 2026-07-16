@@ -1,41 +1,42 @@
 /**
  * ScoreCast design tokens — the single source of truth for color, type,
- * spacing, radius, shadow and motion. See MOBILE_DESIGN_SPEC.md §2 (DS1).
- * Components import from here only; no literal colors in component files.
+ * spacing, radius, shadow and motion.
  *
- * Unified LIGHT theme. Per-competition accents (PL purple / UCL navy) do the
- * theming; green is reserved for action/success. Dark mode is out of scope for
- * V1 but the shape here (flat maps) leaves room to add one later.
+ * The "blueprint" system, derived from the app icon. The icon is dark (navy
+ * ground, off-white mark); the in-app experience is the inverse — a light cool
+ * paper ground, brand-navy ink, and mid-blue accents. `src/constants/brand.ts`
+ * re-exports these as semantic aliases for the auth screens.
+ *
+ * NOTE: the `plPurple` / `uclNavy` / `neon` token NAMES are legacy — their
+ * VALUES are now blueprint navy/blues (rename is a later cleanup).
  */
 
 export const colors = {
-  bg: "#f1f5f9", // screen background (flat)
+  bg: "#f2f6fb", // light cool paper ground
   surface: "#ffffff", // cards, sheets, tab bar
-  surfaceAlt: "#f8fafc", // inset rows, filled inputs, skeleton base
-  border: "#e2e8f0", // hairlines, input borders (default)
+  surfaceAlt: "#eef2f7", // inset rows, filled inputs, skeleton base
+  border: "#e3e9f1", // hairlines, input borders (default)
 
-  textPrimary: "#0f172a",
-  textSecondary: "#64748b",
-  textTertiary: "#94a3b8", // placeholders, timestamps
-  textOnBrand: "#ffffff",
+  textPrimary: "#1d2d3d", // brand navy (ink)
+  textSecondary: "#5a6b7e",
+  textTertiary: "#93a3b4", // placeholders, timestamps, labels
+  textOnBrand: "#eef6ff", // off-white — text on navy
 
-  plPurple: "#3d195b",
-  plPurpleLight: "#6b2d8a",
-  plTint: "#f3eef8", // PL-scoped fills: active segment, rail tints
-  uclNavy: "#04065c",
-  uclNavyLight: "#1a237e",
-  uclTint: "#e9eaf6",
+  plPurple: "#1d2d3d", // navy — PL main, crest discs, avatars
+  plPurpleLight: "#5980a6", // mid-blue — PL light
+  plTint: "#e6edf4", // PL-scoped fills: active segment, rail tints
+  uclNavy: "#33547a", // steel-blue — UCL main
+  uclNavyLight: "#6d92bb",
+  uclTint: "#e9eef6",
 
-  // #00ff87 (the web neon) fails contrast on white — decorative use only, on
-  // purple/navy grounds. This darkened green is the one used for text/CTAs.
-  accent: "#00b368",
-  accentPressed: "#009457",
-  accentTint: "#e6f7ef",
-  neon: "#00ff87", // decorative ONLY, never as text/fill on light surfaces
+  accent: "#5980a6", // mid-blue — actions, links, focus
+  accentPressed: "#4a6c8f",
+  accentTint: "#e4ecf5",
+  neon: "#b5d9fd", // bright line-blue — decorative only (on navy)
 
-  danger: "#dc2626",
-  dangerTint: "#fdecec",
-  warning: "#d97706", // deadline < 24h
+  danger: "#c0492e",
+  dangerTint: "#f7e6e0",
+  warning: "#d97706", // deadline < 24h (warm, deliberately pops on the cool palette)
   warningTint: "#fdf3e3",
 } as const;
 
@@ -59,13 +60,19 @@ export const competition = {
 
 export type CompetitionKey = keyof typeof competition;
 
-/** Plus Jakarta Sans family keys (see fonts.ts for the load map). */
+/**
+ * Font families (see fonts.ts for the load map). Inter across the whole app.
+ * `mono` / `monoBold` are kept as aliases (they point at Inter) so components
+ * that referenced them keep working — there is no separate mono face.
+ */
 export const fontFamily = {
-  regular: "PlusJakartaSans_400Regular",
-  medium: "PlusJakartaSans_500Medium",
-  semibold: "PlusJakartaSans_600SemiBold",
-  bold: "PlusJakartaSans_700Bold",
-  extrabold: "PlusJakartaSans_800ExtraBold",
+  regular: "Inter_400Regular",
+  medium: "Inter_500Medium",
+  semibold: "Inter_600SemiBold",
+  bold: "Inter_700Bold",
+  extrabold: "Inter_800ExtraBold",
+  mono: "Inter_600SemiBold",
+  monoBold: "Inter_700Bold",
 } as const;
 
 /**
@@ -118,11 +125,13 @@ export const layout = {
   minTouchTarget: 44,
 } as const;
 
+// Squared, small radii — echoing the icon's hard-edged square score boxes and
+// ruled/technical feel. Straight lines over soft pills.
 export const radius = {
-  sm: 10, // inputs, chips
-  md: 14, // cards, buttons
-  lg: 20, // sheets, hero cards
-  pill: 999,
+  sm: 4, // inputs, chips, otp boxes
+  md: 8, // cards, buttons
+  lg: 12, // sheets
+  pill: 999, // circles only (dots, avatars, skeleton discs)
 } as const;
 
 /** The single soft card shadow used everywhere. No blur effects in the app. */

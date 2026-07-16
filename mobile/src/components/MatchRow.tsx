@@ -37,12 +37,12 @@ export function MatchRow({ match, center, right }: MatchRowProps) {
           (started ? (
             <View style={styles.scoreChip}>
               {live ? <View style={styles.liveDot} /> : null}
-              <Text variant="heading" tabular>
-                {match.homeScore ?? 0} - {match.awayScore ?? 0}
+              <Text variant="heading" color="textOnBrand" tabular>
+                {match.homeScore ?? 0}–{match.awayScore ?? 0}
               </Text>
             </View>
           ) : (
-            <Text variant="bodyMedium" color="textSecondary">
+            <Text variant="bodyMedium" color="textSecondary" tabular>
               {kickoffTime(match.kickoffTime)}
             </Text>
           ))}
@@ -88,13 +88,13 @@ const styles = StyleSheet.create({
   scoreChip: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 4,
-    backgroundColor: colors.surfaceAlt,
+    gap: 5,
+    backgroundColor: colors.textPrimary,
     borderRadius: radius.sm,
     paddingHorizontal: spacing.sm,
-    paddingVertical: 2,
+    paddingVertical: 3,
   },
-  liveDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: colors.accent },
+  liveDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: colors.neon },
   redCard: { width: 12, height: 16, borderRadius: 2, backgroundColor: colors.danger, alignItems: "center", justifyContent: "center" },
   redCardText: { fontSize: 9, lineHeight: 12 },
   rightSlot: { marginLeft: spacing.sm },

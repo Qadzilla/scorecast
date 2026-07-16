@@ -1,12 +1,12 @@
 import { useEffect, useRef, useState } from "react";
-import { View, StyleSheet, KeyboardAvoidingView, Platform } from "react-native";
+import { View, StyleSheet, KeyboardAvoidingView, Platform, Pressable } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Text } from "@/components/Text";
-import { Button } from "@/components/Button";
-import { Banner } from "@/components/Banner";
+import { SolidButton } from "@/components/SolidButton";
+import { FormErrorStrip } from "@/components/FormErrorStrip";
 import { OtpInput } from "@/components/OtpInput";
-import { ScreenHeader } from "@/components/ScreenHeader";
 import {
   sendVerificationCode,
   verifyEmailCode,
@@ -16,7 +16,8 @@ import {
 } from "@/lib/auth";
 import { takePendingPassword, clearPendingCredentials } from "@/lib/pendingCredentials";
 import { haptics } from "@/utils/haptics";
-import { colors, spacing, layout } from "@/constants/theme";
+import { brand } from "@/constants/brand";
+import { spacing, layout, fontFamily } from "@/constants/theme";
 
 const RESEND_COOLDOWN = 60;
 
@@ -104,52 +105,75 @@ export default function VerifyScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.safe}>
-      <ScreenHeader title="Verify email" />
-      <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === "ios" ? "padding" : undefined}>
-        <View style={styles.body}>
-          <Text variant="title">Enter your code</Text>
-          <Text variant="body" color="textSecondary">
-            We sent a 6-digit code to{"\n"}
-            <Text variant="bodyMedium">{email ?? "your email"}</Text>.
-          </Text>
+    <View style={styles.root}>
+      <SafeAreaView style={styles.safe}>
+        <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === "ios" ? "padding" : undefined}>
+          <View style={styles.body}>
+            <Pressable
+              onPress={() => router.back()}
+              hitSlop={layout.hitSlop}
+              style={styles.back}
+              accessibilityLabel="Go back"
+            >
+              <Ionicons name="chevron-back" size={26} color={brand.ink} />
+            </Pressable>
 
-          {error ? (
-            <Banner
-              kind={error === "NETWORK" ? "offline" : "error"}
-              message={`${ERROR_COPY[error] ?? ERROR_COPY.UNKNOWN!}${detail ? `\n[${detail}]` : ""}`}
+            <Text style={styles.headline}>Check your email.</Text>
+            <Text style={styles.subhead}>
+              Enter the 6-digit code we sent to{" "}
+              <Text style={styles.email}>{email ?? "your email"}</Text>.
+            </Text>
+
+            {error ? (
+              <View style={styles.errorWrap}>
+                <FormErrorStrip
+                  kind={error === "NETWORK" ? "offline" : "error"}
+                  message={`${ERROR_COPY[error] ?? ERROR_COPY.UNKNOWN!}${detail ? `\n[${detail}]` : ""}`}
+                />
+              </View>
+            ) : null}
+
+            <View style={styles.otpWrap}>
+              <OtpInput value={code} onChange={setCode} error={!!error} onComplete={submit} autoFocus />
+            </View>
+
+            <SolidButton
+              label="Verify"
+              onPress={() => submit(code)}
+              loading={verifying}
+              disabled={code.length !== 6}
+              style={styles.cta}
             />
-          ) : null}
 
-          <OtpInput value={code} onChange={setCode} error={!!error} onComplete={submit} autoFocus />
-
-          <Button
-            label="Verify"
-            onPress={() => submit(code)}
-            loading={verifying}
-            disabled={code.length !== 6}
-          />
-
-          <View style={styles.resendRow}>
-            {cooldown > 0 ? (
-              <Text variant="caption" color="textTertiary">
-                Resend code in {cooldown}s
-              </Text>
-            ) : (
-              <Text variant="bodyMedium" color="accent" onPress={resend}>
-                Resend code
-              </Text>
-            )}
+            <View style={styles.resendRow}>
+              {cooldown > 0 ? (
+                <Text style={styles.resendMuted}>Resend code in {cooldown}s</Text>
+              ) : (
+                <Text style={styles.resendLink} onPress={resend}>
+                  Resend code
+                </Text>
+              )}
+            </View>
           </View>
-        </View>
-      </KeyboardAvoidingView>
-    </SafeAreaView>
+        </KeyboardAvoidingView>
+      </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.bg },
+  root: { flex: 1, backgroundColor: brand.paper },
+  safe: { flex: 1 },
   flex: { flex: 1 },
-  body: { flex: 1, paddingHorizontal: layout.gutter, paddingTop: spacing.xl, gap: spacing.lg },
-  resendRow: { alignItems: "center", marginTop: spacing.sm },
+  body: { flex: 1, paddingHorizontal: layout.gutter, paddingTop: spacing.sm },
+  back: { width: 40, height: 40, justifyContent: "center", marginLeft: -8, marginBottom: spacing.md },
+  headline: { fontFamily: fontFamily.extrabold, fontSize: 30, lineHeight: 36, letterSpacing: -0.6, color: brand.ink },
+  subhead: { fontFamily: fontFamily.regular, fontSize: 15, lineHeight: 22, color: brand.muted, marginTop: spacing.sm },
+  email: { fontFamily: fontFamily.semibold, color: brand.ink },
+  errorWrap: { marginTop: spacing.lg },
+  otpWrap: { marginTop: spacing.xxl },
+  cta: { marginTop: spacing.xxl },
+  resendRow: { alignItems: "center", marginTop: spacing.lg },
+  resendMuted: { fontFamily: fontFamily.regular, fontSize: 13, color: brand.faint },
+  resendLink: { fontFamily: fontFamily.semibold, fontSize: 15, color: brand.line },
 });

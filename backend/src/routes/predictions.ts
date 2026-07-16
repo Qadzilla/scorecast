@@ -45,10 +45,12 @@ router.get("/:leagueId/gameweek/:gameweekId", requireAuth, async (req, res) => {
       homeTeamName: string;
       homeTeamShortName: string;
       homeTeamCode: string;
+      homeTeamLogo: string | null;
       awayTeamId: string;
       awayTeamName: string;
       awayTeamShortName: string;
       awayTeamCode: string;
+      awayTeamLogo: string | null;
     }>(
       `SELECT
         p.id,
@@ -67,10 +69,12 @@ router.get("/:leagueId/gameweek/:gameweekId", requireAuth, async (req, res) => {
         ht.name as "homeTeamName",
         ht."shortName" as "homeTeamShortName",
         ht.code as "homeTeamCode",
+        ht.logo as "homeTeamLogo",
         at.id as "awayTeamId",
         at.name as "awayTeamName",
         at."shortName" as "awayTeamShortName",
-        at.code as "awayTeamCode"
+        at.code as "awayTeamCode",
+        at.logo as "awayTeamLogo"
       FROM prediction p
       JOIN match m ON p."matchId" = m.id
       JOIN matchday md ON m."matchdayId" = md.id
@@ -102,12 +106,14 @@ router.get("/:leagueId/gameweek/:gameweekId", requireAuth, async (req, res) => {
           name: p.homeTeamName,
           shortName: p.homeTeamShortName,
           code: p.homeTeamCode,
+          logo: p.homeTeamLogo,
         },
         awayTeam: {
           id: p.awayTeamId,
           name: p.awayTeamName,
           shortName: p.awayTeamShortName,
           code: p.awayTeamCode,
+          logo: p.awayTeamLogo,
         },
       },
     }));

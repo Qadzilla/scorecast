@@ -8,6 +8,7 @@ import * as Clipboard from "expo-clipboard";
 import { ScreenHeader } from "@/components/ScreenHeader";
 import { Text } from "@/components/Text";
 import { Card } from "@/components/Card";
+import { SectionTitle } from "@/components/SectionTitle";
 import { SegmentedControl } from "@/components/SegmentedControl";
 import { CountdownCard } from "@/components/CountdownCard";
 import { MatchRow } from "@/components/MatchRow";
@@ -25,7 +26,7 @@ import { upcomingDeadline } from "@/types/leagues";
 import { isPredictionWindowOpen } from "@/types/fixtures";
 import { outcomeFromPoints, type UserPrediction } from "@/types/predictions";
 import { haptics } from "@/utils/haptics";
-import { colors, spacing, layout, competition } from "@/constants/theme";
+import { colors, spacing, layout, radius, competition, fontFamily } from "@/constants/theme";
 
 type Pane = "fixtures" | "predictions" | "table";
 
@@ -106,7 +107,7 @@ export default function LeagueDetailScreen() {
           ]}
           value={pane}
           onChange={setPane}
-          activeColor={compColor}
+          activeColor={colors.textPrimary}
         />
       </View>
 
@@ -114,13 +115,12 @@ export default function LeagueDetailScreen() {
         {pane === "fixtures" && (
           <FixturesPane
             loading={current.isLoading || gameweek.isLoading}
-            gwName={gameweek.data?.name ?? (current.data ? `Gameweek ${current.data.number}` : "")}
             matchdays={gameweek.data?.matchdays}
           />
         )}
 
         {pane === "predictions" && (
-          <View style={{ gap: spacing.md }}>
+          <View style={{ gap: spacing.lg }}>
             {current.isLoading ? (
               <CountdownCard competitionKey={league.type} deadline={new Date().toISOString()} state="loading" />
             ) : (
@@ -129,8 +129,8 @@ export default function LeagueDetailScreen() {
                 return up ? (
                   <CountdownCard competitionKey={league.type} deadline={up.deadline} gameweekName={up.label} />
                 ) : (
-                  <Card railColor={compColor}>
-                    <Text variant="title" color="textSecondary">No upcoming deadline</Text>
+                  <Card>
+                    <Text variant="heading" color="textSecondary">No upcoming deadline</Text>
                   </Card>
                 );
               })()
@@ -147,7 +147,10 @@ export default function LeagueDetailScreen() {
                 })
               }
             />
-            <PredictionsList leagueId={league.id} gameweekId={current.data?.id} />
+            <View style={{ gap: spacing.sm }}>
+              <SectionTitle label="Your predictions" />
+              <PredictionsList leagueId={league.id} gameweekId={current.data?.id} />
+            </View>
           </View>
         )}
 
@@ -187,11 +190,9 @@ export default function LeagueDetailScreen() {
 
 function FixturesPane({
   loading,
-  gwName,
   matchdays,
 }: {
   loading: boolean;
-  gwName: string;
   matchdays?: { id: string; date: string; matches: Parameters<typeof MatchRow>[0]["match"][] }[];
 }) {
   if (loading) return <SkeletonLines count={5} />;
@@ -199,16 +200,15 @@ function FixturesPane({
     return <EmptyState icon="calendar-outline" title="No fixtures" subtitle="This gameweek has no matches yet." />;
   }
   return (
-    <View style={{ gap: spacing.lg }}>
-      {gwName ? <Text variant="heading">{gwName}</Text> : null}
+    <View style={{ gap: spacing.xl }}>
       {matchdays.map((md) => (
-        <View key={md.id} style={{ gap: spacing.xs }}>
-          <Text variant="label" color="textSecondary">
-            {new Date(md.date).toLocaleDateString([], { weekday: "short", day: "numeric", month: "short" })}
-          </Text>
+        <View key={md.id} style={{ gap: spacing.sm }}>
+          <SectionTitle
+            label={new Date(md.date).toLocaleDateString([], { weekday: "long", day: "numeric", month: "short" })}
+          />
           <Card padded={false} style={styles.matchCard}>
-            {md.matches.map((m) => (
-              <View key={m.id} style={styles.matchRowWrap}>
+            {md.matches.map((m, i) => (
+              <View key={m.id} style={[styles.matchRowWrap, i === 0 && styles.noBorder]}>
                 <MatchRow match={m} />
               </View>
             ))}
@@ -230,22 +230,24 @@ function PredictionsList({ leagueId, gameweekId }: { leagueId: string; gameweekI
     );
   }
   return (
-    <Card padded={false} style={{ paddingHorizontal: spacing.md, paddingVertical: spacing.xs }}>
-      {preds.data.map((p: UserPrediction) => {
+    <Card padded={false} style={styles.predCard}>
+      {preds.data.map((p: UserPrediction, i) => {
         const settled = p.match.status === "finished";
         return (
-          <View key={p.id} style={styles.predRow}>
+          <View key={p.id} style={[styles.predRow, i === 0 && styles.noBorder]}>
             <View style={[styles.predTeam, { justifyContent: "flex-end" }]}>
               <Text variant="caption" numberOfLines={1} style={styles.predName}>
                 {p.match.homeTeam.shortName || p.match.homeTeam.name}
               </Text>
-              <TeamCrest name={p.match.homeTeam.name} code={p.match.homeTeam.code} size={20} />
+              <TeamCrest name={p.match.homeTeam.name} code={p.match.homeTeam.code} logo={p.match.homeTeam.logo} size={20} />
             </View>
-            <Text variant="bodyMedium" tabular style={styles.predScore}>
-              {p.predictedHome}:{p.predictedAway}
-            </Text>
+            <View style={styles.predScoreChip}>
+              <Text variant="bodyMedium" color="textOnBrand" tabular>
+                {p.predictedHome}–{p.predictedAway}
+              </Text>
+            </View>
             <View style={[styles.predTeam, { justifyContent: "flex-start" }]}>
-              <TeamCrest name={p.match.awayTeam.name} code={p.match.awayTeam.code} size={20} />
+              <TeamCrest name={p.match.awayTeam.name} code={p.match.awayTeam.code} logo={p.match.awayTeam.logo} size={20} />
               <Text variant="caption" numberOfLines={1} style={styles.predName}>
                 {p.match.awayTeam.shortName || p.match.awayTeam.name}
               </Text>
@@ -293,17 +295,23 @@ function TablePane({
     return <EmptyState icon="podium-outline" title="No standings yet" subtitle="Standings appear once predictions are scored." />;
   }
   return (
-    <Card padded={false} style={{ paddingVertical: spacing.sm }}>
-      {entries.map((e) => (
-        <LeaderboardRow
-          key={e.userId}
-          rank={e.rank}
-          username={e.username}
-          points={e.totalPoints}
-          isCurrentUser={e.userId === userId}
-          isChampion={isSeasonComplete && e.rank === 1}
-          competitionKey={competitionKey}
-        />
+    <Card padded={false}>
+      <View style={styles.tableHead}>
+        <Text style={[styles.colLabel, styles.colRank]}>#</Text>
+        <Text style={[styles.colLabel, styles.colPlayer]}>Player</Text>
+        <Text style={[styles.colLabel, styles.colPts]}>Pts</Text>
+      </View>
+      {entries.map((e, i) => (
+        <View key={e.userId} style={i > 0 ? styles.rowDivider : undefined}>
+          <LeaderboardRow
+            rank={e.rank}
+            username={e.username}
+            points={e.totalPoints}
+            isCurrentUser={e.userId === userId}
+            isChampion={isSeasonComplete && e.rank === 1}
+            competitionKey={competitionKey}
+          />
+        </View>
       ))}
     </Card>
   );
@@ -316,19 +324,41 @@ const styles = StyleSheet.create({
   segmentWrap: { paddingHorizontal: layout.gutter, paddingBottom: spacing.md },
   content: { paddingHorizontal: layout.gutter, paddingBottom: spacing.xxxl, gap: spacing.md },
   matchCard: { paddingHorizontal: layout.cardPadding },
-  matchRowWrap: { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border },
+  matchRowWrap: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border },
+  noBorder: { borderTopWidth: 0 },
+  predCard: { paddingHorizontal: layout.cardPadding },
   predRow: {
     flexDirection: "row",
     alignItems: "center",
     gap: spacing.sm,
-    paddingVertical: spacing.sm,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.border,
+    paddingVertical: spacing.md,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: colors.border,
   },
   predTeam: { flex: 1, flexDirection: "row", alignItems: "center", gap: spacing.xs },
   predName: { flexShrink: 1 },
-  predScore: { minWidth: 36, textAlign: "center" },
+  predScoreChip: {
+    backgroundColor: colors.textPrimary,
+    borderRadius: radius.sm,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 3,
+  },
   predPendingSlot: { width: 44 },
+  tableHead: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    gap: spacing.md,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: colors.border,
+    backgroundColor: colors.surfaceAlt,
+  },
+  colLabel: { fontFamily: fontFamily.semibold, fontSize: 10, letterSpacing: 0.6, textTransform: "uppercase", color: colors.textTertiary },
+  colRank: { width: 28, textAlign: "center" },
+  colPlayer: { flex: 1, marginLeft: 30 + spacing.md },
+  colPts: { width: 44, textAlign: "right" },
+  rowDivider: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border },
   codeBox: {
     flexDirection: "row",
     alignItems: "center",

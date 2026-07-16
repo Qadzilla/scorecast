@@ -1,19 +1,18 @@
 import { View, Pressable, StyleSheet } from "react-native";
 import { Text } from "./Text";
 import { haptics } from "@/utils/haptics";
-import { colors, radius, spacing, shadow, fontFamily } from "@/constants/theme";
+import { colors, radius, spacing, fontFamily } from "@/constants/theme";
 
 type SegmentedControlProps<T extends string> = {
   segments: { key: T; label: string }[];
   value: T;
   onChange: (key: T) => void;
-  /** Active-segment label color (competition-scoped on league screens). */
+  /** Active-segment fill color. Defaults to the brand navy (deadline-card dark). */
   activeColor?: string;
 };
 
-// SegmentedControl — surfaceAlt track, white active pill w/ shadow, selection
-// haptic (spec §3). The active-label color follows the competition on league
-// screens; defaults to textPrimary.
+// SegmentedControl — a light track with the active segment filled (navy by
+// default) and white text; inactive segments are muted. Selection haptic.
 export function SegmentedControl<T extends string>({
   segments,
   value,
@@ -27,7 +26,7 @@ export function SegmentedControl<T extends string>({
         return (
           <Pressable
             key={seg.key}
-            style={[styles.segment, active && styles.segmentActive]}
+            style={[styles.segment, active && { backgroundColor: activeColor }]}
             onPress={() => {
               if (!active) {
                 haptics.select();
@@ -41,7 +40,7 @@ export function SegmentedControl<T extends string>({
               variant="bodyMedium"
               center
               style={{
-                color: active ? activeColor : colors.textSecondary,
+                color: active ? colors.textOnBrand : colors.textSecondary,
                 fontFamily: active ? fontFamily.semibold : fontFamily.medium,
               }}
             >
@@ -67,9 +66,5 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
     borderRadius: radius.sm,
     alignItems: "center",
-  },
-  segmentActive: {
-    backgroundColor: colors.surface,
-    ...shadow.card,
   },
 });
