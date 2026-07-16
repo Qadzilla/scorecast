@@ -43,6 +43,19 @@ function RootNavigator({ fontsReady }: { fontsReady: boolean }) {
   // gate only ever redirects.
   const booted = fontsReady && !isPending;
 
+  // TEMP diagnostic (dev only) — remove once the login redirect is confirmed.
+  if (__DEV__) {
+    console.log("[gate]", {
+      booted,
+      hasSession,
+      isPending,
+      favStatus: fav.status,
+      favIsLoading: fav.isLoading,
+      favTeamId: fav.data?.favoriteTeamId ?? null,
+      seg: segments[0] ?? "(index)",
+    });
+  }
+
   useEffect(() => {
     if (booted) SplashScreen.hideAsync();
   }, [booted]);
@@ -59,16 +72,24 @@ function RootNavigator({ fontsReady }: { fontsReady: boolean }) {
     const onTeamSelect = root === "team-select";
 
     if (!session) {
-      if (root === "(tabs)" || onTeamSelect) router.replace("/(auth)/login");
+      if (root === "(tabs)" || onTeamSelect) {
+        if (__DEV__) console.log("[gate] no session on protected route -> login");
+        router.replace("/(auth)/login");
+      }
       return;
     }
 
-    if (fav.isLoading) return; // wait for team status before onboarding routing
+    if (fav.isLoading) {
+      if (__DEV__) console.log("[gate] session present, waiting on team status…");
+      return; // wait for team status before onboarding routing
+    }
 
     const needsTeam = fav.data ? fav.data.favoriteTeamId == null : false;
     if (needsTeam && !onTeamSelect) {
+      if (__DEV__) console.log("[gate] -> team-select");
       router.replace("/team-select");
     } else if (!needsTeam && (inAuth || onTeamSelect)) {
+      if (__DEV__) console.log("[gate] -> tabs");
       router.replace("/(tabs)");
     }
   }, [booted, session, fav.isLoading, fav.data, segments, router]);
