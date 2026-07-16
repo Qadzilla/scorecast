@@ -1,6 +1,6 @@
 # ScoreCast Mobile — Slice Roadmap
 
-**Status:** Stages A + B COMPLETE; **Stage C underway — MS9 (login+gate) + MS10 (signup+OTP) shipped** (2026-07-15). Next: **MS11 (team-select gate)**; DS5 visual pass closes Stage C.
+**Status:** Stages A + B COMPLETE; **Stage C build slices done — MS9 (login+gate) + MS10 (signup+OTP) + MS11 (team-select) shipped** (2026-07-15). The full signup→verify→team→tabs and login/logout loops exist. Next: **DS5 visual pass** closes Stage C, or jump to **Stage D — MS12 (Leagues home)** to start the core product.
 **Parent document:** `MOBILE_PLAN.md` — all decisions, rationale, and specs live there; section references below (§) point into it. This document adds exactly one thing: **execution order**, cut into slices. When the two disagree, MOBILE_PLAN.md wins and this file gets fixed.
 
 ---
@@ -108,10 +108,10 @@ Done: added `emailOTPClient` + `inferAdditionalFields` to the auth client; helpe
 **Exit (met):** strict `tsc` clean (validates emailOTP client API + additional-field typing); iOS `expo export` bundles; **full flow proven over real HTTP** against a local backend on the exact RN-client endpoints — signup 200 → `email-otp/send-verification-otp` 200 → wrong code 400 → correct code 200 → post-verify `sign-in` 200. Backend `email-otp.test.ts` (7 tests) covers the same server-side. *On-simulator visual + iOS autofill are the user's step.*
 **Closes MS9's gap:** the app can now create + verify a real account, yielding credentials to exercise the MS9 login loop on-device.
 
-### MS11 — Team-select gate  *(§5.4 team-select)*
-Onboarding gate for `favoriteTeamId == null`: crest grid, preview, Continue.
-**Depends on:** MS9 (MS10 not strictly required).
-**Exit:** fresh verified account is forced through team selection exactly once; choice persists server-side; existing users skip it.
+### MS11 — Team-select gate ✅ *(§5.4 team-select)* — shipped 2026-07-15
+Done: **first data-query layer** — `lib/queries/user.ts` (`useFavoriteTeam(enabled)`, `useTeams`, `useSetFavoriteTeam` mutation invalidating favorite-team) + `queries/index.ts` barrel (the "components import from @/lib/queries" convention starts here). `team-select.tsx` — `FlatList` 3-col crest grid (competition-colored fallback), selected preview + Continue, loading skeletons, error/save Banners, haptics. **Root gate extended**: `useFavoriteTeam` (enabled only when signed in), `ready` also waits on team status so onboarding routing settles under the splash; signed-in + `favoriteTeamId == null` → forced to `team-select`, set-and-invalidate releases to tabs. On a favorite-team fetch error the user isn't trapped (`needsTeam = false`).
+**Exit (met):** strict `tsc` clean (Query hook types + gate); iOS `expo export` bundles; both endpoints the queries hit are live + auth-protected on prod (`/api/user/teams`, `/api/user/favorite-team` → 401 unauth). *On-device: force-through-once, persistence, and existing-user-skip are the user's visual step.*
+**Known minor:** a sub-second blank (bg-colored) can show while the favorite-team query loads right after login/verify (gate renders null until `ready`); acceptable for a once-per-session path, revisit if it reads poorly on device.
 
 **Stage C gate:** signup → verify → team → tabs and login/logout loops work end-to-end against the local backend.
 
@@ -236,7 +236,7 @@ Planning slices register their children here (PS1 → `DS*`, PS2 → `NS*`, PS3 
 | DS9 | Motion, haptics & a11y audit | F | ☐ | |
 | MS9 | Auth client + login | C | ✅ 2026-07-15 | (this commit) |
 | MS10 | Signup + OTP verify | C | ✅ 2026-07-15 | (this commit) |
-| MS11 | Team-select gate | C | ☐ | |
+| MS11 | Team-select gate | C | ✅ 2026-07-15 | (this commit) |
 | MS12 | Leagues home | D | ☐ | |
 | MS13 | League detail: fixtures + table | D | ☐ | |
 | MS14 | Join + admin surfaces | D | ☐ | |
