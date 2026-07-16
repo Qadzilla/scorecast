@@ -1,6 +1,6 @@
 # ScoreCast Mobile — Slice Roadmap
 
-**Status:** Stages A + B COMPLETE; **Stage C underway — MS9 (login + auth gate) shipped** (2026-07-15). Next: **MS10 (signup + 6-digit OTP verify)** → MS11 (team-select); DS5 visual pass closes the stage.
+**Status:** Stages A + B COMPLETE; **Stage C underway — MS9 (login+gate) + MS10 (signup+OTP) shipped** (2026-07-15). Next: **MS11 (team-select gate)**; DS5 visual pass closes Stage C.
 **Parent document:** `MOBILE_PLAN.md` — all decisions, rationale, and specs live there; section references below (§) point into it. This document adds exactly one thing: **execution order**, cut into slices. When the two disagree, MOBILE_PLAN.md wins and this file gets fixed.
 
 ---
@@ -103,10 +103,10 @@ All 15 components built to spec, token-only, each demoed in `app/gallery.tsx` in
 Done: `lib/validation.ts` (Zod schemas, limits mirror backend); `loginWithIdentifier` in `lib/auth.ts` (two-step: `lookup-email` → `signIn.email`, normalizes failures to a typed `AuthError` with codes RATE_LIMITED / INVALID_CREDENTIALS / EMAIL_NOT_VERIFIED / NETWORK / UNKNOWN, carrying the email on unverified so login can hand off to verify); real login screen (RHF + `zodResolver`, `BrandLockup`, `TextField`/`Button`/`Banner`, KeyboardAvoiding, error copy per code); **root-layout auth gate** (`RootNavigator` gates on `useSession` + segments: signed-out→auth, signed-in→tabs, splash held until fonts+session resolve); sign-out wired into the Account tab. Placeholder `signup`/`verify` routes added so links resolve (MS10 fills them).
 **Exit (code-verified):** strict `tsc` clean (confirms the better-auth client API surface — `signIn.email` result, `useSession`, `signOut`); iOS `expo export` bundles; **live prod check of the flow's first step** — `lookup-email` echoes an email identifier (200) and 401s an unknown username (→ INVALID_CREDENTIALS), exactly as the mapping expects. *On-device login→tabs, relaunch-persists, and sign-out→login are the user's step (need a verified account + simulator).*
 
-### MS10 — Signup + OTP verify  *(§5.4 signup/verify, §4.2)*
-Signup form (RHF + Zod schemas ported from `lib/validation.ts`), verify screen (6 boxes, auto-advance, paste, `oneTimeCode` content type, resend w/ 60s cooldown), post-verify sign-in.
-**Depends on:** MS9, MS3.
-**Exit:** full new-account flow on simulator: signup → real OTP email → typed code → signed in. Duplicate-email and bad-code paths render designed errors.
+### MS10 — Signup + OTP verify ✅ *(§5.4 signup/verify, §4.2)* — shipped 2026-07-15
+Done: added `emailOTPClient` + `inferAdditionalFields` to the auth client; helpers `signUpWithDetails` (maps errors incl. USER_EXISTS), `sendVerificationCode`, `verifyEmailCode`; `lib/pendingCredentials.ts` (in-memory holder so verify auto-signs-in without putting the password in nav params). Signup screen (RHF+Zod, first/last/username/email/password/confirm, USER_EXISTS→login link). `OtpInput` component (6 boxes over one hidden field for iOS `oneTimeCode` autofill + paste). Verify screen (sends code once on mount — single source for both signup and login-unverified paths; auto-submit on 6th digit; 60s resend cooldown; post-verify `signIn.email` with held password). Login's EMAIL_NOT_VERIFIED path now stashes credentials + routes to verify.
+**Exit (met):** strict `tsc` clean (validates emailOTP client API + additional-field typing); iOS `expo export` bundles; **full flow proven over real HTTP** against a local backend on the exact RN-client endpoints — signup 200 → `email-otp/send-verification-otp` 200 → wrong code 400 → correct code 200 → post-verify `sign-in` 200. Backend `email-otp.test.ts` (7 tests) covers the same server-side. *On-simulator visual + iOS autofill are the user's step.*
+**Closes MS9's gap:** the app can now create + verify a real account, yielding credentials to exercise the MS9 login loop on-device.
 
 ### MS11 — Team-select gate  *(§5.4 team-select)*
 Onboarding gate for `favoriteTeamId == null`: crest grid, preview, Continue.
@@ -235,7 +235,7 @@ Planning slices register their children here (PS1 → `DS*`, PS2 → `NS*`, PS3 
 | DS8 | App icon + splash | F | ☐ | |
 | DS9 | Motion, haptics & a11y audit | F | ☐ | |
 | MS9 | Auth client + login | C | ✅ 2026-07-15 | (this commit) |
-| MS10 | Signup + OTP verify | C | ☐ | |
+| MS10 | Signup + OTP verify | C | ✅ 2026-07-15 | (this commit) |
 | MS11 | Team-select gate | C | ☐ | |
 | MS12 | Leagues home | D | ☐ | |
 | MS13 | League detail: fixtures + table | D | ☐ | |

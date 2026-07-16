@@ -11,10 +11,11 @@ import { Banner } from "@/components/Banner";
 import { BrandLockup } from "@/components/BrandLockup";
 import { loginSchema, type LoginValues } from "@/lib/validation";
 import { loginWithIdentifier, AuthError, type AuthErrorCode } from "@/lib/auth";
+import { setPendingCredentials } from "@/lib/pendingCredentials";
 import { haptics } from "@/utils/haptics";
 import { colors, spacing, layout } from "@/constants/theme";
 
-const ERROR_COPY: Record<AuthErrorCode, string> = {
+const ERROR_COPY: Partial<Record<AuthErrorCode, string>> = {
   RATE_LIMITED: "Too many attempts. Please wait 15 minutes and try again.",
   INVALID_CREDENTIALS: "Wrong username/email or password.",
   EMAIL_NOT_VERIFIED: "Your email isn't verified yet — enter the code we sent you.",
@@ -44,6 +45,8 @@ export default function LoginScreen() {
       const code = e instanceof AuthError ? e.code : "UNKNOWN";
       setServerError(code);
       if (code === "EMAIL_NOT_VERIFIED" && e instanceof AuthError && e.email) {
+        // Hold the entered password so verify can auto sign-in on success.
+        setPendingCredentials(e.email, values.password);
         router.push({ pathname: "/(auth)/verify", params: { email: e.email } });
       }
     }
@@ -64,7 +67,7 @@ export default function LoginScreen() {
           </View>
 
           {serverError ? (
-            <Banner kind={serverError === "NETWORK" ? "offline" : "error"} message={ERROR_COPY[serverError]} />
+            <Banner kind={serverError === "NETWORK" ? "offline" : "error"} message={ERROR_COPY[serverError] ?? ERROR_COPY.UNKNOWN!} />
           ) : null}
 
           <Controller
