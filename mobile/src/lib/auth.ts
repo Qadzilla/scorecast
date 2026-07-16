@@ -18,6 +18,11 @@ export const authClient = createAuthClient({
     expoClient({
       scheme: "scorecast",
       storagePrefix: "scorecast",
+      // MUST match the server's advanced.cookiePrefix ("pl-predictions").
+      // Otherwise the client's hasBetterAuthCookies() check fails and it
+      // silently drops the session cookie after sign-in (getCookie() stays
+      // empty → no session → no redirect).
+      cookiePrefix: "pl-predictions",
       storage: SecureStore,
     }),
     emailOTPClient(),

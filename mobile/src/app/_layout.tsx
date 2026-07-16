@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useFonts } from "expo-font";
 import { Stack, useRouter, useSegments } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
@@ -41,7 +41,14 @@ function RootNavigator({ fontsReady }: { fontsReady: boolean }) {
   // after login/verify), tearing down navigation state and bouncing the user
   // back to the first screen. Once booted, the navigator stays mounted and the
   // gate only ever redirects.
-  const booted = fontsReady && !isPending;
+  // Latch first-boot readiness: once fonts + the initial session read complete,
+  // stay booted. better-auth's useSession can briefly flip isPending back to
+  // true on later refreshes; without the latch that unmounts the whole
+  // navigator (returns null) and churns navigation ("random bugging").
+  const [booted, setBooted] = useState(false);
+  useEffect(() => {
+    if (fontsReady && !isPending) setBooted(true);
+  }, [fontsReady, isPending]);
 
   // TEMP diagnostic (dev only) — remove once the login redirect is confirmed.
   if (__DEV__) {
