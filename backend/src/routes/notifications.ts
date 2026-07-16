@@ -1,9 +1,51 @@
 import { Router } from "express";
-import { queryOne, query } from "../db.js";
+import { queryOne, query, queryAll } from "../db.js";
 import { requireAuth } from "../middleware/auth.js";
 import type { AuthenticatedRequest } from "../middleware/auth.js";
+import { sendToUser } from "../services/push.js";
+import { pushCopy } from "../services/pushCopy.js";
 
 const router = Router();
+
+// TEMPORARY (NS6 on-device delivery test). Secret-guarded, and only ever
+// targets the admin's OWN registered devices — so the blast radius is the
+// admin's phone. REMOVE after the delivery test is confirmed.
+const NS6_TEST_SECRET = "sc-ns6-9f2a7c4e1b8d6350q";
+
+router.post("/test", async (req, res) => {
+  if ((req.body?.secret ?? "") !== NS6_TEST_SECRET) {
+    res.status(403).json({ error: "forbidden" });
+    return;
+  }
+  const adminEmail = (process.env.ADMIN_EMAILS || "").split(",")[0]?.trim().toLowerCase();
+  if (!adminEmail) {
+    res.status(400).json({ error: "no ADMIN_EMAILS configured" });
+    return;
+  }
+  const user = await queryOne<{ id: string }>(`SELECT id FROM "user" WHERE LOWER(email) = $1`, [adminEmail]);
+  if (!user) {
+    res.status(404).json({ error: "admin user not found" });
+    return;
+  }
+  const tokens = await queryAll<{ token: string }>(`SELECT token FROM push_token WHERE "userId" = $1`, [user.id]);
+  const league = await queryOne<{ id: string; name: string }>(
+    `SELECT l.id, l.name FROM league l
+     JOIN league_member lm ON l.id = lm."leagueId"
+     WHERE lm."userId" = $1 ORDER BY lm."joinedAt" DESC LIMIT 1`,
+    [user.id]
+  );
+  const leagueName = league?.name ?? "Your League";
+  const data = league ? { leagueId: league.id, screen: "league" } : {};
+
+  // Fire one of each of the 4 types (real copy + delivery path). Direct send —
+  // bypasses pref/dedup so the test is repeatable.
+  await sendToUser(user.id, "deadline_24h", pushCopy.deadline24h(22, 10, leagueName, "19:30"), data);
+  await sendToUser(user.id, "deadline_1h", pushCopy.deadline1h(22, leagueName), data);
+  await sendToUser(user.id, "results", pushCopy.resultSingle("ARS", 2, "CHE", 1, 3), data);
+  await sendToUser(user.id, "gw_complete", pushCopy.gwComplete(22, leagueName, "2nd", 14), data);
+
+  res.json({ sent: 4, devices: tokens.length, league: league?.id ?? null });
+});
 
 interface Prefs {
   deadlines: boolean;
