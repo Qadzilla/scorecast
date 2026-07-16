@@ -36,6 +36,11 @@ export default function VerifyScreen() {
   const [verifying, setVerifying] = useState(false);
   const [cooldown, setCooldown] = useState(RESEND_COOLDOWN);
   const sentOnce = useRef(false);
+  // Ref guard: OtpInput.onComplete and the Verify button can both fire in the
+  // same tick when the 6th digit lands. The `verifying` state read is stale in
+  // that window, so a ref blocks the duplicate submit (which would consume the
+  // now-used OTP and show a spurious INVALID_CODE).
+  const submitting = useRef(false);
 
   // Send the code once on mount (single source for both signup and
   // login-unverified entry paths).
@@ -56,7 +61,8 @@ export default function VerifyScreen() {
   }, [cooldown]);
 
   const submit = async (value: string) => {
-    if (!email || verifying) return;
+    if (!email || submitting.current) return;
+    submitting.current = true;
     setError(null);
     setVerifying(true);
     try {
@@ -81,6 +87,7 @@ export default function VerifyScreen() {
       setCode("");
     } finally {
       setVerifying(false);
+      submitting.current = false;
     }
   };
 

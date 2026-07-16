@@ -61,8 +61,11 @@ export function useSetFavoriteTeam() {
         method: "POST",
         body: JSON.stringify({ teamId }),
       }),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: userKeys.favoriteTeam });
+    // Seed the cache from the response so the onboarding gate advances without a
+    // second round-trip — a failed refetch would otherwise strand the user on
+    // team-select even though the team saved.
+    onSuccess: (res) => {
+      qc.setQueryData(userKeys.favoriteTeam, { favoriteTeamId: res.team.id, team: res.team });
       qc.invalidateQueries({ queryKey: userKeys.me });
     },
   });
@@ -78,7 +81,12 @@ export function useUpdateUsername() {
         method: "PUT",
         body: JSON.stringify({ username: username.trim().toLowerCase() }),
       }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: userKeys.me }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: userKeys.me });
+      // Leaderboards render the username — refresh them so a rename shows in
+      // league tables without waiting for staleTime / a manual pull-to-refresh.
+      qc.invalidateQueries({ queryKey: ["leaderboard"] });
+    },
   });
 }
 

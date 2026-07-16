@@ -48,8 +48,12 @@ export default function AccountScreen() {
   const prefs = useNotificationPrefs();
   const updatePrefs = useUpdateNotificationPrefs();
   const notif: NotificationPrefs = prefs.data ?? { deadlines: true, results: true, updates: true };
-  const setNotif = (key: keyof NotificationPrefs, value: boolean) =>
-    updatePrefs.mutate({ ...notif, [key]: value });
+  // Guard against toggling before the real prefs load: without prefs.data, `notif`
+  // is the all-on default, and a PUT would clobber the user's other saved keys.
+  const setNotif = (key: keyof NotificationPrefs, value: boolean) => {
+    if (!prefs.data) return;
+    updatePrefs.mutate({ ...prefs.data, [key]: value });
+  };
 
   const usernameChanged =
     !!me.data && username.trim().length >= 3 && username.trim().toLowerCase() !== me.data.username;
@@ -83,8 +87,15 @@ export default function AccountScreen() {
           onPress: () =>
             deleteAccount.mutate(undefined, {
               onSuccess: async () => {
+                // Sign out first (clears the SecureStore session) so the gate
+                // redirects cleanly; then clear the cache. Tolerate a failed
+                // sign-out request against the now-deleted account.
+                try {
+                  await signOut();
+                } catch {
+                  // account is gone; local session clears regardless
+                }
                 qc.clear();
-                await signOut(); // gate redirects to login
               },
               onError: () => Alert.alert("Couldn't delete account", "Please try again."),
             }),
@@ -156,12 +167,12 @@ export default function AccountScreen() {
           <InfoRow label="Verified" value={me.data?.emailVerified ? "Yes" : "No"} last />
         </Card>
 
-        {/* Notifications (placeholder) */}
+        {/* Notifications */}
         <Text variant="label" color="textSecondary" style={styles.sectionLabel}>Notifications</Text>
         <Card>
-          <NotifRow label="Deadline reminders" value={notif.deadlines} onChange={(v) => setNotif("deadlines", v)} />
-          <NotifRow label="Results & points" value={notif.results} onChange={(v) => setNotif("results", v)} />
-          <NotifRow label="League updates" value={notif.updates} onChange={(v) => setNotif("updates", v)} last />
+          <NotifRow label="Deadline reminders" value={notif.deadlines} disabled={!prefs.data} onChange={(v) => setNotif("deadlines", v)} />
+          <NotifRow label="Results & points" value={notif.results} disabled={!prefs.data} onChange={(v) => setNotif("results", v)} />
+          <NotifRow label="League updates" value={notif.updates} disabled={!prefs.data} onChange={(v) => setNotif("updates", v)} last />
         </Card>
 
         {/* Actions */}
@@ -187,11 +198,11 @@ function InfoRow({ label, value, last }: { label: string; value: string; last?: 
   );
 }
 
-function NotifRow({ label, value, onChange, last }: { label: string; value: boolean; onChange: (v: boolean) => void; last?: boolean }) {
+function NotifRow({ label, value, onChange, last, disabled }: { label: string; value: boolean; onChange: (v: boolean) => void; last?: boolean; disabled?: boolean }) {
   return (
     <View style={[styles.infoRow, last && styles.infoRowLast]}>
-      <Text variant="body">{label}</Text>
-      <Switch value={value} onValueChange={onChange} trackColor={{ true: colors.accent }} />
+      <Text variant="body" color={disabled ? "textTertiary" : "textPrimary"}>{label}</Text>
+      <Switch value={value} onValueChange={onChange} disabled={disabled} trackColor={{ true: colors.accent }} />
     </View>
   );
 }
