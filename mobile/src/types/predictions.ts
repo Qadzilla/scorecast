@@ -39,3 +39,29 @@ export function formatRank(rank: number): string {
   const v = rank % 100;
   return rank + (suffix[(v - 20) % 10] || suffix[v] || suffix[0]);
 }
+
+// A user's saved prediction for one match, with the match's own (actual) state.
+export interface UserPrediction {
+  id: string;
+  matchId: string;
+  predictedHome: number;
+  predictedAway: number;
+  points: number | null;
+  match: {
+    id: string;
+    kickoffTime: string;
+    homeScore: number | null;
+    awayScore: number | null;
+    status: string;
+    homeTeam: { id: string; name: string; shortName: string; code: string };
+    awayTeam: { id: string; name: string; shortName: string; code: string };
+  };
+}
+
+// Outcome bucket for a settled prediction, for the PointsBadge.
+export function outcomeFromPoints(points: number | null): PredictionOutcome | "pending" {
+  if (points == null) return "pending";
+  if (points === POINTS.EXACT_SCORE) return "exact";
+  if (points === POINTS.CORRECT_RESULT) return "result";
+  return "incorrect";
+}

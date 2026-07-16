@@ -4,3 +4,4 @@ export * from "./user";
 export * from "./fixtures";
 export * from "./leagues";
 export * from "./leaderboard";
+export * from "./predictions";

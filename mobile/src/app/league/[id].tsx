@@ -12,15 +12,18 @@ import { SegmentedControl } from "@/components/SegmentedControl";
 import { CountdownCard } from "@/components/CountdownCard";
 import { MatchRow } from "@/components/MatchRow";
 import { LeaderboardRow } from "@/components/LeaderboardRow";
+import { PointsBadge } from "@/components/PointsBadge";
+import { TeamCrest } from "@/components/TeamCrest";
 import { Button } from "@/components/Button";
 import { Banner } from "@/components/Banner";
 import { EmptyState } from "@/components/EmptyState";
 import { Skeleton, SkeletonLines } from "@/components/Skeleton";
 import { Sheet } from "@/components/Sheet";
 import { useSession } from "@/lib/auth";
-import { useLeagues, useCurrentGameweek, useGameweek, useLeaderboard } from "@/lib/queries";
+import { useLeagues, useCurrentGameweek, useGameweek, useLeaderboard, usePredictions } from "@/lib/queries";
 import { upcomingDeadline } from "@/types/leagues";
 import { isPredictionWindowOpen } from "@/types/fixtures";
+import { outcomeFromPoints, type UserPrediction } from "@/types/predictions";
 import { haptics } from "@/utils/haptics";
 import { colors, spacing, layout, competition } from "@/constants/theme";
 
@@ -133,10 +136,10 @@ export default function LeagueDetailScreen() {
               })()
             )}
             <Button
-              label={deadlineOpen ? "Make / edit predictions" : "Deadline passed"}
+              label={deadlineOpen ? "Make / edit predictions" : "View predictions"}
               variant="brand"
               competitionKey={league.type}
-              disabled={!deadlineOpen || !current.data}
+              disabled={!current.data}
               onPress={() =>
                 router.push({
                   pathname: "/league/predict",
@@ -144,9 +147,7 @@ export default function LeagueDetailScreen() {
                 })
               }
             />
-            <Text variant="caption" color="textTertiary" center>
-              Your predictions and points show here (MS15).
-            </Text>
+            <PredictionsList leagueId={league.id} gameweekId={current.data?.id} />
           </View>
         )}
 
@@ -218,6 +219,49 @@ function FixturesPane({
   );
 }
 
+function PredictionsList({ leagueId, gameweekId }: { leagueId: string; gameweekId?: string }) {
+  const preds = usePredictions(leagueId, gameweekId);
+  if (preds.isLoading) return <SkeletonLines count={3} />;
+  if (!preds.data || preds.data.length === 0) {
+    return (
+      <Text variant="caption" color="textTertiary" center>
+        You haven't predicted this gameweek yet.
+      </Text>
+    );
+  }
+  return (
+    <Card padded={false} style={{ paddingHorizontal: spacing.md, paddingVertical: spacing.xs }}>
+      {preds.data.map((p: UserPrediction) => {
+        const settled = p.match.status === "finished";
+        return (
+          <View key={p.id} style={styles.predRow}>
+            <View style={[styles.predTeam, { justifyContent: "flex-end" }]}>
+              <Text variant="caption" numberOfLines={1} style={styles.predName}>
+                {p.match.homeTeam.shortName || p.match.homeTeam.name}
+              </Text>
+              <TeamCrest name={p.match.homeTeam.name} code={p.match.homeTeam.code} size={20} />
+            </View>
+            <Text variant="bodyMedium" tabular style={styles.predScore}>
+              {p.predictedHome}:{p.predictedAway}
+            </Text>
+            <View style={[styles.predTeam, { justifyContent: "flex-start" }]}>
+              <TeamCrest name={p.match.awayTeam.name} code={p.match.awayTeam.code} size={20} />
+              <Text variant="caption" numberOfLines={1} style={styles.predName}>
+                {p.match.awayTeam.shortName || p.match.awayTeam.name}
+              </Text>
+            </View>
+            {settled ? (
+              <PointsBadge outcome={outcomeFromPoints(p.points)} points={p.points ?? 0} />
+            ) : (
+              <View style={styles.predPendingSlot} />
+            )}
+          </View>
+        );
+      })}
+    </Card>
+  );
+}
+
 function TablePane({
   loading,
   error,
@@ -273,6 +317,18 @@ const styles = StyleSheet.create({
   content: { paddingHorizontal: layout.gutter, paddingBottom: spacing.xxxl, gap: spacing.md },
   matchCard: { paddingHorizontal: layout.cardPadding },
   matchRowWrap: { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border },
+  predRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.sm,
+    paddingVertical: spacing.sm,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: colors.border,
+  },
+  predTeam: { flex: 1, flexDirection: "row", alignItems: "center", gap: spacing.xs },
+  predName: { flexShrink: 1 },
+  predScore: { minWidth: 36, textAlign: "center" },
+  predPendingSlot: { width: 44 },
   codeBox: {
     flexDirection: "row",
     alignItems: "center",
