@@ -1,6 +1,12 @@
 # ScoreCast Mobile — Slice Roadmap
 
-**Status:** Stages A + B COMPLETE; **Stage C build slices done — MS9 (login+gate) + MS10 (signup+OTP) + MS11 (team-select) shipped** (2026-07-15). The full signup→verify→team→tabs and login/logout loops exist. Next: **DS5 visual pass** closes Stage C, or jump to **Stage D — MS12 (Leagues home)** to start the core product.
+**Status:** Stages A + B COMPLETE; **Stage C build slices done AND device-verified — MS9/MS10/MS11 shipped** (2026-07-15). The full signup→verify→team→tabs and login/logout loops were confirmed on a physical iPhone (Expo Go, SDK 54) against the live backend. Next: **Stage D — MS12 (Leagues home)** to start the core product (the tabs are still placeholders); DS5 visual pass can follow.
+
+**Field fixes during device bring-up (2026-07-15)** — three bugs the simulator/typecheck couldn't catch, all fixed:
+- **Expo Go origin 403.** better-auth rejects untrusted origins; the Expo client sends `expo-origin: exp://<lan-ip>:<port>/--/`, which the `@better-auth/expo` server plugin only auto-trusts when `NODE_ENV=development`. Prod 403'd every call. Fix: added `"exp://"` to server `trustedOrigins` (prefix-matches any Expo Go origin; safe — browsers can't forge the custom header). See MOBILE_PLAN.md §4.1.
+- **Session cookie silently dropped.** The Expo client only stores the cookie if `hasBetterAuthCookies(setCookie, cookiePrefix)` passes, and its `cookiePrefix` defaults to `"better-auth"`. Server uses `"pl-predictions"`. Fix: pass `cookiePrefix: "pl-predictions"` to `expoClient`. **Any better-auth client config must match the server cookiePrefix.**
+- **Navigator unmount churn.** `booted = fontsReady && !isPending` returned null when `useSession` briefly re-pended, unmounting the whole navigator repeatedly. Fix: latch `booted` once true.
+- Also fixed a client bug where any 403 was mapped to EMAIL_NOT_VERIFIED (mis-routed origin-rejected logins to the verify screen).
 **Parent document:** `MOBILE_PLAN.md` — all decisions, rationale, and specs live there; section references below (§) point into it. This document adds exactly one thing: **execution order**, cut into slices. When the two disagree, MOBILE_PLAN.md wins and this file gets fixed.
 
 ---

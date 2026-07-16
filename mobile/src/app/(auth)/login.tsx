@@ -10,7 +10,7 @@ import { Button } from "@/components/Button";
 import { Banner } from "@/components/Banner";
 import { BrandLockup } from "@/components/BrandLockup";
 import { loginSchema, type LoginValues } from "@/lib/validation";
-import { loginWithIdentifier, authClient, AuthError, type AuthErrorCode } from "@/lib/auth";
+import { loginWithIdentifier, AuthError, type AuthErrorCode } from "@/lib/auth";
 import { setPendingCredentials } from "@/lib/pendingCredentials";
 import { haptics } from "@/utils/haptics";
 import { colors, spacing, layout } from "@/constants/theme";
@@ -42,7 +42,6 @@ export default function LoginScreen() {
     try {
       await loginWithIdentifier(values.identifier, values.password);
       haptics.success();
-      if (__DEV__) console.log("[login] signIn OK, cookie?", !!authClient.getCookie());
       // The root auth gate redirects to (tabs) once the session lands.
     } catch (e) {
       const code = e instanceof AuthError ? e.code : "UNKNOWN";

@@ -78,6 +78,9 @@ The RN app cannot use browser cookie sessions. better-auth has first-party Expo 
 
 - **Server** (`backend/src/auth.ts`): add the `expo()` plugin from `@better-auth/expo`. Add the app scheme to `trustedOrigins`: `["scorecast://"]` alongside the existing web origins (web ones removed at decommission).
 - **Client** (`mobile/src/lib/auth.ts`): `createAuthClient` from `better-auth/react` + `expoClient` plugin from `@better-auth/expo/client`, with `expo-secure-store` as storage. This gives the same `signIn`/`signUp`/`signOut`/`useSession` surface the web code uses — the auth calls in the RN screens are near copy-paste. The plugin stores the session cookie in SecureStore and replays it as a header; no manual token plumbing.
+  - ⚠️ **Two gotchas found during device bring-up (MS9):**
+    1. **`cookiePrefix` must match the server.** The Expo client only persists the cookie if its `cookiePrefix` matches; it defaults to `"better-auth"`, but this server uses `"pl-predictions"`. Mismatch → cookie silently dropped → sign-in "succeeds" but no session. Pass `cookiePrefix: "pl-predictions"` to `expoClient`.
+    2. **Expo Go origin.** The client sends `expo-origin: exp://<lan-ip>:<port>/--/`. The `@better-auth/expo` server plugin only auto-trusts `exp://` when `NODE_ENV=development`, so prod needs `"exp://"` added to `trustedOrigins` (done in `auth.ts`). Standalone builds send `scorecast://` (already trusted). Both are safe on prod: browsers can't forge the custom `expo-origin` header.
 - **Keep** the custom `POST /api/auth/lookup-email` route (username-or-email login) exactly as is — the RN login screen uses it identically.
 - The session `cookieCache` (5 min) and the `databaseHooks.user.create.before` sanitizer stay unchanged.
 
