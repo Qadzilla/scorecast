@@ -1,6 +1,6 @@
 # ScoreCast Mobile — Slice Roadmap
 
-**Status:** Stage A COMPLETE (MS0–MS6) + PS1; **Stage B COMPLETE** (MS7, MS8, DS1–DS4) — shipped 2026-07-15. Next: **Stage C — auth & onboarding** (MS9 login → MS10 signup/OTP → MS11 team-select; DS5 visual pass closes the stage).
+**Status:** Stages A + B COMPLETE; **Stage C underway — MS9 (login + auth gate) shipped** (2026-07-15). Next: **MS10 (signup + 6-digit OTP verify)** → MS11 (team-select); DS5 visual pass closes the stage.
 **Parent document:** `MOBILE_PLAN.md` — all decisions, rationale, and specs live there; section references below (§) point into it. This document adds exactly one thing: **execution order**, cut into slices. When the two disagree, MOBILE_PLAN.md wins and this file gets fixed.
 
 ---
@@ -99,10 +99,9 @@ All 15 components built to spec, token-only, each demoed in `app/gallery.tsx` in
 
 ## Stage C — Auth & onboarding
 
-### MS9 — Auth client + login  *(§5.4 login, §4.1)*
-better-auth Expo client + SecureStore; login screen (identifier lookup → `signIn.email`, 429 + invalid-credential error mapping); session persistence across app relaunch; root-layout auth gate (session → tabs, none → auth stack).
-**Depends on:** MS8, MS2.
-**Exit:** login with a real account on simulator → lands in (placeholder) tabs; kill + relaunch app → still logged in; sign-out returns to login.
+### MS9 — Auth client + login ✅ *(§5.4 login, §4.1)* — shipped 2026-07-15
+Done: `lib/validation.ts` (Zod schemas, limits mirror backend); `loginWithIdentifier` in `lib/auth.ts` (two-step: `lookup-email` → `signIn.email`, normalizes failures to a typed `AuthError` with codes RATE_LIMITED / INVALID_CREDENTIALS / EMAIL_NOT_VERIFIED / NETWORK / UNKNOWN, carrying the email on unverified so login can hand off to verify); real login screen (RHF + `zodResolver`, `BrandLockup`, `TextField`/`Button`/`Banner`, KeyboardAvoiding, error copy per code); **root-layout auth gate** (`RootNavigator` gates on `useSession` + segments: signed-out→auth, signed-in→tabs, splash held until fonts+session resolve); sign-out wired into the Account tab. Placeholder `signup`/`verify` routes added so links resolve (MS10 fills them).
+**Exit (code-verified):** strict `tsc` clean (confirms the better-auth client API surface — `signIn.email` result, `useSession`, `signOut`); iOS `expo export` bundles; **live prod check of the flow's first step** — `lookup-email` echoes an email identifier (200) and 401s an unknown username (→ INVALID_CREDENTIALS), exactly as the mapping expects. *On-device login→tabs, relaunch-persists, and sign-out→login are the user's step (need a verified account + simulator).*
 
 ### MS10 — Signup + OTP verify  *(§5.4 signup/verify, §4.2)*
 Signup form (RHF + Zod schemas ported from `lib/validation.ts`), verify screen (6 boxes, auto-advance, paste, `oneTimeCode` content type, resend w/ 60s cooldown), post-verify sign-in.
@@ -235,7 +234,7 @@ Planning slices register their children here (PS1 → `DS*`, PS2 → `NS*`, PS3 
 | DS7 | Predictions & account visual pass | D | ☐ | |
 | DS8 | App icon + splash | F | ☐ | |
 | DS9 | Motion, haptics & a11y audit | F | ☐ | |
-| MS9 | Auth client + login | C | ☐ | |
+| MS9 | Auth client + login | C | ✅ 2026-07-15 | (this commit) |
 | MS10 | Signup + OTP verify | C | ☐ | |
 | MS11 | Team-select gate | C | ☐ | |
 | MS12 | Leagues home | D | ☐ | |

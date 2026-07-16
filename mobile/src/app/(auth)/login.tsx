@@ -1,86 +1,136 @@
-import { View, StyleSheet, Pressable } from "react-native";
+import { useState } from "react";
+import { View, StyleSheet, KeyboardAvoidingView, Platform, ScrollView } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { LinearGradient } from "expo-linear-gradient";
-import { Link } from "expo-router";
+import { useForm, Controller } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Link, useRouter } from "expo-router";
 import { Text } from "@/components/Text";
-import { colors, spacing, layout, radius, type } from "@/constants/theme";
+import { TextField } from "@/components/TextField";
+import { Button } from "@/components/Button";
+import { Banner } from "@/components/Banner";
+import { BrandLockup } from "@/components/BrandLockup";
+import { loginSchema, type LoginValues } from "@/lib/validation";
+import { loginWithIdentifier, AuthError, type AuthErrorCode } from "@/lib/auth";
+import { haptics } from "@/utils/haptics";
+import { colors, spacing, layout } from "@/constants/theme";
 
-// Placeholder login (MS7). The real form — identifier + password, lookup-email
-// then signIn.email, error mapping — is DS5/MS9. This exists to prove the app
-// boots in the brand font and to reach the gallery + health screens.
+const ERROR_COPY: Record<AuthErrorCode, string> = {
+  RATE_LIMITED: "Too many attempts. Please wait 15 minutes and try again.",
+  INVALID_CREDENTIALS: "Wrong username/email or password.",
+  EMAIL_NOT_VERIFIED: "Your email isn't verified yet — enter the code we sent you.",
+  NETWORK: "Can't reach ScoreCast. Check your connection.",
+  UNKNOWN: "Something went wrong. Please try again.",
+};
+
 export default function LoginScreen() {
+  const router = useRouter();
+  const [serverError, setServerError] = useState<AuthErrorCode | null>(null);
+  const {
+    control,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+  } = useForm<LoginValues>({
+    resolver: zodResolver(loginSchema),
+    defaultValues: { identifier: "", password: "" },
+  });
+
+  const onSubmit = async (values: LoginValues) => {
+    setServerError(null);
+    try {
+      await loginWithIdentifier(values.identifier, values.password);
+      haptics.success();
+      // The root auth gate redirects to (tabs) once the session lands.
+    } catch (e) {
+      const code = e instanceof AuthError ? e.code : "UNKNOWN";
+      setServerError(code);
+      if (code === "EMAIL_NOT_VERIFIED" && e instanceof AuthError && e.email) {
+        router.push({ pathname: "/(auth)/verify", params: { email: e.email } });
+      }
+    }
+  };
+
   return (
     <SafeAreaView style={styles.safe}>
-      <View style={styles.center}>
-        <View style={styles.lockup}>
-          <Text variant="display">Score</Text>
-          <LinearGradient
-            colors={[colors.plPurpleLight, colors.uclNavy]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={styles.castWrap}
-          >
-            <Text variant="display" color="textOnBrand" style={styles.castText}>
-              Cast
-            </Text>
-          </LinearGradient>
-        </View>
-        <Text variant="caption" color="textSecondary" center>
-          Premier League &amp; UCL predictions
-        </Text>
-        <Text variant="caption" color="textTertiary" center style={{ marginTop: spacing.sm }}>
-          Scaffold build — auth lands in MS9
-        </Text>
-      </View>
+      <KeyboardAvoidingView
+        style={styles.flex}
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+      >
+        <ScrollView
+          contentContainerStyle={styles.scroll}
+          keyboardShouldPersistTaps="handled"
+        >
+          <View style={styles.header}>
+            <BrandLockup subtitle="Premier League & UCL predictions" />
+          </View>
 
-      <View style={styles.actions}>
-        <Link href="/(tabs)" asChild>
-          <Pressable style={styles.primary}>
-            <Text variant="bodyMedium" color="textOnBrand" center>
-              Enter app (placeholder)
-            </Text>
-          </Pressable>
-        </Link>
-        <View style={styles.row}>
-          <Link href="/gallery" asChild>
-            <Pressable style={styles.secondary}>
-              <Text variant="bodyMedium" color="accent" center>
-                Design gallery
-              </Text>
-            </Pressable>
-          </Link>
-          <Link href="/debug" asChild>
-            <Pressable style={styles.secondary}>
-              <Text variant="bodyMedium" color="accent" center>
-                Health check
-              </Text>
-            </Pressable>
-          </Link>
-        </View>
-      </View>
+          {serverError ? (
+            <Banner kind={serverError === "NETWORK" ? "offline" : "error"} message={ERROR_COPY[serverError]} />
+          ) : null}
+
+          <Controller
+            control={control}
+            name="identifier"
+            render={({ field: { onChange, onBlur, value } }) => (
+              <TextField
+                label="Username or email"
+                placeholder="you or you@example.com"
+                autoCapitalize="none"
+                autoCorrect={false}
+                autoComplete="username"
+                value={value}
+                onChangeText={onChange}
+                onBlur={onBlur}
+                error={errors.identifier?.message}
+                returnKeyType="next"
+              />
+            )}
+          />
+
+          <Controller
+            control={control}
+            name="password"
+            render={({ field: { onChange, onBlur, value } }) => (
+              <TextField
+                label="Password"
+                placeholder="••••••••"
+                secureTextEntry
+                secureToggle
+                autoCapitalize="none"
+                autoComplete="password"
+                value={value}
+                onChangeText={onChange}
+                onBlur={onBlur}
+                error={errors.password?.message}
+                returnKeyType="go"
+                onSubmitEditing={handleSubmit(onSubmit)}
+              />
+            )}
+          />
+
+          <Button label="Log in" onPress={handleSubmit(onSubmit)} loading={isSubmitting} />
+
+          <View style={styles.footer}>
+            <Text variant="body" color="textSecondary">New here? </Text>
+            <Link href="/(auth)/signup">
+              <Text variant="bodyMedium" color="accent">Create an account</Text>
+            </Link>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.bg, paddingHorizontal: layout.gutter },
-  center: { flex: 1, justifyContent: "center", alignItems: "center" },
-  lockup: { flexDirection: "row", alignItems: "center" },
-  castWrap: { borderRadius: radius.sm, paddingHorizontal: 6, marginLeft: 2 },
-  castText: { paddingHorizontal: 2 },
-  actions: { paddingBottom: spacing.xxl, gap: spacing.md },
-  primary: {
-    backgroundColor: colors.accent,
-    borderRadius: radius.md,
-    paddingVertical: spacing.lg,
+  safe: { flex: 1, backgroundColor: colors.bg },
+  flex: { flex: 1 },
+  scroll: {
+    flexGrow: 1,
+    justifyContent: "center",
+    paddingHorizontal: layout.gutter,
+    gap: spacing.lg,
+    paddingVertical: spacing.xxxl,
   },
-  row: { flexDirection: "row", gap: spacing.md },
-  secondary: {
-    flex: 1,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.md,
-    paddingVertical: spacing.md,
-  },
+  header: { marginBottom: spacing.md },
+  footer: { flexDirection: "row", justifyContent: "center", alignItems: "center" },
 });

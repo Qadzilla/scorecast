@@ -7,6 +7,7 @@
     "@expo-google-fonts/plus-jakarta-sans": "^0.4.2",
     "@expo/ui": "~57.0.6",
     "@expo/vector-icons": "^15.0.2",
+    "@hookform/resolvers": "^5.4.0",
     "@tanstack/react-query": "^5.101.2",
     "better-auth": "1.4.17",
     "expo": "~57.0.6",

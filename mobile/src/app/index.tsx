@@ -1,7 +1,10 @@
 import { Redirect } from "expo-router";
+import { useSession } from "@/lib/auth";
 
-// Entry point. The real session gate (session -> tabs, none -> auth) lands in
-// MS9; for the scaffold we route straight to the placeholder auth stack.
+// Entry point: route on session. The root layout's gate keeps it correct
+// afterwards (e.g. sign-out while in tabs).
 export default function Index() {
-  return <Redirect href="/(auth)/login" />;
+  const { data: session, isPending } = useSession();
+  if (isPending) return null;
+  return <Redirect href={session ? "/(tabs)" : "/(auth)/login"} />;
 }
