@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { Alert, Platform } from "react-native";
 import * as Notifications from "expo-notifications";
 import * as Device from "expo-device";
@@ -94,20 +94,38 @@ export async function unregisterPush(): Promise<void> {
 }
 
 // Route notification taps (and cold-start opens) to the relevant league.
-export function usePushObserver(): void {
+// `ready` = the navigator is mounted and the auth gate has settled; the
+// cold-start route must wait for it or the push is dropped / overridden by the
+// gate's redirect onto the tabs.
+export function usePushObserver(ready: boolean): void {
   const router = useRouter();
+  const coldHandled = useRef(false);
+
+  const routeTo = (data: unknown) => {
+    const leagueId = (data as { leagueId?: string } | undefined)?.leagueId;
+    if (leagueId) router.push({ pathname: "/league/[id]", params: { id: String(leagueId) } });
+  };
+
+  // Taps while the app is running/backgrounded — navigator already mounted.
   useEffect(() => {
-    const routeTo = (data: unknown) => {
-      const leagueId = (data as { leagueId?: string } | undefined)?.leagueId;
-      if (leagueId) router.push({ pathname: "/league/[id]", params: { id: String(leagueId) } });
-    };
     const sub = Notifications.addNotificationResponseReceivedListener((response) => {
       routeTo(response.notification.request.content.data);
     });
-    // App opened from a notification while cold.
-    Notifications.getLastNotificationResponseAsync().then((response) => {
-      if (response) routeTo(response.notification.request.content.data);
-    });
     return () => sub.remove();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [router]);
+
+  // Cold start: the app was launched by tapping a notification. Run once, after
+  // `ready`, and after a tick so the initial index→tabs redirect completes —
+  // then push the league on top.
+  useEffect(() => {
+    if (!ready || coldHandled.current) return;
+    coldHandled.current = true;
+    Notifications.getLastNotificationResponseAsync().then((response) => {
+      if (!response) return;
+      const data = response.notification.request.content.data;
+      setTimeout(() => routeTo(data), 400);
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ready, router]);
 }

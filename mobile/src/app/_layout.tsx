@@ -36,8 +36,6 @@ function RootNavigator({ fontsReady }: { fontsReady: boolean }) {
   const segments = useSegments();
   const router = useRouter();
 
-  usePushObserver();
-
   // Register this device's push token once signed in (only actually sends if
   // permission was already granted; the contextual prompt lives on first predict).
   useEffect(() => {
@@ -62,6 +60,10 @@ function RootNavigator({ fontsReady }: { fontsReady: boolean }) {
   useEffect(() => {
     if (booted) SplashScreen.hideAsync();
   }, [booted]);
+
+  // Notification tap-routing. Cold-start routing waits for `booted` so it lands
+  // after the navigator + gate settle.
+  usePushObserver(booted);
 
   // Auth + onboarding gate. Signed-out users can't sit in tabs/team-select;
   // signed-in users without a favorite team are forced through team-select
