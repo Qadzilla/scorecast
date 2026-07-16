@@ -55,12 +55,22 @@ export class AuthError extends Error {
   code: AuthErrorCode;
   /** Present when the server told us the email is unverified — carry it to the verify screen. */
   email?: string;
-  constructor(code: AuthErrorCode, email?: string) {
+  /** Raw server code/status/message, surfaced in dev so failures aren't opaque. */
+  detail?: string;
+  constructor(code: AuthErrorCode, email?: string, detail?: string) {
     super(code);
     this.name = "AuthError";
     this.code = code;
     this.email = email;
+    this.detail = detail;
   }
+}
+
+// Turn a better-auth error object into a readable "CODE / status / message"
+// string for diagnostics (shown in dev builds).
+function describe(error: { status?: number; code?: string; message?: string } | null | undefined): string {
+  if (!error) return "";
+  return [error.code, error.status, error.message].filter(Boolean).join(" · ");
 }
 
 /**
@@ -94,11 +104,17 @@ export async function loginWithIdentifier(identifier: string, password: string):
   if (error) {
     const status = error.status;
     const msg = (error.message || "").toLowerCase();
-    if (status === 429 || msg.includes("too many")) throw new AuthError("RATE_LIMITED");
-    if (status === 403 || error.code === "EMAIL_NOT_VERIFIED" || msg.includes("not verified")) {
-      throw new AuthError("EMAIL_NOT_VERIFIED", email);
+    if (status === 429 || msg.includes("too many")) throw new AuthError("RATE_LIMITED", undefined, describe(error));
+    // Only treat as unverified when the server actually says so — NOT every 403
+    // (an origin/CSRF 403 is a different failure and must not look like this).
+    if (error.code === "EMAIL_NOT_VERIFIED" || msg.includes("not verified") || msg.includes("verify")) {
+      throw new AuthError("EMAIL_NOT_VERIFIED", email, describe(error));
     }
-    throw new AuthError("INVALID_CREDENTIALS");
+    if (status === 401 || error.code === "INVALID_EMAIL_OR_PASSWORD" || msg.includes("invalid")) {
+      throw new AuthError("INVALID_CREDENTIALS", undefined, describe(error));
+    }
+    // Anything else (e.g. a 403 origin rejection) surfaces as UNKNOWN + detail.
+    throw new AuthError("UNKNOWN", undefined, describe(error));
   }
 }
 
@@ -132,13 +148,19 @@ export async function signUpWithDetails(input: {
 
 /** Send (or resend) the 6-digit email-verification code. */
 export async function sendVerificationCode(email: string): Promise<void> {
-  const { error } = await authClient.emailOtp.sendVerificationOtp({
-    email: email.trim().toLowerCase(),
-    type: "email-verification",
-  });
-  if (error) {
-    if (error.status === 429) throw new AuthError("RATE_LIMITED");
-    throw new AuthError("NETWORK");
+  let result: Awaited<ReturnType<typeof authClient.emailOtp.sendVerificationOtp>>;
+  try {
+    result = await authClient.emailOtp.sendVerificationOtp({
+      email: email.trim().toLowerCase(),
+      type: "email-verification",
+    });
+  } catch (e) {
+    // Only a thrown exception is a genuine transport failure.
+    throw new AuthError("NETWORK", undefined, String((e as Error)?.message ?? e));
+  }
+  if (result.error) {
+    if (result.error.status === 429) throw new AuthError("RATE_LIMITED", undefined, describe(result.error));
+    throw new AuthError("UNKNOWN", undefined, describe(result.error));
   }
 }
 

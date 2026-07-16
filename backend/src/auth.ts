@@ -5,8 +5,18 @@ import { pool, queryOne } from "./db.js";
 import { sendEmail } from "./email.js";
 
 // Custom URL scheme of the iOS app (see MOBILE_PLAN.md §4.1) — must be a
-// trusted origin so better-auth accepts requests from the Expo auth client
+// trusted origin so better-auth accepts requests from the Expo auth client.
+// Standalone/dev builds send Origin "scorecast://".
 export const APP_SCHEME_ORIGIN = "scorecast://";
+
+// Expo Go can't use a custom scheme, so its dev origin is "exp://<lan-ip>:<port>/--/".
+// The @better-auth/expo server plugin only auto-trusts "exp://" when
+// NODE_ENV==="development"; prod (Railway) doesn't, which 403'd the app in
+// Expo Go. A bare "exp://" pattern matches any exp:// origin by prefix. This is
+// safe on prod: browsers can't set the custom `expo-origin` header without a
+// CORS preflight (blocked), and no real web origin starts with "exp://", so it
+// doesn't widen CSRF surface. Remove once dev happens on standalone builds only.
+const EXPO_GO_ORIGIN = "exp://";
 
 const isProduction = process.env.NODE_ENV === "production";
 
@@ -87,7 +97,7 @@ export const auth: ReturnType<typeof betterAuth> = betterAuth({
       },
     }),
   ],
-  trustedOrigins: [...corsOrigins, APP_SCHEME_ORIGIN],
+  trustedOrigins: [...corsOrigins, APP_SCHEME_ORIGIN, EXPO_GO_ORIGIN],
   user: {
     additionalFields: {
       username: {

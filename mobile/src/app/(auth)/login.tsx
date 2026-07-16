@@ -26,6 +26,7 @@ const ERROR_COPY: Partial<Record<AuthErrorCode, string>> = {
 export default function LoginScreen() {
   const router = useRouter();
   const [serverError, setServerError] = useState<AuthErrorCode | null>(null);
+  const [detail, setDetail] = useState<string | null>(null);
   const {
     control,
     handleSubmit,
@@ -37,6 +38,7 @@ export default function LoginScreen() {
 
   const onSubmit = async (values: LoginValues) => {
     setServerError(null);
+    setDetail(null);
     try {
       await loginWithIdentifier(values.identifier, values.password);
       haptics.success();
@@ -44,6 +46,7 @@ export default function LoginScreen() {
     } catch (e) {
       const code = e instanceof AuthError ? e.code : "UNKNOWN";
       setServerError(code);
+      setDetail(e instanceof AuthError ? e.detail ?? null : String(e));
       if (code === "EMAIL_NOT_VERIFIED" && e instanceof AuthError && e.email) {
         // Hold the entered password so verify can auto sign-in on success.
         setPendingCredentials(e.email, values.password);
@@ -67,7 +70,10 @@ export default function LoginScreen() {
           </View>
 
           {serverError ? (
-            <Banner kind={serverError === "NETWORK" ? "offline" : "error"} message={ERROR_COPY[serverError] ?? ERROR_COPY.UNKNOWN!} />
+            <Banner
+              kind={serverError === "NETWORK" ? "offline" : "error"}
+              message={`${ERROR_COPY[serverError] ?? ERROR_COPY.UNKNOWN!}${detail ? `\n[${detail}]` : ""}`}
+            />
           ) : null}
 
           <Controller

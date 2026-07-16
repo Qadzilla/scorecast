@@ -32,6 +32,7 @@ export default function VerifyScreen() {
   const { email } = useLocalSearchParams<{ email?: string }>();
   const [code, setCode] = useState("");
   const [error, setError] = useState<AuthErrorCode | null>(null);
+  const [detail, setDetail] = useState<string | null>(null);
   const [verifying, setVerifying] = useState(false);
   const [cooldown, setCooldown] = useState(RESEND_COOLDOWN);
   const sentOnce = useRef(false);
@@ -41,7 +42,10 @@ export default function VerifyScreen() {
   useEffect(() => {
     if (!email || sentOnce.current) return;
     sentOnce.current = true;
-    sendVerificationCode(email).catch(() => setError("NETWORK"));
+    sendVerificationCode(email).catch((e) => {
+      setError(e instanceof AuthError ? e.code : "UNKNOWN");
+      setDetail(e instanceof AuthError ? e.detail ?? null : String(e));
+    });
   }, [email]);
 
   // Resend cooldown tick.
@@ -73,6 +77,7 @@ export default function VerifyScreen() {
       }
     } catch (e) {
       setError(e instanceof AuthError ? e.code : "UNKNOWN");
+      setDetail(e instanceof AuthError ? e.detail ?? null : String(e));
       setCode("");
     } finally {
       setVerifying(false);
@@ -102,7 +107,12 @@ export default function VerifyScreen() {
             <Text variant="bodyMedium">{email ?? "your email"}</Text>.
           </Text>
 
-          {error ? <Banner kind={error === "NETWORK" ? "offline" : "error"} message={ERROR_COPY[error] ?? ERROR_COPY.UNKNOWN!} /> : null}
+          {error ? (
+            <Banner
+              kind={error === "NETWORK" ? "offline" : "error"}
+              message={`${ERROR_COPY[error] ?? ERROR_COPY.UNKNOWN!}${detail ? `\n[${detail}]` : ""}`}
+            />
+          ) : null}
 
           <OtpInput value={code} onChange={setCode} error={!!error} onComplete={submit} autoFocus />
 
