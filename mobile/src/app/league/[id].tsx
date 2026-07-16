@@ -77,9 +77,20 @@ export default function LeagueDetailScreen() {
       <ScreenHeader
         title={league.name}
         right={
-          <Pressable onPress={() => setInfoOpen(true)} hitSlop={layout.hitSlop} accessibilityLabel="League info">
-            <Ionicons name="information-circle-outline" size={24} color={colors.textPrimary} />
-          </Pressable>
+          <View style={styles.headerActions}>
+            {league.role === "admin" ? (
+              <Pressable
+                onPress={() => router.push({ pathname: "/league/manage", params: { leagueId: league.id } })}
+                hitSlop={layout.hitSlop}
+                accessibilityLabel="Manage league"
+              >
+                <Ionicons name="settings-outline" size={22} color={colors.textPrimary} />
+              </Pressable>
+            ) : null}
+            <Pressable onPress={() => setInfoOpen(true)} hitSlop={layout.hitSlop} accessibilityLabel="League info">
+              <Ionicons name="information-circle-outline" size={24} color={colors.textPrimary} />
+            </Pressable>
+          </View>
         }
       />
 
@@ -257,6 +268,7 @@ function TablePane({
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.bg },
   pad: { padding: layout.gutter, gap: spacing.md },
+  headerActions: { flexDirection: "row", alignItems: "center", gap: spacing.md },
   segmentWrap: { paddingHorizontal: layout.gutter, paddingBottom: spacing.md },
   content: { paddingHorizontal: layout.gutter, paddingBottom: spacing.xxxl, gap: spacing.md },
   matchCard: { paddingHorizontal: layout.cardPadding },

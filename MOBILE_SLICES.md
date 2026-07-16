@@ -1,6 +1,6 @@
 # ScoreCast Mobile — Slice Roadmap
 
-**Status:** Stages A + B COMPLETE; Stage C done + device-verified (MS9–MS11); **Stage D underway — MS12 (Leagues home) + MS13 (league detail: fixtures/table/info) shipped** (2026-07-15). Next: MS14 (join + admin surfaces) or MS15 (predictions entry). The full signup→verify→team→tabs and login/logout loops were confirmed on a physical iPhone (Expo Go, SDK 54) against the live backend. Next: **Stage D — MS12 (Leagues home)** to start the core product (the tabs are still placeholders); DS5 visual pass can follow.
+**Status:** Stages A + B COMPLETE; Stage C done + device-verified (MS9–MS11); **Stage D underway — MS12–MS14 shipped** (2026-07-15) — Leagues home, league detail, join + admin surfaces. Next: **MS15 (predictions entry)** — the last core-loop screen, then MS16 (account). The full signup→verify→team→tabs and login/logout loops were confirmed on a physical iPhone (Expo Go, SDK 54) against the live backend. Next: **Stage D — MS12 (Leagues home)** to start the core product (the tabs are still placeholders); DS5 visual pass can follow.
 
 **Field fixes during device bring-up (2026-07-15)** — three bugs the simulator/typecheck couldn't catch, all fixed:
 - **Expo Go origin 403.** better-auth rejects untrusted origins; the Expo client sends `expo-origin: exp://<lan-ip>:<port>/--/`, which the `@better-auth/expo` server plugin only auto-trusts when `NODE_ENV=development`. Prod 403'd every call. Fix: added `"exp://"` to server `trustedOrigins` (prefix-matches any Expo Go origin; safe — browsers can't forge the custom header). See MOBILE_PLAN.md §4.1.
@@ -136,10 +136,9 @@ Done: query layer expanded — `queries/fixtures.ts` (`useCurrentGameweek`), `qu
 Done: `useGameweek` query (+ `GameweekDetail`/`Matchday` types). `league/[id]`: nav header with info button, `SegmentedControl` (Fixtures / Predictions / Table, competition-tinted active). **Fixtures pane** — gameweek matchdays grouped by day (date headers + `MatchRow`s in a card, kickoff/FT/live/red-card states). **Table pane** — full standings via `useLeaderboard` (`LeaderboardRow`, own row highlighted, champion trophy when `isSeasonComplete`). **Predictions pane** — deadline `CountdownCard` + "Make/edit predictions" brand button (→ predict, disabled past deadline); the predictions list itself is MS15. **Info sheet** — invite code in a tap-to-copy box (`expo-clipboard` + haptic + "Copied!"), competition + member count. Placeholder `league/predict` route registered.
 **Exit (met, code-verified):** strict `tsc` clean; iOS `expo export` bundles; discovered `/league/predict` in typed routes. On-device visual (side-by-side vs web, copy code) is the user's step.
 
-### MS14 — Join + admin surfaces  *(§5.4 join/create/members)*
-`league/join` modal (8-char code entry); admin-gated `league/create` and `league/[id]/members` (rename, kick with `Alert.alert` confirm) driven by `isAdmin` from `/me` — no client-side email constants.
-**Depends on:** MS13, MS4.
-**Exit:** non-admin account joins a league by code and sees no admin UI anywhere; admin account creates a league, renames it, kicks a member.
+### MS14 — Join + admin surfaces ✅ *(§5.4 join/create/members)* — shipped 2026-07-15
+Done: `useMe` (server-computed `isAdmin`), `useCreateLeague`/`useUpdateLeague`/`useLeagueMembers`/`useKickMember`. **`league/join`** modal — invite-code field (auto-uppercase, A–Z0–9, ≤8), join → navigate to the league, 404/"already member" error mapping. **`league/create`** modal (admin-only, double-gated: hidden unless `me.isAdmin`, server also enforces) — name + PL/UCL segmented, create → navigate. **`league/manage`** — rename (save when changed) + member roster with `Alert.alert`-confirmed kick (hidden for self and other admins). Entry points gated on `isAdmin`: "+ Create" on the Leagues home, ⚙️ Manage in league-detail header when `league.role === "admin"`.
+**Exit (met, code-verified):** strict `tsc` clean; iOS `expo export` bundles; typed routes discover create/manage/join/predict; `/api/user/me` + `/api/leagues` 401 unauth on prod. Non-admins never see Create/Manage (UI gate + server 403). On-device join/create/rename/kick is the user's step.
 
 ### MS15 — Predictions entry  *(§5.4 predict)*
 Predictions pane in league detail + `league/[id]/predict` flow: grouped score inputs with auto-advance, locked/finished/points states, sticky submit bar with entered-count, haptic on success, deadline-passed 400 handled gracefully.
@@ -246,7 +245,7 @@ Planning slices register their children here (PS1 → `DS*`, PS2 → `NS*`, PS3 
 | MS11 | Team-select gate | C | ✅ 2026-07-15 | (this commit) |
 | MS12 | Leagues home | D | ✅ 2026-07-15 | (this commit) |
 | MS13 | League detail: fixtures + table | D | ✅ 2026-07-15 | (this commit) |
-| MS14 | Join + admin surfaces | D | ☐ | |
+| MS14 | Join + admin surfaces | D | ✅ 2026-07-15 | (this commit) |
 | MS15 | Predictions entry | D | ☐ | |
 | MS16 | Account screen | D | ☐ | |
 | PS2 🗎 | PUSH_SPEC.md (→ registers `NS*`) | E | ☐ | |

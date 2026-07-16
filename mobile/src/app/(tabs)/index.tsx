@@ -17,6 +17,7 @@ import {
   useCurrentGameweek,
   useFavoriteTeam,
   useLeaderboard,
+  useMe,
 } from "@/lib/queries";
 import { upcomingDeadline, type League } from "@/types/leagues";
 import { formatRank } from "@/types/predictions";
@@ -27,6 +28,7 @@ export default function LeaguesHomeScreen() {
   const qc = useQueryClient();
   const { data: session } = useSession();
   const fav = useFavoriteTeam();
+  const me = useMe();
   const leagues = useLeagues();
   const [refreshing, setRefreshing] = useState(false);
 
@@ -78,7 +80,14 @@ export default function LeaguesHomeScreen() {
         </View>
 
         {/* Leagues */}
-        <Text variant="label" color="textSecondary" style={styles.sectionLabel}>Your leagues</Text>
+        <View style={[styles.sectionLabel, styles.sectionRow]}>
+          <Text variant="label" color="textSecondary">Your leagues</Text>
+          {me.data?.isAdmin ? (
+            <Text variant="caption" color="accent" onPress={() => router.push("/league/create")}>
+              + Create
+            </Text>
+          ) : null}
+        </View>
         {leagues.isLoading ? (
           <View style={styles.list}>
             {[0, 1].map((i) => (
@@ -193,6 +202,7 @@ const styles = StyleSheet.create({
   header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
   headerText: { gap: 2 },
   sectionLabel: { marginTop: spacing.md },
+  sectionRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
   deadlines: { gap: spacing.md },
   list: { gap: spacing.md },
   leagueRow: { flexDirection: "row", alignItems: "center", gap: spacing.md },

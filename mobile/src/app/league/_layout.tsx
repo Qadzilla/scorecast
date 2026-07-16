@@ -7,7 +7,9 @@ export default function LeagueLayout() {
     <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.bg } }}>
       <Stack.Screen name="[id]" />
       <Stack.Screen name="predict" />
+      <Stack.Screen name="manage" />
       <Stack.Screen name="join" options={{ presentation: "modal" }} />
+      <Stack.Screen name="create" options={{ presentation: "modal" }} />
     </Stack>
   );
 }

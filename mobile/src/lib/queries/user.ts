@@ -4,9 +4,32 @@ import type { Team } from "@/types/fixtures";
 
 // Query keys — one place so invalidations stay consistent.
 export const userKeys = {
+  me: ["me"] as const,
   favoriteTeam: ["favorite-team"] as const,
   teams: ["teams"] as const,
 };
+
+export interface Me {
+  id: string;
+  email: string;
+  name: string;
+  username: string | null;
+  firstName: string | null;
+  lastName: string | null;
+  emailVerified: boolean;
+  favoriteTeamId: string | null;
+  isAdmin: boolean;
+}
+
+// Current user's profile + server-computed isAdmin. Admin UI (create league,
+// manage members) gates on this — never on a client-baked email constant.
+export function useMe() {
+  return useQuery({
+    queryKey: userKeys.me,
+    queryFn: () => apiFetch<Me>("/api/user/me"),
+    staleTime: 5 * 60 * 1000,
+  });
+}
 
 type FavoriteTeamResponse = { favoriteTeamId: string | null; team: Team | null };
 
