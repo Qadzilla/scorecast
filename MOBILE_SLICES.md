@@ -1,6 +1,6 @@
 # ScoreCast Mobile — Slice Roadmap
 
-**Status:** Stages A–D COMPLETE (2026-07-15). The app has full feature parity with the web app (minus demo mode) and was run end-to-end on a physical iPhone (Expo Go, SDK 54) against the live backend. **Stage E underway — PS2 (PUSH_SPEC.md) shipped; NS1–NS6 registered.** Next: NS1 (push infra + prefs). ⚠️ NS6 (on-device delivery) needs the Apple Developer account + a dev build — enroll in parallel; NS1–NS5 build without it.
+**Status:** Stages A–D COMPLETE (2026-07-15). The app has full feature parity with the web app (minus demo mode) and was run end-to-end on a physical iPhone (Expo Go, SDK 54) against the live backend. **Stage E underway — PS2 + NS1–NS3 shipped** (backend push complete: infra, prefs, deadline reminders, results + gw-complete). Next: **NS4** (client register + tap-routing). User has an Apple Developer account, so NS6 is unblocked. NS4 needs `eas init` on the mobile app for the push `projectId`.
 
 **Field fixes during device bring-up (2026-07-15)** — three bugs the simulator/typecheck couldn't catch, all fixed:
 - **Expo Go origin 403.** better-auth rejects untrusted origins; the Expo client sends `expo-origin: exp://<lan-ip>:<port>/--/`, which the `@better-auth/expo` server plugin only auto-trusts when `NODE_ENV=development`. Prod 403'd every call. Fix: added `"exp://"` to server `trustedOrigins` (prefix-matches any Expo Go origin; safe — browsers can't forge the custom header). See MOBILE_PLAN.md §4.1.
@@ -166,9 +166,10 @@ Done: `expo-server-sdk@6`; migrations `009_notification_pref` (per-user, all-on 
 Done: `services/notifications.ts` `runDeadlineReminders()` — scans gameweeks with a deadline in [now+23.5h, now+24h] (`deadline_24h`) or [now+0.5h, now+1h] (`deadline_1h`), and for each league of that competition, `notifyIfAllowed`s only members with **zero predictions** for the gameweek. Deadline times shown in Jordan time (Asia/Amman). Scheduled `*/30 * * * *` in `index.ts`.
 **Exit (met):** 2 tests — only the unsubmitted member is notified (once), correct kind per window, re-run dedups (one `push_log` row). Full suite 158 green (caught + fixed a test-isolation bug: the seed must use `isCurrent=false` to avoid colliding with other tests' current-season queries).
 
-### NS3 — Results + GW-complete triggers *(PUSH_SPEC §4)*
-Hook into `runResultsUpdate`: per-user-per-league results batching; full-gameweek detection → `gw_complete`.
-**Depends on:** NS1. **Exit:** scoring a predicted match → one results push per (user,league); idempotent re-score sends nothing; last match finishing fires `gw_complete` once per member.
+### NS3 — Results + GW-complete triggers ✅ *(PUSH_SPEC §4)* — shipped 2026-07-15
+Done: refactored `push.ts` into composable pieces (`prefAllows`, `claimLog`, `sendToUser`; `notifyIfAllowed` now composes them). `notifyResults(matchIds)` — groups a user's newly-scored matches per league and sends **one** batched push (single-match copy vs "N results in — X pts"); `push_log` per match dedups across the 15-min re-score cadence. `notifyGameweekComplete()` — fires once per member per league when a gameweek's matches are all finished, with their gameweek rank + points. Both wired into `runResultsUpdate` (best-effort, non-blocking).
+**Exit (met):** 2 tests — batched results (2 matches → 1 push), idempotent re-run sends nothing, `gw_complete` once per member per league. Full suite 160 green.
+**⚠️ Prod bug caught by the test:** `notifyGameweekComplete` originally had no time bound → on first deploy it would notify every member about every historically-complete gameweek. Fixed with a "match settled in the last 3h" guard so only recently-completed gameweeks fire (dedup handles the rest).
 
 ### NS4 — Client register + tap-routing *(PUSH_SPEC §5)*
 `expo-notifications`; `lib/notifications.ts`; contextual permission pre-prompt after first prediction; register on grant / app-start, unregister on sign-out; tap → league.
@@ -268,7 +269,7 @@ Planning slices register their children here (PS1 → `DS*`, PS2 → `NS*`, PS3 
 | PS2 🗎 | PUSH_SPEC.md (→ registers `NS*`) | E | ✅ 2026-07-15 | (this commit) |
 | NS1 | Push infra + prefs | E | ✅ 2026-07-15 | (this commit) |
 | NS2 | Deadline reminder cron | E | ✅ 2026-07-15 | (this commit) |
-| NS3 | Results + GW-complete triggers | E | ☐ | |
+| NS3 | Results + GW-complete triggers | E | ✅ 2026-07-15 | (this commit) |
 | NS4 | Client register + tap-routing | E | ☐ | |
 | NS5 | Preference toggles | E | ☐ | |
 | NS6 | On-device delivery pass 🍎 | E | ☐ | |

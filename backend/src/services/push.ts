@@ -27,14 +27,57 @@ const PREF_COLUMN: Record<PushKind, "deadlines" | "results" | "updates"> = {
   gw_complete: "updates",
 };
 
-async function isAllowed(userId: string, kind: PushKind): Promise<boolean> {
+// Is this notification category enabled for the user? Absent row = all-on.
+export async function prefAllows(userId: string, kind: PushKind): Promise<boolean> {
   const col = PREF_COLUMN[kind];
   const pref = await queryOne<{ allowed: boolean }>(
     `SELECT ${col} AS allowed FROM notification_pref WHERE user_id = $1`,
     [userId]
   );
-  // Absent row = all-on default.
   return pref ? pref.allowed : true;
+}
+
+// Claim the dedup slot for (user, kind, subject, league). Returns true if this
+// is the first claim (proceed to send), false if already notified.
+export async function claimLog(
+  userId: string,
+  kind: PushKind,
+  subjectId: string,
+  leagueId: string
+): Promise<boolean> {
+  const logged = await queryOne<{ id: string }>(
+    `INSERT INTO push_log (id, user_id, kind, subject_id, league_id)
+     VALUES ($1, $2, $3, $4, $5)
+     ON CONFLICT (user_id, kind, subject_id, league_id) DO NOTHING
+     RETURNING id`,
+    [crypto.randomUUID(), userId, kind, subjectId, leagueId]
+  );
+  return !!logged;
+}
+
+// Send a message to all of a user's devices (or capture to the test outbox).
+// Best-effort; never throws.
+export async function sendToUser(
+  userId: string,
+  kind: PushKind,
+  message: PushMessage,
+  data?: Record<string, unknown>
+): Promise<void> {
+  const tokens = await tokensForUser(userId);
+  if (process.env.NODE_ENV === "test") {
+    pushTestOutbox.push({ userId, kind, title: message.title, body: message.body, tokens });
+    return;
+  }
+  if (tokens.length === 0) return;
+  await deliver(
+    tokens.map((to) => ({
+      to,
+      sound: "default" as const,
+      title: message.title,
+      body: message.body,
+      data: data ?? {},
+    }))
+  );
 }
 
 async function tokensForUser(userId: string): Promise<string[]> {
@@ -87,42 +130,9 @@ export interface NotifyOptions {
  */
 export async function notifyIfAllowed(opts: NotifyOptions): Promise<boolean> {
   try {
-    if (!(await isAllowed(opts.userId, opts.kind))) return false;
-
-    // Dedup: the unique constraint rejects a repeat; RETURNING tells us if this
-    // was the first attempt.
-    const logged = await queryOne<{ id: string }>(
-      `INSERT INTO push_log (id, user_id, kind, subject_id, league_id)
-       VALUES ($1, $2, $3, $4, $5)
-       ON CONFLICT (user_id, kind, subject_id, league_id) DO NOTHING
-       RETURNING id`,
-      [crypto.randomUUID(), opts.userId, opts.kind, opts.subjectId, opts.leagueId]
-    );
-    if (!logged) return false; // already notified
-
-    const tokens = await tokensForUser(opts.userId);
-
-    if (process.env.NODE_ENV === "test") {
-      pushTestOutbox.push({
-        userId: opts.userId,
-        kind: opts.kind,
-        title: opts.message.title,
-        body: opts.message.body,
-        tokens,
-      });
-      return true;
-    }
-
-    if (tokens.length === 0) return true; // logged, but no device to send to
-    await deliver(
-      tokens.map((to) => ({
-        to,
-        sound: "default" as const,
-        title: opts.message.title,
-        body: opts.message.body,
-        data: opts.data ?? {},
-      }))
-    );
+    if (!(await prefAllows(opts.userId, opts.kind))) return false;
+    if (!(await claimLog(opts.userId, opts.kind, opts.subjectId, opts.leagueId))) return false;
+    await sendToUser(opts.userId, opts.kind, opts.message, opts.data);
     return true;
   } catch (err) {
     console.error("[Push] notifyIfAllowed failed:", err);

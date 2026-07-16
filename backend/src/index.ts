@@ -2,7 +2,7 @@ import { app } from "./app.js";
 import { initializeDatabase, queryAll } from "./db.js";
 import { syncAll, updateMatchResults } from "./services/footballData.js";
 import { scorePredictionsForMatch } from "./routes/predictions.js";
-import { runDeadlineReminders } from "./services/notifications.js";
+import { runDeadlineReminders, notifyResults, notifyGameweekComplete } from "./services/notifications.js";
 import cron from "node-cron";
 
 const PORT = process.env.PORT || 3000;
@@ -68,6 +68,18 @@ async function runResultsUpdate() {
         await scorePredictionsForMatch(match.id);
       }
     }
+
+    // NS3 — push notifications for the matches touched this tick, then any
+    // gameweeks that just completed. push_log dedups both, so the 15-min
+    // re-score cadence doesn't re-notify. Best-effort; never blocks the job.
+    const touchedMatchIds = [
+      ...new Set([
+        ...finishedMatchesWithPredictions.map((m) => m.id),
+        ...unscoredMatches.map((m) => m.id),
+      ]),
+    ];
+    await notifyResults(touchedMatchIds);
+    await notifyGameweekComplete();
 
     console.log("[Results] Update completed");
   } catch (error) {
