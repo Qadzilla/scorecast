@@ -1,6 +1,6 @@
 # ScoreCast Mobile — Slice Roadmap
 
-**Status:** Stages A–D COMPLETE (2026-07-15). The app has full feature parity with the web app (minus demo mode) and was run end-to-end on a physical iPhone (Expo Go, SDK 54) against the live backend. **Stages A–E COMPLETE** (2026-07-16). Feature parity with the web app **plus push notifications**, all verified on a physical iPhone (dev build): all 4 notification types deliver, prefs honored, cold-start taps route correctly. Next: **Stage F — beta & launch** (PS3 store listing → TestFlight → App Store), then **Stage G — web decommission**. App icon/splash still placeholders (needed for PS3/TestFlight).
+**Status:** Stages A–D COMPLETE (2026-07-15). The app has full feature parity with the web app (minus demo mode) and was run end-to-end on a physical iPhone (Expo Go, SDK 54) against the live backend. **Stages A–E COMPLETE** (2026-07-16). Feature parity with the web app **plus push notifications**, all verified on a physical iPhone (dev build): all 4 notification types deliver, prefs honored, cold-start taps route correctly. **Stage F underway — PS3 (STORE_LISTING.md) shipped; LS1–LS5 registered.** Next: **LS1 (app icon + splash)** — gated on the icon-artwork decision (STORE_LISTING §8.1). Then LS3 screenshots → LS4 listing → MS17 TestFlight. LS2 (privacy page) + LS5 (test account) run in parallel.
 
 **Field fixes during device bring-up (2026-07-15)** — three bugs the simulator/typecheck couldn't catch, all fixed:
 - **Expo Go origin 403.** better-auth rejects untrusted origins; the Expo client sends `expo-origin: exp://<lan-ip>:<port>/--/`, which the `@better-auth/expo` server plugin only auto-trusts when `NODE_ENV=development`. Prod 403'd every call. Fix: added `"exp://"` to server `trustedOrigins` (prefix-matches any Expo Go origin; safe — browsers can't forge the custom header). See MOBILE_PLAN.md §4.1.
@@ -190,10 +190,28 @@ Done: EAS dev build (`eas build --profile development --platform ios`, EAS-manag
 
 ## Stage F — Beta & launch
 
-### PS3 — Write `STORE_LISTING.md` 🗎  *(§9, §10)*
-**Planning slice.** App name/subtitle/keywords/description, screenshot plan (6.7" + 6.1"), icon + splash final assets (direction came from PS1), privacy-policy page content, App Store privacy-label answers, review-notes text including the test account and the no-stakes/no-gambling statement (§9.7). **Must end in an `LS*` slice table** — expected shape: icon+splash assets → privacy page live at scorecast.club → screenshots → App Store Connect listing filled → review package (test account seeded + notes). Register `LS*` into the tracker.
-**Depends on:** Stage D gate (screens must exist to screenshot); can overlap Stage E.
-**Exit:** `STORE_LISTING.md` exists, ends in an `LS*` slice table, tracker updated.
+### PS3 — Write `STORE_LISTING.md` ✅ 🗎  *(§9, §10)* — shipped 2026-07-16
+Done: `STORE_LISTING.md` — decision-complete listing copy (name "ScoreCast", subtitle, keywords, promo + full description), Sports category, 4+ rating; asset direction (icon/splash on the brand gradient — still placeholders); 5-shot screenshot plan (6.9"/6.7"); privacy-policy page content + App Store privacy-label answers (no tracking); review package (pre-verified test account in a populated league + the no-gambling review notes). Ends in the LS1–LS5 table (below), registered here.
+
+### LS1 — App icon + splash *(STORE_LISTING §4)*
+Final 1024² icon (no alpha) + splash wired into `app.json`, replacing the Expo placeholders.
+**Depends on:** icon-artwork decision (STORE_LISTING §8.1). **Exit:** brand icon renders on-device; `expo-doctor` clean.
+
+### LS2 — Privacy policy page *(STORE_LISTING §5)*
+Static `/privacy` at scorecast.club with the §5 content.
+**Exit:** URL resolves 200; ready for App Store Connect.
+
+### LS3 — Screenshots *(STORE_LISTING §4)*
+5-shot set at 6.9"/6.7", framed + captioned, from a populated league.
+**Depends on:** LS1. **Exit:** 5 store-ready PNGs at correct resolution.
+
+### LS4 — App Store Connect listing *(STORE_LISTING §1–5)*
+App record; all metadata + privacy labels; icon + screenshots + privacy URL uploaded.
+**Depends on:** LS1, LS3, LS2. **Exit:** "Ready to Submit" minus the build.
+
+### LS5 — Review package *(STORE_LISTING §6)*
+Seed the pre-verified test account in a populated league; finalize review notes.
+**Exit:** reviewer can log in and see real content; notes saved.
 
 ### MS17 — TestFlight  *(§11 P7)*
 Production EAS profile, icon/splash wired (from `LS*`), version/build numbering, crash reporting decision executed (default per §12: `sentry-expo`), internal TestFlight distribution to the real league group.
@@ -274,8 +292,12 @@ Planning slices register their children here (PS1 → `DS*`, PS2 → `NS*`, PS3 
 | NS4 | Client register + tap-routing | E | ✅ 2026-07-16 | (this commit) |
 | NS5 | Preference toggles | E | ✅ 2026-07-16 | (this commit) |
 | NS6 | On-device delivery pass 🍎 | E | ✅ 2026-07-16 | (this commit) |
-| PS3 🗎 | STORE_LISTING.md (→ registers `LS*`) | F | ☐ | |
-| *LS\** | *— defined by PS3 —* | F | — | |
+| PS3 🗎 | STORE_LISTING.md (→ registers `LS*`) | F | ✅ 2026-07-16 | (this commit) |
+| LS1 | App icon + splash | F | ☐ | |
+| LS2 | Privacy policy page | F | ☐ | |
+| LS3 | Screenshots | F | ☐ | |
+| LS4 | App Store Connect listing | F | ☐ | |
+| LS5 | Review package | F | ☐ | |
 | MS17 | TestFlight | F | ☐ | |
 | MS18 | Beta hardening (`MS18.x` ad hoc) | F | ☐ | |
 | MS19 | App Store submission → **live** | F | ☐ | |
