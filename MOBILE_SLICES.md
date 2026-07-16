@@ -1,6 +1,6 @@
 # ScoreCast Mobile — Slice Roadmap
 
-**Status:** Stages A–D COMPLETE (2026-07-15). The app has full feature parity with the web app (minus demo mode) and was run end-to-end on a physical iPhone (Expo Go, SDK 54) against the live backend. **Stage E underway — PS2 + NS1–NS3 shipped** (backend push complete: infra, prefs, deadline reminders, results + gw-complete). Next: **NS4** (client register + tap-routing). User has an Apple Developer account, so NS6 is unblocked. NS4 needs `eas init` on the mobile app for the push `projectId`.
+**Status:** Stages A–D COMPLETE (2026-07-15). The app has full feature parity with the web app (minus demo mode) and was run end-to-end on a physical iPhone (Expo Go, SDK 54) against the live backend. **Stage E nearly done — PS2 + NS1–NS5 shipped** (backend push + full client: register, contextual prompt, tap-routing, preference toggles). Only **NS6** left — the on-device delivery test: a dev build on the iPhone, drive all 4 notification types. Apple account + EAS project both ready.
 
 **Field fixes during device bring-up (2026-07-15)** — three bugs the simulator/typecheck couldn't catch, all fixed:
 - **Expo Go origin 403.** better-auth rejects untrusted origins; the Expo client sends `expo-origin: exp://<lan-ip>:<port>/--/`, which the `@better-auth/expo` server plugin only auto-trusts when `NODE_ENV=development`. Prod 403'd every call. Fix: added `"exp://"` to server `trustedOrigins` (prefix-matches any Expo Go origin; safe — browsers can't forge the custom header). See MOBILE_PLAN.md §4.1.
@@ -175,9 +175,9 @@ Done: refactored `push.ts` into composable pieces (`prefAllows`, `claimLog`, `se
 Done: EAS project linked (`eas init` → projectId in app.json, owner qadzilla); `expo-notifications` installed + config plugin. `lib/notifications.ts` — foreground handler; `registerIfGranted()` (app-start, token → `POST /api/push/register`); `maybePromptForPush()` (soft pre-prompt → OS dialog, only when undetermined — no nag); `unregisterPush()` (before sign-out); `usePushObserver()` (tap + cold-start → `/league/[id]` from `data.leagueId`). Wired: register on session in root layout, `usePushObserver` in root, prompt after first prediction submit, unregister in account sign-out.
 **Exit (code-verified):** strict `tsc` clean; iOS `expo export` bundles. Degrades gracefully in Expo Go (push token throws → caught; app unaffected). **Real registration + tap needs a dev build — verified in NS6.**
 
-### NS5 — Preference toggles *(PUSH_SPEC §5)*
-Wire MS16's placeholder switches to `GET/PUT /api/notifications/prefs` (optimistic).
-**Depends on:** NS1, MS16. **Exit:** toggles persist across relaunch; a disabled category isn't delivered.
+### NS5 — Preference toggles ✅ *(PUSH_SPEC §5)* — shipped 2026-07-16
+Done: `queries/notifications.ts` — `useNotificationPrefs` (GET) + `useUpdateNotificationPrefs` (optimistic PUT with rollback). Account screen's three switches now read/write the server prefs (replacing the local-only placeholder state); removed the "arrive in a later update" caption.
+**Exit (code-verified):** strict `tsc` clean; iOS `expo export` bundles; `/api/notifications/prefs` live on prod (NS1). Toggles persist server-side (round-trip verified against NS1's endpoint tests); a disabled category is gated by NS1's `prefAllows`. On-device persist-across-relaunch is the user's step.
 
 ### NS6 — On-device delivery pass 🍎 *(PUSH_SPEC §7)*
 Requires **Apple Developer account + EAS dev build on a physical iPhone**. Shrink cron windows locally; drive all four types.
@@ -271,7 +271,7 @@ Planning slices register their children here (PS1 → `DS*`, PS2 → `NS*`, PS3 
 | NS2 | Deadline reminder cron | E | ✅ 2026-07-15 | (this commit) |
 | NS3 | Results + GW-complete triggers | E | ✅ 2026-07-15 | (this commit) |
 | NS4 | Client register + tap-routing | E | ✅ 2026-07-16 | (this commit) |
-| NS5 | Preference toggles | E | ☐ | |
+| NS5 | Preference toggles | E | ✅ 2026-07-16 | (this commit) |
 | NS6 | On-device delivery pass 🍎 | E | ☐ | |
 | PS3 🗎 | STORE_LISTING.md (→ registers `LS*`) | F | ☐ | |
 | *LS\** | *— defined by PS3 —* | F | — | |

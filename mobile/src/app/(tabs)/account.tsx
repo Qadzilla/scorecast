@@ -20,6 +20,9 @@ import {
   useUpdateUsername,
   useDeleteAccount,
   useLeagues,
+  useNotificationPrefs,
+  useUpdateNotificationPrefs,
+  type NotificationPrefs,
 } from "@/lib/queries";
 import { ApiError } from "@/lib/api";
 import { unregisterPush } from "@/lib/notifications";
@@ -41,8 +44,12 @@ export default function AccountScreen() {
   }, [me.data?.username]);
 
   const [teamSheet, setTeamSheet] = useState(false);
-  // Local-only placeholders until NS* wires real storage.
-  const [notif, setNotif] = useState({ deadlines: true, results: true, updates: true });
+
+  const prefs = useNotificationPrefs();
+  const updatePrefs = useUpdateNotificationPrefs();
+  const notif: NotificationPrefs = prefs.data ?? { deadlines: true, results: true, updates: true };
+  const setNotif = (key: keyof NotificationPrefs, value: boolean) =>
+    updatePrefs.mutate({ ...notif, [key]: value });
 
   const usernameChanged =
     !!me.data && username.trim().length >= 3 && username.trim().toLowerCase() !== me.data.username;
@@ -152,11 +159,10 @@ export default function AccountScreen() {
         {/* Notifications (placeholder) */}
         <Text variant="label" color="textSecondary" style={styles.sectionLabel}>Notifications</Text>
         <Card>
-          <NotifRow label="Deadline reminders" value={notif.deadlines} onChange={(v) => setNotif((n) => ({ ...n, deadlines: v }))} />
-          <NotifRow label="Results & points" value={notif.results} onChange={(v) => setNotif((n) => ({ ...n, results: v }))} />
-          <NotifRow label="League updates" value={notif.updates} onChange={(v) => setNotif((n) => ({ ...n, updates: v }))} last />
+          <NotifRow label="Deadline reminders" value={notif.deadlines} onChange={(v) => setNotif("deadlines", v)} />
+          <NotifRow label="Results & points" value={notif.results} onChange={(v) => setNotif("results", v)} />
+          <NotifRow label="League updates" value={notif.updates} onChange={(v) => setNotif("updates", v)} last />
         </Card>
-        <Text variant="caption" color="textTertiary">Push notifications arrive in a later update.</Text>
 
         {/* Actions */}
         <View style={styles.actions}>

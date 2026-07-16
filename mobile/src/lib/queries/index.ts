@@ -5,3 +5,4 @@ export * from "./fixtures";
 export * from "./leagues";
 export * from "./leaderboard";
 export * from "./predictions";
+export * from "./notifications";
