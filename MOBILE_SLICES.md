@@ -199,7 +199,7 @@ Done: generated `icon.png` (1024² RGB, no alpha — App Store compliant) — bo
 
 ### LS2 — Privacy policy page ✅ *(STORE_LISTING §5)* — shipped 2026-07-16
 Done: `frontend/public/privacy.html` — self-contained, brand-styled privacy policy with all §5 content (data collected, no tracking, in-app deletion, contact). Vite serves `public/` at root, so it deploys to **scorecast.club/privacy.html** on the next Vercel deploy.
-**Exit (met, pending live-verify):** page written; goes live when Vercel redeploys from `main`. Uses `support@scorecast.club` as contact — confirm that inbox exists or swap it (STORE_LISTING §8.4).
+**Exit (met):** **live at https://scorecast.club/privacy.html** (200, real content — Vercel auto-deployed from `main`). Uses `support@scorecast.club` as contact — confirm that inbox exists or swap it (STORE_LISTING §8.4).
 
 ### LS3 — Screenshots *(STORE_LISTING §4)*
 5-shot set at 6.9"/6.7", framed + captioned, from a populated league.
