@@ -35,21 +35,25 @@ function RootNavigator({ fontsReady }: { fontsReady: boolean }) {
   const segments = useSegments();
   const router = useRouter();
 
-  // Ready once fonts + session resolve, and (for signed-in users) once the
-  // favorite-team status is known — so onboarding routing settles under the
-  // splash instead of flashing the wrong screen.
-  const ready = fontsReady && !isPending && (!hasSession || !fav.isLoading);
+  // First-boot readiness = fonts + the initial session read. The favorite-team
+  // query is deliberately NOT part of this: gating the render on it would
+  // unmount the whole navigator every time the session changes (e.g. right
+  // after login/verify), tearing down navigation state and bouncing the user
+  // back to the first screen. Once booted, the navigator stays mounted and the
+  // gate only ever redirects.
+  const booted = fontsReady && !isPending;
 
   useEffect(() => {
-    if (ready) SplashScreen.hideAsync();
-  }, [ready]);
+    if (booted) SplashScreen.hideAsync();
+  }, [booted]);
 
   // Auth + onboarding gate. Signed-out users can't sit in tabs/team-select;
   // signed-in users without a favorite team are forced through team-select
   // exactly once; everyone else lands in tabs. Dev gallery/debug are untouched.
-  // On a favorite-team fetch error we don't trap the user (needsTeam = false).
+  // While the team status is still loading we just wait (no redirect, no
+  // unmount). On a favorite-team fetch error we don't trap the user.
   useEffect(() => {
-    if (!ready) return;
+    if (!booted) return;
     const root = segments[0];
     const inAuth = root === "(auth)";
     const onTeamSelect = root === "team-select";
@@ -59,15 +63,17 @@ function RootNavigator({ fontsReady }: { fontsReady: boolean }) {
       return;
     }
 
+    if (fav.isLoading) return; // wait for team status before onboarding routing
+
     const needsTeam = fav.data ? fav.data.favoriteTeamId == null : false;
     if (needsTeam && !onTeamSelect) {
       router.replace("/team-select");
     } else if (!needsTeam && (inAuth || onTeamSelect)) {
       router.replace("/(tabs)");
     }
-  }, [ready, session, fav.data, segments, router]);
+  }, [booted, session, fav.isLoading, fav.data, segments, router]);
 
-  if (!ready) return null;
+  if (!booted) return null;
 
   return (
     <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.bg } }}>
