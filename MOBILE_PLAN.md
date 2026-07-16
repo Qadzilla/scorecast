@@ -142,7 +142,7 @@ Fixtures/predictions/leaderboard/leagues route logic, deadline enforcement, scor
 
 | Concern | Choice | Notes |
 |---|---|---|
-| Framework | **Expo SDK 57, RN 0.86, React 19.2, TypeScript strict** (updated in MS7 from the originally-planned SDK 54 — latest-stable is right for a new app and satisfies better-auth's Expo peers) | No `any` without a justifying comment. Routes live under `src/app/`. |
+| Framework | **Expo SDK 54, RN 0.81, React 19.1, TypeScript strict** | No `any` without a justifying comment. Routes live under `src/app/`. MS7 first scaffolded on SDK 57 (create-expo-app default), but the App Store build of **Expo Go doesn't support SDK 57**, blocking QR-scan-to-phone dev. Reverted to SDK 54 (the plan's original target) — Expo-Go-compatible, `expo-doctor` 17/17, whole app still typechecks + bundles. |
 | Navigation | **Expo Router** (file-based, `mobile/app/`) | Route groups: `(auth)` stack + `(tabs)`. |
 | Server state | **TanStack Query** | Hook layer in `src/lib/queries/` — components never call `fetch`/the API client directly (same convention as MalaaBi). |
 | UI state | **Zustand** (sparingly) | Never caches server data. Likely only needed for transient prediction-entry drafts. |

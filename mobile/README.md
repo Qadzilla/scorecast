@@ -7,9 +7,14 @@ the (soon-to-be-retired) web app. See the repo-root planning docs:
 
 ## Stack
 
-Expo SDK 57 · React Native 0.86 · React 19 · TypeScript strict · Expo Router ·
+Expo SDK 54 · React Native 0.81 · React 19.1 · TypeScript strict · Expo Router ·
 TanStack Query · better-auth Expo client (SecureStore sessions) · Plus Jakarta
 Sans. Light theme; tokens in `src/constants/theme.ts`.
+
+> SDK 54 (not the newer 57) is deliberate: the App Store build of **Expo Go**
+> supports SDK 54, so the app opens by scanning a QR from `npx expo start` — no
+> native build needed to iterate. SDK 57 was briefly used during scaffolding but
+> is too new for public Expo Go.
 
 ## Layout
 
