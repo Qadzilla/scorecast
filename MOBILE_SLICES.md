@@ -193,9 +193,9 @@ Done: EAS dev build (`eas build --profile development --platform ios`, EAS-manag
 ### PS3 — Write `STORE_LISTING.md` ✅ 🗎  *(§9, §10)* — shipped 2026-07-16
 Done: `STORE_LISTING.md` — decision-complete listing copy (name "ScoreCast", subtitle, keywords, promo + full description), Sports category, 4+ rating; asset direction (icon/splash on the brand gradient — still placeholders); 5-shot screenshot plan (6.9"/6.7"); privacy-policy page content + App Store privacy-label answers (no tracking); review package (pre-verified test account in a populated league + the no-gambling review notes). Ends in the LS1–LS5 table (below), registered here.
 
-### LS1 — App icon + splash *(STORE_LISTING §4)*
-Final 1024² icon (no alpha) + splash wired into `app.json`, replacing the Expo placeholders.
-**Depends on:** icon-artwork decision (STORE_LISTING §8.1). **Exit:** brand icon renders on-device; `expo-doctor` clean.
+### LS1 — App icon + splash ✅ *(STORE_LISTING §4)* — shipped 2026-07-16
+Done: generated `icon.png` (1024² RGB, no alpha — App Store compliant) — bold white "SC" monogram on the purple→navy brand gradient with a neon-green accent bar; `splash-icon.png` a matching rounded brand tile on transparent (`imageWidth` 140). Both wired via existing `app.json` paths. `expo-doctor` 17/17.
+**Exit (met, code-verified):** assets wired, config validates. On-device home-screen icon shows at the next native build (production build for MS17). *Android adaptive-icon foreground still the Expo default — cosmetic, only matters when Android ships.*
 
 ### LS2 — Privacy policy page *(STORE_LISTING §5)*
 Static `/privacy` at scorecast.club with the §5 content.
@@ -293,7 +293,7 @@ Planning slices register their children here (PS1 → `DS*`, PS2 → `NS*`, PS3 
 | NS5 | Preference toggles | E | ✅ 2026-07-16 | (this commit) |
 | NS6 | On-device delivery pass 🍎 | E | ✅ 2026-07-16 | (this commit) |
 | PS3 🗎 | STORE_LISTING.md (→ registers `LS*`) | F | ✅ 2026-07-16 | (this commit) |
-| LS1 | App icon + splash | F | ☐ | |
+| LS1 | App icon + splash | F | ✅ 2026-07-16 | (this commit) |
 | LS2 | Privacy policy page | F | ☐ | |
 | LS3 | Screenshots | F | ☐ | |
 | LS4 | App Store Connect listing | F | ☐ | |
