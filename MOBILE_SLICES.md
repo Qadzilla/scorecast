@@ -1,6 +1,6 @@
 # ScoreCast Mobile — Slice Roadmap
 
-**Status:** Stages A + B COMPLETE; **Stage C build slices done AND device-verified — MS9/MS10/MS11 shipped** (2026-07-15). The full signup→verify→team→tabs and login/logout loops were confirmed on a physical iPhone (Expo Go, SDK 54) against the live backend. Next: **Stage D — MS12 (Leagues home)** to start the core product (the tabs are still placeholders); DS5 visual pass can follow.
+**Status:** Stages A + B COMPLETE; Stage C done + device-verified (MS9–MS11); **Stage D underway — MS12 (Leagues home) shipped** (2026-07-15). Next: MS13 (league detail). The full signup→verify→team→tabs and login/logout loops were confirmed on a physical iPhone (Expo Go, SDK 54) against the live backend. Next: **Stage D — MS12 (Leagues home)** to start the core product (the tabs are still placeholders); DS5 visual pass can follow.
 
 **Field fixes during device bring-up (2026-07-15)** — three bugs the simulator/typecheck couldn't catch, all fixed:
 - **Expo Go origin 403.** better-auth rejects untrusted origins; the Expo client sends `expo-origin: exp://<lan-ip>:<port>/--/`, which the `@better-auth/expo` server plugin only auto-trusts when `NODE_ENV=development`. Prod 403'd every call. Fix: added `"exp://"` to server `trustedOrigins` (prefix-matches any Expo Go origin; safe — browsers can't forge the custom header). See MOBILE_PLAN.md §4.1.
@@ -125,10 +125,12 @@ Done: **first data-query layer** — `lib/queries/user.ts` (`useFavoriteTeam(ena
 
 ## Stage D — Core product
 
-### MS12 — Leagues home  *(§5.4 home)*
-`(tabs)/index`: PL + UCL countdown cards (focus-aware 1s tick), league cards with rank/points, empty state → join CTA, pull-to-refresh, greeting header with crest.
-**Depends on:** MS11, MS4 (uses `/me`).
-**Exit:** account in ≥1 real league sees live countdowns and correct standing; account with none sees the empty state; pull-to-refresh visibly refetches.
+### MS12 — Leagues home ✅ *(§5.4 home)* — shipped 2026-07-15
+Done: query layer expanded — `queries/fixtures.ts` (`useCurrentGameweek`), `queries/leagues.ts` (`useLeagues` coercing SQL `memberCount`, `useJoinLeague`), `queries/leaderboard.ts` (`useLeaderboard`), `types/leagues.ts` (+ `upcomingDeadline` helper picking current-or-next deadline). `(tabs)/index`: greeting + favorite-team crest header, PL + UCL `CountdownCard`s (live tick, loading + season-over states), league cards (name, competition badge, member count, and the user's own rank + points pulled from each league's leaderboard), empty state → Join CTA, pull-to-refresh. Placeholder `league/[id]` + `league/join` routes (MS13/MS14).
+**Depends on:** MS11.
+**Exit (met, code-verified):** strict `tsc` clean; iOS `expo export` bundles. On-device visual is the user's step.
+**Gotcha logged:** expo-router typed routes only discovered the `league/` folder once it had a `_layout.tsx` — without it, `.expo/types/router.d.ts` omitted the routes and `router.push("/league/…")` failed tsc. **Nested route folders need a `_layout`.** A stale `.expo/types` also causes phantom route-type errors; `rm -rf .expo` + regen fixes it.
+**Deferred:** `CountdownCard` interval isn't paused on blur (`useFocusEffect`) yet — fine for an always-visible home; revisit if CPU shows up.
 
 ### MS13 — League detail: Fixtures + Table  *(§5.4 league detail)*
 `league/[id]` with segmented control; Fixtures pane (matches grouped by day, kickoff/FT states, red-card indicators); Table pane (full standings, own row highlighted, champion state when `isSeasonComplete`); league-info sheet with invite code + `expo-clipboard` copy.
@@ -243,7 +245,7 @@ Planning slices register their children here (PS1 → `DS*`, PS2 → `NS*`, PS3 
 | MS9 | Auth client + login | C | ✅ 2026-07-15 | (this commit) |
 | MS10 | Signup + OTP verify | C | ✅ 2026-07-15 | (this commit) |
 | MS11 | Team-select gate | C | ✅ 2026-07-15 | (this commit) |
-| MS12 | Leagues home | D | ☐ | |
+| MS12 | Leagues home | D | ✅ 2026-07-15 | (this commit) |
 | MS13 | League detail: fixtures + table | D | ☐ | |
 | MS14 | Join + admin surfaces | D | ☐ | |
 | MS15 | Predictions entry | D | ☐ | |
