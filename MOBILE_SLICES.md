@@ -1,6 +1,6 @@
 # ScoreCast Mobile — Slice Roadmap
 
-**Status:** Stages A + B COMPLETE; Stage C done + device-verified (MS9–MS11); **Stage D underway — **Stage D COMPLETE** (MS12–MS16, 2026-07-15) — Leagues home, league detail, join + admin, predictions core loop, account screen. **The app now has full feature parity with the web app** (minus demo mode). Next: **DS5–DS7 on-device visual polish** (close Stage C/D), then **Stage E — push notifications** (PS2 → NS\*). The full signup→verify→team→tabs and login/logout loops were confirmed on a physical iPhone (Expo Go, SDK 54) against the live backend. Next: **Stage D — MS12 (Leagues home)** to start the core product (the tabs are still placeholders); DS5 visual pass can follow.
+**Status:** Stages A–D COMPLETE (2026-07-15). The app has full feature parity with the web app (minus demo mode) and was run end-to-end on a physical iPhone (Expo Go, SDK 54) against the live backend. **Stage E underway — PS2 (PUSH_SPEC.md) shipped; NS1–NS6 registered.** Next: NS1 (push infra + prefs). ⚠️ NS6 (on-device delivery) needs the Apple Developer account + a dev build — enroll in parallel; NS1–NS5 build without it.
 
 **Field fixes during device bring-up (2026-07-15)** — three bugs the simulator/typecheck couldn't catch, all fixed:
 - **Expo Go origin 403.** better-auth rejects untrusted origins; the Expo client sends `expo-origin: exp://<lan-ip>:<port>/--/`, which the `@better-auth/expo` server plugin only auto-trusts when `NODE_ENV=development`. Prod 403'd every call. Fix: added `"exp://"` to server `trustedOrigins` (prefix-matches any Expo Go origin; safe — browsers can't forge the custom header). See MOBILE_PLAN.md §4.1.
@@ -155,14 +155,32 @@ Done: `useUpdateUsername` (409→"taken", invalidates `/me` — no reload) + `us
 
 ## Stage E — Push (the one net-new feature)
 
-### PS2 — Write `PUSH_SPEC.md` 🗎  *(§7, §10)*
-**Planning slice.** Finalize the §7 contract: exact copy for all four notification types, the dedup/batching rules and whether that's a `push_log` table or `remindedAt` markers (schema decision), preference storage (columns on `push_token` vs `notification_pref` table), token-pruning cadence, quiet-hours call (§7 leans "none in V1" — confirm or overturn). **Must end in an `NS*` slice table** — expected shape: sender service + receipts → reminder cron + dedup schema → results/GW-complete triggers → client permission + registration + tap-routing → preference toggles (replacing MS16's placeholders) → on-device verification pass. Register `NS*` into the tracker.
-**Depends on:** Stage D gate (push prompts are contextual on first prediction — the flow it hooks into must exist).
-**Exit:** `PUSH_SPEC.md` exists, resolves every open decision in §7, ends in an `NS*` slice table, tracker updated.
+### PS2 — Write `PUSH_SPEC.md` ✅ 🗎  *(§7, §10)* — shipped 2026-07-15
+Done: `PUSH_SPEC.md` resolves every §7 open decision — Expo Push transport; **`push_log` table** for dedup (unique per user/kind/subject/league); **`notification_pref` table** (per-user, not per-device); **no quiet hours** in V1; prune on `DeviceNotRegistered` (send + receipt check); permission prompt **contextual after first prediction**. Final copy for all 4 types. `notifyIfAllowed` choke point (pref-gate + dedup + send). Ends in the NS1–NS6 slice table (below), registered into this tracker.
 
-### NS1…NSn — Push execution  *(defined by PS2)*
-Placeholder — replaced by PS2's table. Hard exit criterion for the series as a whole (inherited from §11 P6): **all four notification types received on a physical iPhone from real cron runs** (windows shrunk locally for testing), preferences honored, opt-out verified.
-**Depends on:** PS2, MS6, Apple Developer account, EAS dev build on device.
+### NS1 — Push infra + prefs *(PUSH_SPEC §7)*
+`expo-server-sdk`; migrations `009_notification_pref` + `010_push_log`; `services/push.ts` (send/chunk/prune) + `pushCopy.ts` + `notifyIfAllowed`; `GET/PUT /api/notifications/prefs`.
+**Depends on:** MS6. **Exit:** vitest (mocked Expo SDK) covers pref-gating + `push_log` dedup (double send → one delivery); prefs endpoints 401 unauth, round-trip authed.
+
+### NS2 — Deadline reminder cron *(PUSH_SPEC §4)*
+`*/30` cron; 24h + 1h window queries; unsubmitted-members filter; per-member `notifyIfAllowed`.
+**Depends on:** NS1. **Exit:** test seeds gameweeks in each window + members with/without predictions → only unsubmitted notified once each; re-run sends nothing new.
+
+### NS3 — Results + GW-complete triggers *(PUSH_SPEC §4)*
+Hook into `runResultsUpdate`: per-user-per-league results batching; full-gameweek detection → `gw_complete`.
+**Depends on:** NS1. **Exit:** scoring a predicted match → one results push per (user,league); idempotent re-score sends nothing; last match finishing fires `gw_complete` once per member.
+
+### NS4 — Client register + tap-routing *(PUSH_SPEC §5)*
+`expo-notifications`; `lib/notifications.ts`; contextual permission pre-prompt after first prediction; register on grant / app-start, unregister on sign-out; tap → league.
+**Depends on:** NS1, Stage D (first-prediction hook). **Exit:** on a dev build, granting permission writes a `push_token` row; tapping a sent notification opens the right league.
+
+### NS5 — Preference toggles *(PUSH_SPEC §5)*
+Wire MS16's placeholder switches to `GET/PUT /api/notifications/prefs` (optimistic).
+**Depends on:** NS1, MS16. **Exit:** toggles persist across relaunch; a disabled category isn't delivered.
+
+### NS6 — On-device delivery pass 🍎 *(PUSH_SPEC §7)*
+Requires **Apple Developer account + EAS dev build on a physical iPhone**. Shrink cron windows locally; drive all four types.
+**Depends on:** NS2, NS3, NS4, NS5. **Exit (Stage E gate):** all 4 types received on a real iPhone from real cron runs; prefs honored; opt-out verified; taps route correctly.
 
 **Stage E gate:** push works on-device; §11 P6 exit criteria met.
 
@@ -247,8 +265,13 @@ Planning slices register their children here (PS1 → `DS*`, PS2 → `NS*`, PS3 
 | MS14 | Join + admin surfaces | D | ✅ 2026-07-15 | (this commit) |
 | MS15 | Predictions entry | D | ✅ 2026-07-15 | (this commit) |
 | MS16 | Account screen | D | ✅ 2026-07-15 | (this commit) |
-| PS2 🗎 | PUSH_SPEC.md (→ registers `NS*`) | E | ☐ | |
-| *NS\** | *— defined by PS2 —* | E | — | |
+| PS2 🗎 | PUSH_SPEC.md (→ registers `NS*`) | E | ✅ 2026-07-15 | (this commit) |
+| NS1 | Push infra + prefs | E | ☐ | |
+| NS2 | Deadline reminder cron | E | ☐ | |
+| NS3 | Results + GW-complete triggers | E | ☐ | |
+| NS4 | Client register + tap-routing | E | ☐ | |
+| NS5 | Preference toggles | E | ☐ | |
+| NS6 | On-device delivery pass 🍎 | E | ☐ | |
 | PS3 🗎 | STORE_LISTING.md (→ registers `LS*`) | F | ☐ | |
 | *LS\** | *— defined by PS3 —* | F | — | |
 | MS17 | TestFlight | F | ☐ | |
