@@ -1,6 +1,6 @@
 # ScoreCast Mobile — Slice Roadmap
 
-**Status:** Stages A–D COMPLETE (2026-07-15). The app has full feature parity with the web app (minus demo mode) and was run end-to-end on a physical iPhone (Expo Go, SDK 54) against the live backend. **Stages A–E COMPLETE** (2026-07-16). Feature parity with the web app **plus push notifications**, all verified on a physical iPhone (dev build): all 4 notification types deliver, prefs honored, cold-start taps route correctly. **Stage F underway — PS3 (STORE_LISTING.md) shipped; LS1–LS5 registered.** Next: **LS1 (app icon + splash)** — gated on the icon-artwork decision (STORE_LISTING §8.1). Then LS3 screenshots → LS4 listing → MS17 TestFlight. LS2 (privacy page) + LS5 (test account) run in parallel.
+**Status:** **Stages A–E COMPLETE** (2026-07-16) — full web-app parity **plus push notifications**, verified on a physical iPhone (dev build): all 4 notification types deliver, prefs honored, cold-start taps route. **Stage F underway — PS3 + LS1 (icon/splash) + LS2 (privacy page) + LS5 (reviewer script) shipped; a production iOS build is running for TestFlight.** Remaining in F: **LS3** (screenshots), **LS4** (App Store Connect listing), **MS17** (TestFlight), MS18–19 (beta → submit). Run the LS5 seed script against prod, and deploy the privacy page (Vercel) to fully close LS2/LS5.
 
 **Field fixes during device bring-up (2026-07-15)** — three bugs the simulator/typecheck couldn't catch, all fixed:
 - **Expo Go origin 403.** better-auth rejects untrusted origins; the Expo client sends `expo-origin: exp://<lan-ip>:<port>/--/`, which the `@better-auth/expo` server plugin only auto-trusts when `NODE_ENV=development`. Prod 403'd every call. Fix: added `"exp://"` to server `trustedOrigins` (prefix-matches any Expo Go origin; safe — browsers can't forge the custom header). See MOBILE_PLAN.md §4.1.
@@ -197,9 +197,9 @@ Done: `STORE_LISTING.md` — decision-complete listing copy (name "ScoreCast", s
 Done: generated `icon.png` (1024² RGB, no alpha — App Store compliant) — bold white "SC" monogram on the purple→navy brand gradient with a neon-green accent bar; `splash-icon.png` a matching rounded brand tile on transparent (`imageWidth` 140). Both wired via existing `app.json` paths. `expo-doctor` 17/17.
 **Exit (met, code-verified):** assets wired, config validates. On-device home-screen icon shows at the next native build (production build for MS17). *Android adaptive-icon foreground still the Expo default — cosmetic, only matters when Android ships.*
 
-### LS2 — Privacy policy page *(STORE_LISTING §5)*
-Static `/privacy` at scorecast.club with the §5 content.
-**Exit:** URL resolves 200; ready for App Store Connect.
+### LS2 — Privacy policy page ✅ *(STORE_LISTING §5)* — shipped 2026-07-16
+Done: `frontend/public/privacy.html` — self-contained, brand-styled privacy policy with all §5 content (data collected, no tracking, in-app deletion, contact). Vite serves `public/` at root, so it deploys to **scorecast.club/privacy.html** on the next Vercel deploy.
+**Exit (met, pending live-verify):** page written; goes live when Vercel redeploys from `main`. Uses `support@scorecast.club` as contact — confirm that inbox exists or swap it (STORE_LISTING §8.4).
 
 ### LS3 — Screenshots *(STORE_LISTING §4)*
 5-shot set at 6.9"/6.7", framed + captioned, from a populated league.
@@ -209,9 +209,9 @@ Static `/privacy` at scorecast.club with the §5 content.
 App record; all metadata + privacy labels; icon + screenshots + privacy URL uploaded.
 **Depends on:** LS1, LS3, LS2. **Exit:** "Ready to Submit" minus the build.
 
-### LS5 — Review package *(STORE_LISTING §6)*
-Seed the pre-verified test account in a populated league; finalize review notes.
-**Exit:** reviewer can log in and see real content; notes saved.
+### LS5 — Review package ✅ *(STORE_LISTING §6)* — script shipped 2026-07-16
+Done: `backend/src/scripts/seed-review-account.ts` — creates a pre-verified reviewer (`review@scorecast.club` / `ScoreCastReview!2026`, overridable via env), gives it a favorite team (skips onboarding), joins the most-populated PL league, and seeds current-gameweek predictions. Idempotent; smoke-tested locally end-to-end. Review-notes text finalized in STORE_LISTING §6.
+**Exit (pending prod run):** the script is ready + verified; **run it once against prod** (`DATABASE_URL=<prod> npx tsx src/scripts/seed-review-account.ts`) to create the actual reviewer, then confirm login shows a populated league.
 
 ### MS17 — TestFlight  *(§11 P7)*
 Production EAS profile, icon/splash wired (from `LS*`), version/build numbering, crash reporting decision executed (default per §12: `sentry-expo`), internal TestFlight distribution to the real league group.
@@ -294,10 +294,10 @@ Planning slices register their children here (PS1 → `DS*`, PS2 → `NS*`, PS3 
 | NS6 | On-device delivery pass 🍎 | E | ✅ 2026-07-16 | (this commit) |
 | PS3 🗎 | STORE_LISTING.md (→ registers `LS*`) | F | ✅ 2026-07-16 | (this commit) |
 | LS1 | App icon + splash | F | ✅ 2026-07-16 | (this commit) |
-| LS2 | Privacy policy page | F | ☐ | |
+| LS2 | Privacy policy page | F | ✅ 2026-07-16 | (this commit) |
 | LS3 | Screenshots | F | ☐ | |
 | LS4 | App Store Connect listing | F | ☐ | |
-| LS5 | Review package | F | ☐ | |
+| LS5 | Review package (script) | F | ✅ 2026-07-16 | (this commit) |
 | MS17 | TestFlight | F | ☐ | |
 | MS18 | Beta hardening (`MS18.x` ad hoc) | F | ☐ | |
 | MS19 | App Store submission → **live** | F | ☐ | |
