@@ -1,6 +1,6 @@
 # ScoreCast Mobile — Slice Roadmap
 
-**Status:** Stages A + B COMPLETE; Stage C done + device-verified (MS9–MS11); **Stage D underway — MS12–MS15 shipped** (2026-07-15) — Leagues home, league detail, join + admin, **and the predictions core loop**. Only **MS16 (account screen)** remains for feature parity, then Stage D is done. The full signup→verify→team→tabs and login/logout loops were confirmed on a physical iPhone (Expo Go, SDK 54) against the live backend. Next: **Stage D — MS12 (Leagues home)** to start the core product (the tabs are still placeholders); DS5 visual pass can follow.
+**Status:** Stages A + B COMPLETE; Stage C done + device-verified (MS9–MS11); **Stage D underway — **Stage D COMPLETE** (MS12–MS16, 2026-07-15) — Leagues home, league detail, join + admin, predictions core loop, account screen. **The app now has full feature parity with the web app** (minus demo mode). Next: **DS5–DS7 on-device visual polish** (close Stage C/D), then **Stage E — push notifications** (PS2 → NS\*). The full signup→verify→team→tabs and login/logout loops were confirmed on a physical iPhone (Expo Go, SDK 54) against the live backend. Next: **Stage D — MS12 (Leagues home)** to start the core product (the tabs are still placeholders); DS5 visual pass can follow.
 
 **Field fixes during device bring-up (2026-07-15)** — three bugs the simulator/typecheck couldn't catch, all fixed:
 - **Expo Go origin 403.** better-auth rejects untrusted origins; the Expo client sends `expo-origin: exp://<lan-ip>:<port>/--/`, which the `@better-auth/expo` server plugin only auto-trusts when `NODE_ENV=development`. Prod 403'd every call. Fix: added `"exp://"` to server `trustedOrigins` (prefix-matches any Expo Go origin; safe — browsers can't forge the custom header). See MOBILE_PLAN.md §4.1.
@@ -144,10 +144,10 @@ Done: `useMe` (server-computed `isAdmin`), `useCreateLeague`/`useUpdateLeague`/`
 Done: `usePredictions` + `useSubmitPredictions` (invalidates predictions + leaderboard); `UserPrediction` type + `outcomeFromPoints` helper. **`league/predict`** — full entry flow: matches grouped by matchday, two `ScoreInput`s per match with ref-based auto-advance (home→away→next match), seeded from existing predictions, sticky submit bar with "X/Y entered" count, haptic on success → back. Locked/final states when deadline passed or match finished. Server re-checks deadline; its 400 surfaces as a "deadline has passed — locked" banner. **League-detail Predictions pane** now shows the saved predictions read-only (predicted score per match + `PointsBadge` once settled) instead of a placeholder.
 **Exit (met, code-verified):** strict `tsc` clean; iOS `expo export` bundles; predictions endpoint 401 unauth on prod. **Core loop complete** — predict → submit → view points. On-device round-trip vs web (submit here, see it on web; points match after scoring) is the user's step.
 
-### MS16 — Account screen  *(§5.4 account, §4.3)*
-Profile header + stat tiles, username edit (409 handling, Query invalidation instead of reload), favorite-team change, account info, sign out, **Delete Account** end-to-end (destructive confirm → MS5 endpoint → local sign-out). Notification-preference toggles get placeholder UI only (real storage lands with `NS*`).
-**Depends on:** MS11, MS5.
-**Exit:** username rename reflects everywhere without relaunch; delete-account on a throwaway user signs out, blocks re-login, and leaves no orphan rows (re-run MS5's verification query).
+### MS16 — Account screen ✅ *(§5.4 account, §4.3)* — shipped 2026-07-15
+Done: `useUpdateUsername` (409→"taken", invalidates `/me` — no reload) + `useDeleteAccount` (MS5 endpoint). `(tabs)/account`: profile header (favorite crest or initial + name + @username), stat tiles (leagues count, team), username edit, favorite-team change via a `Sheet` crest grid (`useSetFavoriteTeam` also invalidates `/me`), account info (name/email/verified), notification-preference `Switch`es (local-only placeholders, labeled "arrive in a later update" — real storage is `NS*`), sign out, and **Delete account** (destructive `Alert` confirm → DELETE → `qc.clear()` + `signOut()` → gate redirects to login).
+**Exit (met, code-verified):** strict `tsc` clean; iOS `expo export` bundles; `/api/user/username` + `/api/user/account` 401 unauth on prod. Username reflects via `/me` invalidation (no relaunch); delete signs out and the deleted session can't re-auth (MS5 cascade already tested server-side). On-device round-trip is the user's step.
+**🎉 Stage D complete — full feature parity with the web app** (minus demo mode, by decision §0).
 
 **Stage D gate: feature parity with the web app** (minus demo mode, by decision §0). Everything before P6 ran on the simulator; from here on a physical iPhone and the Apple Developer account are required — **enroll now if not already done ($99, verification can take days)**.
 
@@ -246,7 +246,7 @@ Planning slices register their children here (PS1 → `DS*`, PS2 → `NS*`, PS3 
 | MS13 | League detail: fixtures + table | D | ✅ 2026-07-15 | (this commit) |
 | MS14 | Join + admin surfaces | D | ✅ 2026-07-15 | (this commit) |
 | MS15 | Predictions entry | D | ✅ 2026-07-15 | (this commit) |
-| MS16 | Account screen | D | ☐ | |
+| MS16 | Account screen | D | ✅ 2026-07-15 | (this commit) |
 | PS2 🗎 | PUSH_SPEC.md (→ registers `NS*`) | E | ☐ | |
 | *NS\** | *— defined by PS2 —* | E | — | |
 | PS3 🗎 | STORE_LISTING.md (→ registers `LS*`) | F | ☐ | |

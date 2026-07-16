@@ -63,6 +63,28 @@ export function useSetFavoriteTeam() {
       }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: userKeys.favoriteTeam });
+      qc.invalidateQueries({ queryKey: userKeys.me });
     },
+  });
+}
+
+// Rename. 409 if taken (surfaced by the screen). Invalidates /me so the header
+// updates without a reload (the web app used window.location.reload here).
+export function useUpdateUsername() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (username: string) =>
+      apiFetch<{ success: boolean; username: string }>("/api/user/username", {
+        method: "PUT",
+        body: JSON.stringify({ username: username.trim().toLowerCase() }),
+      }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: userKeys.me }),
+  });
+}
+
+// Permanent account deletion (MS5 endpoint). The screen signs out locally after.
+export function useDeleteAccount() {
+  return useMutation({
+    mutationFn: () => apiFetch<{ success: boolean }>("/api/user/account", { method: "DELETE" }),
   });
 }
