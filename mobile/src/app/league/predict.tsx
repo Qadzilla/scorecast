@@ -12,6 +12,7 @@ import { TeamCrest } from "@/components/TeamCrest";
 import { SkeletonLines } from "@/components/Skeleton";
 import { useGameweek, usePredictions, useSubmitPredictions } from "@/lib/queries";
 import { ApiError } from "@/lib/api";
+import { maybePromptForPush } from "@/lib/notifications";
 import { isPredictionWindowOpen, type MatchWithTeams } from "@/types/fixtures";
 import { haptics } from "@/utils/haptics";
 import { colors, spacing, layout } from "@/constants/theme";
@@ -76,6 +77,10 @@ export default function PredictScreen() {
     submit.mutate(predictions, {
       onSuccess: () => {
         haptics.success();
+        // Contextual push opt-in — the ideal moment (they just engaged and
+        // would benefit from a deadline reminder next time). No-op if already
+        // decided. Fire before navigating so the screen is still mounted.
+        void maybePromptForPush();
         router.back();
       },
     });

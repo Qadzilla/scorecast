@@ -171,9 +171,9 @@ Done: refactored `push.ts` into composable pieces (`prefAllows`, `claimLog`, `se
 **Exit (met):** 2 tests — batched results (2 matches → 1 push), idempotent re-run sends nothing, `gw_complete` once per member per league. Full suite 160 green.
 **⚠️ Prod bug caught by the test:** `notifyGameweekComplete` originally had no time bound → on first deploy it would notify every member about every historically-complete gameweek. Fixed with a "match settled in the last 3h" guard so only recently-completed gameweeks fire (dedup handles the rest).
 
-### NS4 — Client register + tap-routing *(PUSH_SPEC §5)*
-`expo-notifications`; `lib/notifications.ts`; contextual permission pre-prompt after first prediction; register on grant / app-start, unregister on sign-out; tap → league.
-**Depends on:** NS1, Stage D (first-prediction hook). **Exit:** on a dev build, granting permission writes a `push_token` row; tapping a sent notification opens the right league.
+### NS4 — Client register + tap-routing ✅ *(PUSH_SPEC §5)* — shipped 2026-07-16
+Done: EAS project linked (`eas init` → projectId in app.json, owner qadzilla); `expo-notifications` installed + config plugin. `lib/notifications.ts` — foreground handler; `registerIfGranted()` (app-start, token → `POST /api/push/register`); `maybePromptForPush()` (soft pre-prompt → OS dialog, only when undetermined — no nag); `unregisterPush()` (before sign-out); `usePushObserver()` (tap + cold-start → `/league/[id]` from `data.leagueId`). Wired: register on session in root layout, `usePushObserver` in root, prompt after first prediction submit, unregister in account sign-out.
+**Exit (code-verified):** strict `tsc` clean; iOS `expo export` bundles. Degrades gracefully in Expo Go (push token throws → caught; app unaffected). **Real registration + tap needs a dev build — verified in NS6.**
 
 ### NS5 — Preference toggles *(PUSH_SPEC §5)*
 Wire MS16's placeholder switches to `GET/PUT /api/notifications/prefs` (optimistic).
@@ -270,7 +270,7 @@ Planning slices register their children here (PS1 → `DS*`, PS2 → `NS*`, PS3 
 | NS1 | Push infra + prefs | E | ✅ 2026-07-15 | (this commit) |
 | NS2 | Deadline reminder cron | E | ✅ 2026-07-15 | (this commit) |
 | NS3 | Results + GW-complete triggers | E | ✅ 2026-07-15 | (this commit) |
-| NS4 | Client register + tap-routing | E | ☐ | |
+| NS4 | Client register + tap-routing | E | ✅ 2026-07-16 | (this commit) |
 | NS5 | Preference toggles | E | ☐ | |
 | NS6 | On-device delivery pass 🍎 | E | ☐ | |
 | PS3 🗎 | STORE_LISTING.md (→ registers `LS*`) | F | ☐ | |

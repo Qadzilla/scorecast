@@ -10,6 +10,7 @@ import { fontMap } from "@/constants/fonts";
 import { queryClient } from "@/lib/queryClient";
 import { useSession } from "@/lib/auth";
 import { useFavoriteTeam } from "@/lib/queries";
+import { registerIfGranted, usePushObserver } from "@/lib/notifications";
 import { colors } from "@/constants/theme";
 
 SplashScreen.preventAutoHideAsync();
@@ -34,6 +35,14 @@ function RootNavigator({ fontsReady }: { fontsReady: boolean }) {
   const fav = useFavoriteTeam(hasSession);
   const segments = useSegments();
   const router = useRouter();
+
+  usePushObserver();
+
+  // Register this device's push token once signed in (only actually sends if
+  // permission was already granted; the contextual prompt lives on first predict).
+  useEffect(() => {
+    if (hasSession) registerIfGranted();
+  }, [hasSession]);
 
   // First-boot readiness = fonts + the initial session read. The favorite-team
   // query is deliberately NOT part of this: gating the render on it would

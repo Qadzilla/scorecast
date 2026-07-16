@@ -22,6 +22,7 @@ import {
   useLeagues,
 } from "@/lib/queries";
 import { ApiError } from "@/lib/api";
+import { unregisterPush } from "@/lib/notifications";
 import { haptics } from "@/utils/haptics";
 import type { Team } from "@/types/fixtures";
 import { colors, spacing, layout, radius, competition } from "@/constants/theme";
@@ -55,6 +56,11 @@ export default function AccountScreen() {
   const saveUsername = () => {
     if (!usernameChanged) return;
     updateUsername.mutate(username, { onSuccess: () => haptics.success() });
+  };
+
+  const handleSignOut = async () => {
+    await unregisterPush(); // remove this device's token while the session is still valid
+    await signOut();
   };
 
   const confirmDelete = () => {
@@ -154,7 +160,7 @@ export default function AccountScreen() {
 
         {/* Actions */}
         <View style={styles.actions}>
-          <Button label="Sign out" variant="secondary" onPress={() => signOut()} />
+          <Button label="Sign out" variant="secondary" onPress={handleSignOut} />
           <Button label="Delete account" variant="destructive" onPress={confirmDelete} loading={deleteAccount.isPending} />
         </View>
       </ScrollView>

@@ -31,11 +31,24 @@
           "imageWidth": 96
         }
       ],
-      "expo-secure-store"
+      "expo-secure-store",
+      [
+        "expo-notifications",
+        {
+          "color": "#00b368"
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "3feb83e7-d0ec-47ec-bdc2-9473430ce3ba"
+      }
+    },
+    "owner": "qadzilla"
   }
 }
