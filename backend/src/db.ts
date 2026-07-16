@@ -8,6 +8,8 @@ import { up as stageAndMatchdayMigration } from "./db/migrations/005_stage_and_m
 import { up as uclCleanupMigration } from "./db/migrations/006_ucl_cleanup.js";
 import { up as userDeleteCascadeMigration } from "./db/migrations/007_user_delete_cascade.js";
 import { up as pushTokensMigration } from "./db/migrations/008_push_tokens.js";
+import { up as notificationPrefMigration } from "./db/migrations/009_notification_pref.js";
+import { up as pushLogMigration } from "./db/migrations/010_push_log.js";
 
 const { Pool } = pg;
 
@@ -141,6 +143,8 @@ export async function runMigrations(): Promise<void> {
     await uclCleanupMigration(client);
     await userDeleteCascadeMigration(client);
     await pushTokensMigration(client);
+    await notificationPrefMigration(client);
+    await pushLogMigration(client);
   } finally {
     client.release();
   }

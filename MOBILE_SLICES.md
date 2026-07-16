@@ -158,9 +158,9 @@ Done: `useUpdateUsername` (409→"taken", invalidates `/me` — no reload) + `us
 ### PS2 — Write `PUSH_SPEC.md` ✅ 🗎  *(§7, §10)* — shipped 2026-07-15
 Done: `PUSH_SPEC.md` resolves every §7 open decision — Expo Push transport; **`push_log` table** for dedup (unique per user/kind/subject/league); **`notification_pref` table** (per-user, not per-device); **no quiet hours** in V1; prune on `DeviceNotRegistered` (send + receipt check); permission prompt **contextual after first prediction**. Final copy for all 4 types. `notifyIfAllowed` choke point (pref-gate + dedup + send). Ends in the NS1–NS6 slice table (below), registered into this tracker.
 
-### NS1 — Push infra + prefs *(PUSH_SPEC §7)*
-`expo-server-sdk`; migrations `009_notification_pref` + `010_push_log`; `services/push.ts` (send/chunk/prune) + `pushCopy.ts` + `notifyIfAllowed`; `GET/PUT /api/notifications/prefs`.
-**Depends on:** MS6. **Exit:** vitest (mocked Expo SDK) covers pref-gating + `push_log` dedup (double send → one delivery); prefs endpoints 401 unauth, round-trip authed.
+### NS1 — Push infra + prefs ✅ *(PUSH_SPEC §7)* — shipped 2026-07-15
+Done: `expo-server-sdk@6`; migrations `009_notification_pref` (per-user, all-on default) + `010_push_log` (UNIQUE(user,kind,subject,league) = dedup); `services/pushCopy.ts` (copy fns); `services/push.ts` — `notifyIfAllowed` choke point (pref-gate → `push_log` insert-or-skip → send) with a `pushTestOutbox` (test-mode capture, like the email module) + real Expo chunked send + `DeviceNotRegistered` prune; `routes/notifications.ts` `GET/PUT /api/notifications/prefs`. Test DB fixture drops the two new tables so their FKs regenerate.
+**Exit (met):** 6 new tests green (156 total) — dedup (double send → 1), per-league separation, disabled-category gating, prefs defaults/upsert/round-trip, 401 unauth. `tsc` build clean.
 
 ### NS2 — Deadline reminder cron *(PUSH_SPEC §4)*
 `*/30` cron; 24h + 1h window queries; unsubmitted-members filter; per-member `notifyIfAllowed`.
@@ -266,7 +266,7 @@ Planning slices register their children here (PS1 → `DS*`, PS2 → `NS*`, PS3 
 | MS15 | Predictions entry | D | ✅ 2026-07-15 | (this commit) |
 | MS16 | Account screen | D | ✅ 2026-07-15 | (this commit) |
 | PS2 🗎 | PUSH_SPEC.md (→ registers `NS*`) | E | ✅ 2026-07-15 | (this commit) |
-| NS1 | Push infra + prefs | E | ☐ | |
+| NS1 | Push infra + prefs | E | ✅ 2026-07-15 | (this commit) |
 | NS2 | Deadline reminder cron | E | ☐ | |
 | NS3 | Results + GW-complete triggers | E | ☐ | |
 | NS4 | Client register + tap-routing | E | ☐ | |

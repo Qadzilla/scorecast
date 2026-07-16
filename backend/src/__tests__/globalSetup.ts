@@ -15,6 +15,8 @@ export default async function setup() {
   try {
     // Drop all existing tables to start fresh
     await client.query(`
+      DROP TABLE IF EXISTS push_log CASCADE;
+      DROP TABLE IF EXISTS notification_pref CASCADE;
       DROP TABLE IF EXISTS push_token CASCADE;
       DROP TABLE IF EXISTS prediction CASCADE;
       DROP TABLE IF EXISTS user_gameweek_score CASCADE;

@@ -12,6 +12,7 @@ import leaderboardRouter from "./routes/leaderboard.js";
 import adminRouter from "./routes/admin.js";
 import userRouter from "./routes/user.js";
 import pushRouter from "./routes/push.js";
+import notificationsRouter from "./routes/notifications.js";
 
 export const app = express();
 
@@ -151,3 +152,4 @@ app.use("/api/leaderboard", leaderboardRouter);
 app.use("/api/admin", adminRouter);
 app.use("/api/user", userRouter);
 app.use("/api/push", pushRouter);
+app.use("/api/notifications", notificationsRouter);
