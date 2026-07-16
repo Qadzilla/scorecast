@@ -1,6 +1,6 @@
 # ScoreCast Mobile — Slice Roadmap
 
-**Status:** Stages A–D COMPLETE (2026-07-15). The app has full feature parity with the web app (minus demo mode) and was run end-to-end on a physical iPhone (Expo Go, SDK 54) against the live backend. **Stage E nearly done — PS2 + NS1–NS5 shipped** (backend push + full client: register, contextual prompt, tap-routing, preference toggles). Only **NS6** left — the on-device delivery test: a dev build on the iPhone, drive all 4 notification types. Apple account + EAS project both ready.
+**Status:** Stages A–D COMPLETE (2026-07-15). The app has full feature parity with the web app (minus demo mode) and was run end-to-end on a physical iPhone (Expo Go, SDK 54) against the live backend. **Stages A–E COMPLETE** (2026-07-16). Feature parity with the web app **plus push notifications**, all verified on a physical iPhone (dev build): all 4 notification types deliver, prefs honored, cold-start taps route correctly. Next: **Stage F — beta & launch** (PS3 store listing → TestFlight → App Store), then **Stage G — web decommission**. App icon/splash still placeholders (needed for PS3/TestFlight).
 
 **Field fixes during device bring-up (2026-07-15)** — three bugs the simulator/typecheck couldn't catch, all fixed:
 - **Expo Go origin 403.** better-auth rejects untrusted origins; the Expo client sends `expo-origin: exp://<lan-ip>:<port>/--/`, which the `@better-auth/expo` server plugin only auto-trusts when `NODE_ENV=development`. Prod 403'd every call. Fix: added `"exp://"` to server `trustedOrigins` (prefix-matches any Expo Go origin; safe — browsers can't forge the custom header). See MOBILE_PLAN.md §4.1.
@@ -179,9 +179,10 @@ Done: EAS project linked (`eas init` → projectId in app.json, owner qadzilla);
 Done: `queries/notifications.ts` — `useNotificationPrefs` (GET) + `useUpdateNotificationPrefs` (optimistic PUT with rollback). Account screen's three switches now read/write the server prefs (replacing the local-only placeholder state); removed the "arrive in a later update" caption.
 **Exit (code-verified):** strict `tsc` clean; iOS `expo export` bundles; `/api/notifications/prefs` live on prod (NS1). Toggles persist server-side (round-trip verified against NS1's endpoint tests); a disabled category is gated by NS1's `prefAllows`. On-device persist-across-relaunch is the user's step.
 
-### NS6 — On-device delivery pass 🍎 *(PUSH_SPEC §7)*
-Requires **Apple Developer account + EAS dev build on a physical iPhone**. Shrink cron windows locally; drive all four types.
-**Depends on:** NS2, NS3, NS4, NS5. **Exit (Stage E gate):** all 4 types received on a real iPhone from real cron runs; prefs honored; opt-out verified; taps route correctly.
+### NS6 — On-device delivery pass ✅ 🍎 *(PUSH_SPEC §7)* — shipped 2026-07-16
+Done: EAS dev build (`eas build --profile development --platform ios`, EAS-managed credentials incl. the shared APNs push key) installed on a physical iPhone. Verified on-device: permission grant → `push_token` registered (`devices: 1`); **all 4 notification types delivered** (real `pushCopy` via a temporary secret-guarded admin-only test endpoint — since removed); notifications arrive with the app foregrounded, backgrounded, and **fully quit**; **tap cold-launches into the correct league**.
+**Fix found on-device:** cold-start tap-routing dropped the deep link because `getLastNotificationResponseAsync` fired before the navigator/gate settled — gated it on `booted` + a short delay. Also added a project `.npmrc` (`legacy-peer-deps=true`) so EAS installs tolerate the zod optional-peer conflict.
+**Exit (met):** all 4 types received on a real iPhone; cold-start taps route correctly. **🎉 Stage E COMPLETE.**
 
 **Stage E gate:** push works on-device; §11 P6 exit criteria met.
 
@@ -272,7 +273,7 @@ Planning slices register their children here (PS1 → `DS*`, PS2 → `NS*`, PS3 
 | NS3 | Results + GW-complete triggers | E | ✅ 2026-07-15 | (this commit) |
 | NS4 | Client register + tap-routing | E | ✅ 2026-07-16 | (this commit) |
 | NS5 | Preference toggles | E | ✅ 2026-07-16 | (this commit) |
-| NS6 | On-device delivery pass 🍎 | E | ☐ | |
+| NS6 | On-device delivery pass 🍎 | E | ✅ 2026-07-16 | (this commit) |
 | PS3 🗎 | STORE_LISTING.md (→ registers `LS*`) | F | ☐ | |
 | *LS\** | *— defined by PS3 —* | F | — | |
 | MS17 | TestFlight | F | ☐ | |
