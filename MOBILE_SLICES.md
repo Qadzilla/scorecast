@@ -1,6 +1,6 @@
 # ScoreCast Mobile — Slice Roadmap
 
-**Status:** Stages A + B COMPLETE; Stage C done + device-verified (MS9–MS11); **Stage D underway — MS12 (Leagues home) shipped** (2026-07-15). Next: MS13 (league detail). The full signup→verify→team→tabs and login/logout loops were confirmed on a physical iPhone (Expo Go, SDK 54) against the live backend. Next: **Stage D — MS12 (Leagues home)** to start the core product (the tabs are still placeholders); DS5 visual pass can follow.
+**Status:** Stages A + B COMPLETE; Stage C done + device-verified (MS9–MS11); **Stage D underway — MS12 (Leagues home) + MS13 (league detail: fixtures/table/info) shipped** (2026-07-15). Next: MS14 (join + admin surfaces) or MS15 (predictions entry). The full signup→verify→team→tabs and login/logout loops were confirmed on a physical iPhone (Expo Go, SDK 54) against the live backend. Next: **Stage D — MS12 (Leagues home)** to start the core product (the tabs are still placeholders); DS5 visual pass can follow.
 
 **Field fixes during device bring-up (2026-07-15)** — three bugs the simulator/typecheck couldn't catch, all fixed:
 - **Expo Go origin 403.** better-auth rejects untrusted origins; the Expo client sends `expo-origin: exp://<lan-ip>:<port>/--/`, which the `@better-auth/expo` server plugin only auto-trusts when `NODE_ENV=development`. Prod 403'd every call. Fix: added `"exp://"` to server `trustedOrigins` (prefix-matches any Expo Go origin; safe — browsers can't forge the custom header). See MOBILE_PLAN.md §4.1.
@@ -132,10 +132,9 @@ Done: query layer expanded — `queries/fixtures.ts` (`useCurrentGameweek`), `qu
 **Gotcha logged:** expo-router typed routes only discovered the `league/` folder once it had a `_layout.tsx` — without it, `.expo/types/router.d.ts` omitted the routes and `router.push("/league/…")` failed tsc. **Nested route folders need a `_layout`.** A stale `.expo/types` also causes phantom route-type errors; `rm -rf .expo` + regen fixes it.
 **Deferred:** `CountdownCard` interval isn't paused on blur (`useFocusEffect`) yet — fine for an always-visible home; revisit if CPU shows up.
 
-### MS13 — League detail: Fixtures + Table  *(§5.4 league detail)*
-`league/[id]` with segmented control; Fixtures pane (matches grouped by day, kickoff/FT states, red-card indicators); Table pane (full standings, own row highlighted, champion state when `isSeasonComplete`); league-info sheet with invite code + `expo-clipboard` copy.
-**Depends on:** MS12.
-**Exit:** matches real web-app data for the same league side by side; copy button yields a joinable code.
+### MS13 — League detail: Fixtures + Table ✅ *(§5.4 league detail)* — shipped 2026-07-15
+Done: `useGameweek` query (+ `GameweekDetail`/`Matchday` types). `league/[id]`: nav header with info button, `SegmentedControl` (Fixtures / Predictions / Table, competition-tinted active). **Fixtures pane** — gameweek matchdays grouped by day (date headers + `MatchRow`s in a card, kickoff/FT/live/red-card states). **Table pane** — full standings via `useLeaderboard` (`LeaderboardRow`, own row highlighted, champion trophy when `isSeasonComplete`). **Predictions pane** — deadline `CountdownCard` + "Make/edit predictions" brand button (→ predict, disabled past deadline); the predictions list itself is MS15. **Info sheet** — invite code in a tap-to-copy box (`expo-clipboard` + haptic + "Copied!"), competition + member count. Placeholder `league/predict` route registered.
+**Exit (met, code-verified):** strict `tsc` clean; iOS `expo export` bundles; discovered `/league/predict` in typed routes. On-device visual (side-by-side vs web, copy code) is the user's step.
 
 ### MS14 — Join + admin surfaces  *(§5.4 join/create/members)*
 `league/join` modal (8-char code entry); admin-gated `league/create` and `league/[id]/members` (rename, kick with `Alert.alert` confirm) driven by `isAdmin` from `/me` — no client-side email constants.
@@ -246,7 +245,7 @@ Planning slices register their children here (PS1 → `DS*`, PS2 → `NS*`, PS3 
 | MS10 | Signup + OTP verify | C | ✅ 2026-07-15 | (this commit) |
 | MS11 | Team-select gate | C | ✅ 2026-07-15 | (this commit) |
 | MS12 | Leagues home | D | ✅ 2026-07-15 | (this commit) |
-| MS13 | League detail: fixtures + table | D | ☐ | |
+| MS13 | League detail: fixtures + table | D | ✅ 2026-07-15 | (this commit) |
 | MS14 | Join + admin surfaces | D | ☐ | |
 | MS15 | Predictions entry | D | ☐ | |
 | MS16 | Account screen | D | ☐ | |

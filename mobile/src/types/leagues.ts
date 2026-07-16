@@ -1,4 +1,4 @@
-import type { CompetitionType } from "./fixtures";
+import type { CompetitionType, MatchWithTeams } from "./fixtures";
 
 export type LeagueRole = "admin" | "member";
 
@@ -53,6 +53,29 @@ export interface CurrentGameweek {
     gameweekName: string;
     deadline: string;
   } | null;
+}
+
+// Full gameweek detail from GET /api/fixtures/gameweek/:id — matchdays each
+// holding their matches (used by the league-detail Fixtures pane).
+export interface Matchday {
+  id: string;
+  date: string;
+  dayNumber: number;
+  matches: MatchWithTeams[];
+}
+
+export interface GameweekDetail {
+  id: string;
+  seasonId: string;
+  number: number;
+  name: string | null;
+  deadline: string;
+  startsAt: string;
+  endsAt: string;
+  status: string;
+  seasonName: string;
+  competition: string;
+  matchdays: Matchday[];
 }
 
 // The deadline to actually count down to: the current gameweek's if it's still
