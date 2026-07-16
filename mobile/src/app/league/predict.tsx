@@ -1,11 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { View, StyleSheet, ScrollView, type TextInput } from "react-native";
+import Animated, { FadeInDown } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { ScreenHeader } from "@/components/ScreenHeader";
 import { Text } from "@/components/Text";
 import { Card } from "@/components/Card";
-import { Button } from "@/components/Button";
+import { SolidButton } from "@/components/SolidButton";
+import { SectionTitle } from "@/components/SectionTitle";
 import { Banner } from "@/components/Banner";
 import { ScoreInput } from "@/components/ScoreInput";
 import { TeamCrest } from "@/components/TeamCrest";
@@ -15,7 +17,7 @@ import { ApiError } from "@/lib/api";
 import { maybePromptForPush } from "@/lib/notifications";
 import { isPredictionWindowOpen, type MatchWithTeams } from "@/types/fixtures";
 import { haptics } from "@/utils/haptics";
-import { colors, spacing, layout } from "@/constants/theme";
+import { colors, spacing, layout, fontFamily } from "@/constants/theme";
 
 type Entry = { home: string; away: string };
 
@@ -114,11 +116,11 @@ export default function PredictScreen() {
             ) : null}
             {deadlinePassedError ? <Banner kind="error" message={deadlinePassedError} /> : null}
 
-            {matchdays.map((md) => (
-              <View key={md.id} style={styles.day}>
-                <Text variant="label" color="textSecondary">
-                  {new Date(md.date).toLocaleDateString([], { weekday: "short", day: "numeric", month: "short" })}
-                </Text>
+            {matchdays.map((md, mdi) => (
+              <Animated.View key={md.id} entering={FadeInDown.duration(260).delay(mdi * 70)} style={styles.day}>
+                <SectionTitle
+                  label={new Date(md.date).toLocaleDateString([], { weekday: "long", day: "numeric", month: "short" })}
+                />
                 <Card padded={false} style={styles.dayCard}>
                   {md.matches.map((m) => {
                     const globalIndex = orderedMatches.findIndex((x) => x.id === m.id);
@@ -145,16 +147,17 @@ export default function PredictScreen() {
                     );
                   })}
                 </Card>
-              </View>
+              </Animated.View>
             ))}
           </ScrollView>
 
           <View style={styles.submitBar}>
-            <Text variant="caption" color="textSecondary">
-              {filledCount}/{orderedMatches.length} entered
-            </Text>
+            <View style={styles.count}>
+              <Text style={styles.countNum} tabular>{filledCount}</Text>
+              <Text variant="caption" color="textTertiary" tabular>/{orderedMatches.length} entered</Text>
+            </View>
             <View style={styles.submitBtn}>
-              <Button
+              <SolidButton
                 label="Submit predictions"
                 onPress={onSubmit}
                 loading={submit.isPending}
@@ -248,10 +251,12 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     padding: layout.gutter,
-    borderTopWidth: 1,
+    borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: colors.border,
     backgroundColor: colors.surface,
-    gap: spacing.md,
+    gap: spacing.lg,
   },
+  count: { flexDirection: "row", alignItems: "baseline", gap: 2 },
+  countNum: { fontFamily: fontFamily.bold, fontSize: 20, color: colors.textPrimary },
   submitBtn: { flex: 1 },
 });

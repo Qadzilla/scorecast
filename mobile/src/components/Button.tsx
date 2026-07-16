@@ -1,5 +1,6 @@
-import { Pressable, ActivityIndicator, StyleSheet, View, type ViewStyle } from "react-native";
+import { ActivityIndicator, StyleSheet, type ViewStyle } from "react-native";
 import { Text } from "./Text";
+import { PressableScale } from "./PressableScale";
 import { colors, radius, spacing, layout, competition, type CompetitionKey } from "@/constants/theme";
 
 export type ButtonVariant = "primary" | "brand" | "secondary" | "destructive" | "ghost";
@@ -31,19 +32,18 @@ export function Button({
   const brandColor = competition[competitionKey].main;
 
   return (
-    <Pressable
+    <PressableScale
       onPress={onPress}
       disabled={isDisabled}
       accessibilityRole="button"
       accessibilityState={{ disabled: isDisabled, busy: loading }}
-      style={({ pressed }) => [
+      style={[
         styles.base,
         compact && styles.compact,
         variantStyle(variant, brandColor),
-        pressed && !isDisabled && pressedStyle(variant, brandColor),
         isDisabled && styles.disabled,
         style,
-      ]}
+      ].filter(Boolean) as ViewStyle[]}
     >
       {loading ? (
         <ActivityIndicator color={variant === "secondary" || variant === "ghost" ? colors.accent : colors.textOnBrand} />
@@ -52,7 +52,7 @@ export function Button({
           {label}
         </Text>
       )}
-    </Pressable>
+    </PressableScale>
   );
 }
 
@@ -74,20 +74,6 @@ function variantStyle(variant: ButtonVariant, brand: string): ViewStyle {
       return { backgroundColor: colors.danger };
     case "ghost":
       return { backgroundColor: "transparent" };
-  }
-}
-
-function pressedStyle(variant: ButtonVariant, brand: string): ViewStyle {
-  switch (variant) {
-    case "primary":
-      return { backgroundColor: colors.accentPressed };
-    case "brand":
-      return { backgroundColor: brand, opacity: 0.85 };
-    case "secondary":
-    case "ghost":
-      return { backgroundColor: colors.surfaceAlt };
-    case "destructive":
-      return { opacity: 0.85 };
   }
 }
 

@@ -1,5 +1,6 @@
 import { useCallback, useState } from "react";
 import { View, StyleSheet, ScrollView, RefreshControl, Pressable } from "react-native";
+import Animated, { FadeInDown } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
@@ -86,13 +87,14 @@ export default function LeaguesHomeScreen() {
           ) : leagues.data && leagues.data.length > 0 ? (
             <Card padded={false}>
               {leagues.data.map((league, i) => (
-                <LeagueRow
-                  key={league.id}
-                  league={league}
-                  userId={session?.user?.id}
-                  first={i === 0}
-                  onPress={() => router.push({ pathname: "/league/[id]", params: { id: league.id } })}
-                />
+                <Animated.View key={league.id} entering={FadeInDown.duration(260).delay(i * 45)}>
+                  <LeagueRow
+                    league={league}
+                    userId={session?.user?.id}
+                    first={i === 0}
+                    onPress={() => router.push({ pathname: "/league/[id]", params: { id: league.id } })}
+                  />
+                </Animated.View>
               ))}
             </Card>
           ) : (

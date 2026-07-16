@@ -1,5 +1,6 @@
-import { Pressable, ActivityIndicator, StyleSheet, type ViewStyle } from "react-native";
+import { ActivityIndicator, StyleSheet, type ViewStyle } from "react-native";
 import { Text } from "./Text";
+import { PressableScale } from "./PressableScale";
 import { brand } from "@/constants/brand";
 import { radius, fontFamily } from "@/constants/theme";
 
@@ -19,13 +20,13 @@ export function SolidButton({
   style?: ViewStyle;
 }) {
   return (
-    <Pressable
+    <PressableScale
       onPress={onPress}
       disabled={loading || disabled}
-      style={({ pressed }) => [styles.cta, disabled && styles.disabled, pressed && !disabled && styles.pressed, style]}
+      style={[styles.cta, disabled && styles.disabled, style as ViewStyle]}
     >
       {loading ? <ActivityIndicator color={brand.onInk} /> : <Text style={styles.text}>{label}</Text>}
-    </Pressable>
+    </PressableScale>
   );
 }
 

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { View, StyleSheet, ScrollView } from "react-native";
+import Animated, { FadeInDown, FadeIn } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -37,7 +38,7 @@ export default function LeagueDetailScreen() {
   const leagues = useLeagues();
   const league = leagues.data?.find((l) => l.id === id);
 
-  const [pane, setPane] = useState<Pane>("fixtures");
+  const [pane, setPane] = useState<Pane>("table");
   const [infoOpen, setInfoOpen] = useState(false);
   const [copied, setCopied] = useState(false);
 
@@ -101,9 +102,9 @@ export default function LeagueDetailScreen() {
       <View style={styles.segmentWrap}>
         <SegmentedControl
           segments={[
+            { key: "table", label: "Table" },
             { key: "fixtures", label: "Fixtures" },
             { key: "predictions", label: "Predictions" },
-            { key: "table", label: "Table" },
           ]}
           value={pane}
           onChange={setPane}
@@ -112,6 +113,7 @@ export default function LeagueDetailScreen() {
       </View>
 
       <ScrollView contentContainerStyle={styles.content}>
+        <Animated.View key={pane} entering={FadeIn.duration(220)} style={{ gap: spacing.md }}>
         {pane === "fixtures" && (
           <FixturesPane
             loading={current.isLoading || gameweek.isLoading}
@@ -164,6 +166,7 @@ export default function LeagueDetailScreen() {
             competitionKey={league.type}
           />
         )}
+        </Animated.View>
       </ScrollView>
 
       <Sheet visible={infoOpen} onClose={() => setInfoOpen(false)} title="League info">
@@ -201,8 +204,8 @@ function FixturesPane({
   }
   return (
     <View style={{ gap: spacing.xl }}>
-      {matchdays.map((md) => (
-        <View key={md.id} style={{ gap: spacing.sm }}>
+      {matchdays.map((md, mdi) => (
+        <Animated.View key={md.id} entering={FadeInDown.duration(260).delay(mdi * 70)} style={{ gap: spacing.sm }}>
           <SectionTitle
             label={new Date(md.date).toLocaleDateString([], { weekday: "long", day: "numeric", month: "short" })}
           />
@@ -213,7 +216,7 @@ function FixturesPane({
               </View>
             ))}
           </Card>
-        </View>
+        </Animated.View>
       ))}
     </View>
   );
@@ -234,30 +237,20 @@ function PredictionsList({ leagueId, gameweekId }: { leagueId: string; gameweekI
       {preds.data.map((p: UserPrediction, i) => {
         const settled = p.match.status === "finished";
         return (
-          <View key={p.id} style={[styles.predRow, i === 0 && styles.noBorder]}>
-            <View style={[styles.predTeam, { justifyContent: "flex-end" }]}>
-              <Text variant="caption" numberOfLines={1} style={styles.predName}>
-                {p.match.homeTeam.shortName || p.match.homeTeam.name}
-              </Text>
-              <TeamCrest name={p.match.homeTeam.name} code={p.match.homeTeam.code} logo={p.match.homeTeam.logo} size={20} />
-            </View>
+          <Animated.View key={p.id} entering={FadeInDown.duration(240).delay(i * 40)} style={[styles.predRow, i === 0 && styles.noBorder]}>
+            <TeamCrest name={p.match.homeTeam.name} code={p.match.homeTeam.code} logo={p.match.homeTeam.logo} size={36} />
             <View style={styles.predScoreChip}>
-              <Text variant="bodyMedium" color="textOnBrand" tabular>
+              <Text variant="heading" color="textOnBrand" tabular>
                 {p.predictedHome}–{p.predictedAway}
               </Text>
             </View>
-            <View style={[styles.predTeam, { justifyContent: "flex-start" }]}>
-              <TeamCrest name={p.match.awayTeam.name} code={p.match.awayTeam.code} logo={p.match.awayTeam.logo} size={20} />
-              <Text variant="caption" numberOfLines={1} style={styles.predName}>
-                {p.match.awayTeam.shortName || p.match.awayTeam.name}
-              </Text>
-            </View>
+            <TeamCrest name={p.match.awayTeam.name} code={p.match.awayTeam.code} logo={p.match.awayTeam.logo} size={36} />
             {settled ? (
-              <PointsBadge outcome={outcomeFromPoints(p.points)} points={p.points ?? 0} />
-            ) : (
-              <View style={styles.predPendingSlot} />
-            )}
-          </View>
+              <View style={styles.predBadge}>
+                <PointsBadge outcome={outcomeFromPoints(p.points)} points={p.points ?? 0} />
+              </View>
+            ) : null}
+          </Animated.View>
         );
       })}
     </Card>
@@ -274,7 +267,7 @@ function TablePane({
 }: {
   loading: boolean;
   error: boolean;
-  entries?: { rank: number; userId: string; username: string; totalPoints: number }[];
+  entries?: { rank: number; userId: string; username: string; totalPoints: number; teamLogo: string | null }[];
   isSeasonComplete: boolean;
   userId?: string;
   competitionKey: "premier_league" | "champions_league";
@@ -302,16 +295,17 @@ function TablePane({
         <Text style={[styles.colLabel, styles.colPts]}>Pts</Text>
       </View>
       {entries.map((e, i) => (
-        <View key={e.userId} style={i > 0 ? styles.rowDivider : undefined}>
+        <Animated.View key={e.userId} entering={FadeInDown.duration(220).delay(i * 30)} style={i > 0 ? styles.rowDivider : undefined}>
           <LeaderboardRow
             rank={e.rank}
             username={e.username}
             points={e.totalPoints}
+            teamLogo={e.teamLogo}
             isCurrentUser={e.userId === userId}
             isChampion={isSeasonComplete && e.rank === 1}
             competitionKey={competitionKey}
           />
-        </View>
+        </Animated.View>
       ))}
     </Card>
   );
@@ -330,20 +324,21 @@ const styles = StyleSheet.create({
   predRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: spacing.sm,
+    justifyContent: "center",
+    gap: spacing.lg,
     paddingVertical: spacing.md,
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: colors.border,
   },
-  predTeam: { flex: 1, flexDirection: "row", alignItems: "center", gap: spacing.xs },
-  predName: { flexShrink: 1 },
   predScoreChip: {
     backgroundColor: colors.textPrimary,
     borderRadius: radius.sm,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 3,
+    paddingHorizontal: spacing.md,
+    paddingVertical: 4,
+    minWidth: 56,
+    alignItems: "center",
   },
-  predPendingSlot: { width: 44 },
+  predBadge: { position: "absolute", right: 0, top: 0, bottom: 0, justifyContent: "center" },
   tableHead: {
     flexDirection: "row",
     alignItems: "center",

@@ -1,15 +1,16 @@
 import { useEffect, useState } from "react";
-import { View, StyleSheet, ScrollView, Pressable, Alert, Switch, FlatList } from "react-native";
+import { View, StyleSheet, ScrollView, Pressable, Alert, Switch, useWindowDimensions } from "react-native";
+import Animated, { FadeInDown } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { Ionicons } from "@expo/vector-icons";
 import { useQueryClient } from "@tanstack/react-query";
 import { Text } from "@/components/Text";
 import { Card } from "@/components/Card";
-import { TextField } from "@/components/TextField";
+import { Field } from "@/components/Field";
 import { Button } from "@/components/Button";
-import { Banner } from "@/components/Banner";
+import { SectionTitle } from "@/components/SectionTitle";
 import { Sheet } from "@/components/Sheet";
 import { TeamCrest } from "@/components/TeamCrest";
-import { StatTile } from "@/components/StatTile";
 import { Skeleton } from "@/components/Skeleton";
 import { signOut } from "@/lib/auth";
 import {
@@ -27,8 +28,10 @@ import {
 import { ApiError } from "@/lib/api";
 import { unregisterPush } from "@/lib/notifications";
 import { haptics } from "@/utils/haptics";
-import type { Team } from "@/types/fixtures";
-import { colors, spacing, layout, radius, competition } from "@/constants/theme";
+import { brand } from "@/constants/brand";
+import { colors, spacing, layout, radius, competition, fontFamily } from "@/constants/theme";
+
+const DIM = "#8ba0b6";
 
 export default function AccountScreen() {
   const qc = useQueryClient();
@@ -48,8 +51,6 @@ export default function AccountScreen() {
   const prefs = useNotificationPrefs();
   const updatePrefs = useUpdateNotificationPrefs();
   const notif: NotificationPrefs = prefs.data ?? { deadlines: true, results: true, updates: true };
-  // Guard against toggling before the real prefs load: without prefs.data, `notif`
-  // is the all-on default, and a PUT would clobber the user's other saved keys.
   const setNotif = (key: keyof NotificationPrefs, value: boolean) => {
     if (!prefs.data) return;
     updatePrefs.mutate({ ...prefs.data, [key]: value });
@@ -62,7 +63,7 @@ export default function AccountScreen() {
       ? "That username is taken."
       : updateUsername.error
         ? "Couldn't update username."
-        : null;
+        : undefined;
 
   const saveUsername = () => {
     if (!usernameChanged) return;
@@ -70,7 +71,7 @@ export default function AccountScreen() {
   };
 
   const handleSignOut = async () => {
-    await unregisterPush(); // remove this device's token while the session is still valid
+    await unregisterPush();
     await signOut();
   };
 
@@ -87,9 +88,6 @@ export default function AccountScreen() {
           onPress: () =>
             deleteAccount.mutate(undefined, {
               onSuccess: async () => {
-                // Sign out first (clears the SecureStore session) so the gate
-                // redirects cleanly; then clear the cache. Tolerate a failed
-                // sign-out request against the now-deleted account.
                 try {
                   await signOut();
                 } catch {
@@ -109,77 +107,89 @@ export default function AccountScreen() {
   return (
     <SafeAreaView style={styles.safe} edges={["top"]}>
       <ScrollView contentContainerStyle={styles.content}>
-        {/* Profile header */}
-        <View style={styles.profile}>
+        {/* Navy profile hero */}
+        <Animated.View entering={FadeInDown.duration(300)} style={styles.hero}>
           {team ? (
-            <TeamCrest name={team.name} code={team.code} logo={team.logo} size={64} />
+            <TeamCrest name={team.name} code={team.code} logo={team.logo} size={52} />
           ) : (
             <View style={styles.avatar}>
-              <Text variant="title" color="textOnBrand">
+              <Text style={styles.avatarText}>
                 {(me.data?.firstName ?? me.data?.name ?? "?").slice(0, 1).toUpperCase()}
               </Text>
             </View>
           )}
-          <View style={styles.profileText}>
+          <View style={styles.heroText}>
             {me.isLoading ? (
-              <Skeleton width={140} height={22} />
+              <Skeleton width={130} height={20} />
             ) : (
-              <Text variant="title">{me.data?.name ?? "You"}</Text>
+              <Text style={styles.heroName} numberOfLines={1}>{me.data?.name ?? "You"}</Text>
             )}
-            {me.data?.username ? <Text variant="body" color="textSecondary">@{me.data.username}</Text> : null}
+            {me.data?.username ? <Text style={styles.heroHandle}>@{me.data.username}</Text> : null}
           </View>
-        </View>
-
-        <View style={styles.stats}>
-          <StatTile value={leagues.data?.length ?? 0} label="Leagues" loading={leagues.isLoading} />
-          <StatTile value={team?.shortName ?? "—"} label="Team" loading={fav.isLoading} />
-        </View>
+          <View style={styles.heroStat}>
+            <Text style={styles.heroStatNum} tabular>{leagues.data?.length ?? 0}</Text>
+            <Text style={styles.heroStatLabel}>Leagues</Text>
+          </View>
+        </Animated.View>
 
         {/* Username */}
-        <Text variant="label" color="textSecondary" style={styles.sectionLabel}>Username</Text>
-        <TextField
-          value={username}
-          onChangeText={(t) => setUsername(t.toLowerCase().replace(/[^a-z0-9_]/g, "").slice(0, 20))}
-          autoCapitalize="none"
-          autoCorrect={false}
-          maxLength={20}
-        />
-        {usernameError ? <Banner kind="error" message={usernameError} /> : null}
-        <Button label="Save username" onPress={saveUsername} loading={updateUsername.isPending} disabled={!usernameChanged} />
+        <Animated.View entering={FadeInDown.duration(300).delay(70)} style={styles.section}>
+          <SectionTitle label="Username" />
+          <Field
+            value={username}
+            onChangeText={(t) => setUsername(t.toLowerCase().replace(/[^a-z0-9_]/g, "").slice(0, 20))}
+            autoCapitalize="none"
+            autoCorrect={false}
+            maxLength={20}
+            error={usernameError}
+          />
+          {usernameChanged ? (
+            <Button label="Save username" onPress={saveUsername} loading={updateUsername.isPending} />
+          ) : null}
+        </Animated.View>
 
         {/* Favorite team */}
-        <Text variant="label" color="textSecondary" style={styles.sectionLabel}>Favorite team</Text>
-        <Card onPress={() => setTeamSheet(true)}>
-          <View style={styles.rowBetween}>
-            <View style={styles.teamRow}>
-              {team ? <TeamCrest name={team.name} code={team.code} logo={team.logo} size={28} /> : null}
-              <Text variant="bodyMedium">{team?.name ?? "Choose a team"}</Text>
+        <Animated.View entering={FadeInDown.duration(300).delay(120)} style={styles.section}>
+          <SectionTitle label="Favorite team" />
+          <Card onPress={() => setTeamSheet(true)}>
+            <View style={styles.rowBetween}>
+              <View style={styles.teamRow}>
+                {team ? <TeamCrest name={team.name} code={team.code} logo={team.logo} size={28} /> : null}
+                <Text variant="bodyMedium">{team?.name ?? "Choose a team"}</Text>
+              </View>
+              <View style={styles.changeRow}>
+                <Text variant="bodyMedium" style={{ color: colors.accent }}>Change</Text>
+                <Ionicons name="chevron-forward" size={16} color={colors.accent} />
+              </View>
             </View>
-            <Text variant="body" color="accent">Change</Text>
-          </View>
-        </Card>
+          </Card>
+        </Animated.View>
 
         {/* Account info */}
-        <Text variant="label" color="textSecondary" style={styles.sectionLabel}>Account</Text>
-        <Card>
-          <InfoRow label="Name" value={`${me.data?.firstName ?? ""} ${me.data?.lastName ?? ""}`.trim() || "—"} />
-          <InfoRow label="Email" value={me.data?.email ?? "—"} />
-          <InfoRow label="Verified" value={me.data?.emailVerified ? "Yes" : "No"} last />
-        </Card>
+        <Animated.View entering={FadeInDown.duration(300).delay(170)} style={styles.section}>
+          <SectionTitle label="Account" />
+          <Card>
+            <InfoRow label="Name" value={`${me.data?.firstName ?? ""} ${me.data?.lastName ?? ""}`.trim() || "—"} />
+            <InfoRow label="Email" value={me.data?.email ?? "—"} />
+            <InfoRow label="Verified" value={me.data?.emailVerified ? "Yes" : "No"} last />
+          </Card>
+        </Animated.View>
 
         {/* Notifications */}
-        <Text variant="label" color="textSecondary" style={styles.sectionLabel}>Notifications</Text>
-        <Card>
-          <NotifRow label="Deadline reminders" value={notif.deadlines} disabled={!prefs.data} onChange={(v) => setNotif("deadlines", v)} />
-          <NotifRow label="Results & points" value={notif.results} disabled={!prefs.data} onChange={(v) => setNotif("results", v)} />
-          <NotifRow label="League updates" value={notif.updates} disabled={!prefs.data} onChange={(v) => setNotif("updates", v)} last />
-        </Card>
+        <Animated.View entering={FadeInDown.duration(300).delay(220)} style={styles.section}>
+          <SectionTitle label="Notifications" />
+          <Card>
+            <NotifRow label="Deadline reminders" value={notif.deadlines} disabled={!prefs.data} onChange={(v) => setNotif("deadlines", v)} />
+            <NotifRow label="Results & points" value={notif.results} disabled={!prefs.data} onChange={(v) => setNotif("results", v)} />
+            <NotifRow label="League updates" value={notif.updates} disabled={!prefs.data} onChange={(v) => setNotif("updates", v)} last />
+          </Card>
+        </Animated.View>
 
         {/* Actions */}
-        <View style={styles.actions}>
+        <Animated.View entering={FadeInDown.duration(300).delay(270)} style={styles.actions}>
           <Button label="Sign out" variant="secondary" onPress={handleSignOut} />
           <Button label="Delete account" variant="destructive" onPress={confirmDelete} loading={deleteAccount.isPending} />
-        </View>
+        </Animated.View>
       </ScrollView>
 
       <Sheet visible={teamSheet} onClose={() => setTeamSheet(false)} title="Choose your team">
@@ -207,23 +217,19 @@ function NotifRow({ label, value, onChange, last, disabled }: { label: string; v
   );
 }
 
-// The team-picker grid used by the change sheet.
 function TeamPickerGrid({ onClose }: { onClose: () => void }) {
   const teams = useTeams();
   const setFav = useSetFavoriteTeam();
+  const { width } = useWindowDimensions();
+  const cellW = (width - layout.gutter * 2 - spacing.md * 2) / 3;
   const sorted = teams.data ? [...teams.data].sort((a, b) => a.name.localeCompare(b.name)) : [];
 
   return (
-    <FlatList
-      data={sorted}
-      numColumns={3}
-      keyExtractor={(t) => t.id}
-      columnWrapperStyle={{ gap: spacing.md }}
-      contentContainerStyle={{ gap: spacing.md }}
-      style={{ maxHeight: 380 }}
-      renderItem={({ item }) => (
+    <View style={styles.pickGrid}>
+      {sorted.map((item) => (
         <Pressable
-          style={styles.pickCell}
+          key={item.id}
+          style={[styles.pickCell, { width: cellW }]}
           onPress={() => {
             haptics.select();
             setFav.mutate(item.id, { onSuccess: () => { haptics.success(); onClose(); } });
@@ -238,21 +244,36 @@ function TeamPickerGrid({ onClose }: { onClose: () => void }) {
           />
           <Text variant="caption" center numberOfLines={1}>{item.shortName || item.name}</Text>
         </Pressable>
-      )}
-    />
+      ))}
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.bg },
-  content: { padding: layout.gutter, paddingBottom: spacing.xxxl, gap: spacing.md },
-  profile: { flexDirection: "row", alignItems: "center", gap: spacing.lg },
-  avatar: { width: 64, height: 64, borderRadius: 32, backgroundColor: colors.plPurple, alignItems: "center", justifyContent: "center" },
-  profileText: { gap: 2 },
-  stats: { flexDirection: "row", gap: spacing.md },
-  sectionLabel: { marginTop: spacing.md },
+  content: { padding: layout.gutter, paddingBottom: spacing.xxxl, gap: spacing.xl },
+  hero: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.lg,
+    backgroundColor: brand.navy,
+    borderRadius: radius.md,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "#2c4056",
+    padding: layout.cardPadding,
+  },
+  avatar: { width: 52, height: 52, borderRadius: 26, backgroundColor: colors.accent, alignItems: "center", justifyContent: "center" },
+  avatarText: { fontFamily: fontFamily.bold, fontSize: 20, color: colors.textOnBrand },
+  heroText: { flex: 1, gap: 2 },
+  heroName: { fontFamily: fontFamily.bold, fontSize: 19, color: colors.textOnBrand },
+  heroHandle: { fontFamily: fontFamily.regular, fontSize: 14, color: DIM },
+  heroStat: { alignItems: "flex-end" },
+  heroStatNum: { fontFamily: fontFamily.extrabold, fontSize: 22, color: colors.textOnBrand },
+  heroStatLabel: { fontFamily: fontFamily.semibold, fontSize: 10, letterSpacing: 0.6, textTransform: "uppercase", color: DIM },
+  section: { gap: spacing.md },
   rowBetween: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
   teamRow: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
+  changeRow: { flexDirection: "row", alignItems: "center", gap: 2 },
   infoRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -264,6 +285,7 @@ const styles = StyleSheet.create({
   },
   infoRowLast: { borderBottomWidth: 0 },
   infoValue: { flexShrink: 1, marginLeft: spacing.md },
-  actions: { marginTop: spacing.xl, gap: spacing.md },
-  pickCell: { flex: 1 / 3, alignItems: "center", gap: spacing.xs, paddingVertical: spacing.sm },
+  actions: { marginTop: spacing.sm, gap: spacing.md },
+  pickGrid: { flexDirection: "row", flexWrap: "wrap", gap: spacing.md },
+  pickCell: { alignItems: "center", gap: spacing.xs, paddingVertical: spacing.sm },
 });

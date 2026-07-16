@@ -2,6 +2,7 @@ import { useState } from "react";
 import { View, StyleSheet, KeyboardAvoidingView, Platform, ScrollView } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Image } from "expo-image";
+import Animated, { FadeInDown } from "react-native-reanimated";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Link, useRouter } from "expo-router";
@@ -61,10 +62,14 @@ export default function LoginScreen() {
       <SafeAreaView style={styles.safe}>
         <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === "ios" ? "padding" : undefined}>
           <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
-            <Image source={MARK} style={styles.mark} contentFit="contain" />
+            <Animated.View entering={FadeInDown.duration(420)}>
+              <Image source={MARK} style={styles.mark} contentFit="contain" />
+            </Animated.View>
 
-            <Text style={styles.headline}>Welcome back.</Text>
-            <Text style={styles.subhead}>Log in to make your picks.</Text>
+            <Animated.View entering={FadeInDown.duration(420).delay(90)}>
+              <Text style={styles.headline}>Welcome back.</Text>
+              <Text style={styles.subhead}>Log in to make your picks.</Text>
+            </Animated.View>
 
             {serverError ? (
               <View style={styles.errorWrap}>
@@ -75,7 +80,7 @@ export default function LoginScreen() {
               </View>
             ) : null}
 
-            <View style={styles.form}>
+            <Animated.View style={styles.form} entering={FadeInDown.duration(420).delay(170)}>
               <Controller
                 control={control}
                 name="identifier"
@@ -114,16 +119,18 @@ export default function LoginScreen() {
                   />
                 )}
               />
-            </View>
+            </Animated.View>
 
-            <SolidButton label="Log in" onPress={handleSubmit(onSubmit)} loading={isSubmitting} style={styles.cta} />
+            <Animated.View entering={FadeInDown.duration(420).delay(250)}>
+              <SolidButton label="Log in" onPress={handleSubmit(onSubmit)} loading={isSubmitting} style={styles.cta} />
 
-            <View style={styles.footer}>
-              <Text style={styles.footerText}>New here? </Text>
-              <Link href="/(auth)/signup">
-                <Text style={styles.footerLink}>Create an account</Text>
-              </Link>
-            </View>
+              <View style={styles.footer}>
+                <Text style={styles.footerText}>New here? </Text>
+                <Link href="/(auth)/signup">
+                  <Text style={styles.footerLink}>Create an account</Text>
+                </Link>
+              </View>
+            </Animated.View>
           </ScrollView>
         </KeyboardAvoidingView>
       </SafeAreaView>

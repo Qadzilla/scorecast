@@ -1,24 +1,27 @@
 import { View, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { Text } from "./Text";
+import { TeamCrest } from "./TeamCrest";
 import { colors, spacing, radius, competition, fontFamily, type CompetitionKey } from "@/constants/theme";
 
 type LeaderboardRowProps = {
   rank: number;
   username: string;
   points: number;
+  teamLogo?: string | null;
   isCurrentUser?: boolean;
   isChampion?: boolean; // season complete, rank 1
   competitionKey?: CompetitionKey;
 };
 
-// LeaderboardRow — rank · avatar-initials · username (+"You") · points (spec §3).
+// LeaderboardRow — rank · club crest · username (+"You") · points (spec §3).
 // Top-3 ranks take the competition color; own row gets a tinted background;
-// champion gets a gold trophy.
+// champion gets a gold trophy. The avatar is the player's favorite-team crest.
 export function LeaderboardRow({
   rank,
   username,
   points,
+  teamLogo,
   isCurrentUser,
   isChampion,
   competitionKey = "premier_league",
@@ -38,11 +41,7 @@ export function LeaderboardRow({
         )}
       </View>
 
-      <View style={[styles.avatar, { backgroundColor: comp.main }]}>
-        <Text variant="caption" color="textOnBrand">
-          {username.slice(0, 1).toUpperCase()}
-        </Text>
-      </View>
+      <TeamCrest name={username} logo={teamLogo} size={28} fallbackColor={comp.main} />
 
       <Text variant="bodyMedium" numberOfLines={1} style={styles.name}>
         {username}

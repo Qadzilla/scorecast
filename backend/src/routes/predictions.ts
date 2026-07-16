@@ -10,6 +10,46 @@ import {
 
 const router = Router();
 
+// Fetch + format a user's predictions for a gameweek in a league (with match +
+// team detail). Shared by the own-predictions and view-a-player endpoints.
+type PredRow = {
+  id: string; matchId: string; predictedHome: number; predictedAway: number;
+  points: number | null; createdAt: string; updatedAt: string; kickoffTime: string;
+  actualHome: number | null; actualAway: number | null; matchStatus: string; venue: string | null;
+  homeTeamId: string; homeTeamName: string; homeTeamShortName: string; homeTeamCode: string; homeTeamLogo: string | null;
+  awayTeamId: string; awayTeamName: string; awayTeamShortName: string; awayTeamCode: string; awayTeamLogo: string | null;
+};
+
+async function fetchGameweekPredictions(userId: string, leagueId: string, gameweekId: string) {
+  const rows = await queryAll<PredRow>(
+    `SELECT
+        p.id, p."matchId", p."homeScore" as "predictedHome", p."awayScore" as "predictedAway",
+        p.points, p."createdAt", p."updatedAt",
+        m."kickoffTime", m."homeScore" as "actualHome", m."awayScore" as "actualAway",
+        m.status as "matchStatus", m.venue,
+        ht.id as "homeTeamId", ht.name as "homeTeamName", ht."shortName" as "homeTeamShortName", ht.code as "homeTeamCode", ht.logo as "homeTeamLogo",
+        at.id as "awayTeamId", at.name as "awayTeamName", at."shortName" as "awayTeamShortName", at.code as "awayTeamCode", at.logo as "awayTeamLogo"
+      FROM prediction p
+      JOIN match m ON p."matchId" = m.id
+      JOIN matchday md ON m."matchdayId" = md.id
+      JOIN team ht ON m."homeTeamId" = ht.id
+      JOIN team at ON m."awayTeamId" = at.id
+      WHERE p."userId" = $1 AND p."leagueId" = $2 AND md."gameweekId" = $3
+      ORDER BY m."kickoffTime" ASC`,
+    [userId, leagueId, gameweekId]
+  );
+  return rows.map((p) => ({
+    id: p.id, matchId: p.matchId, predictedHome: p.predictedHome, predictedAway: p.predictedAway,
+    points: p.points, createdAt: p.createdAt, updatedAt: p.updatedAt,
+    match: {
+      id: p.matchId, kickoffTime: p.kickoffTime, homeScore: p.actualHome, awayScore: p.actualAway,
+      status: p.matchStatus, venue: p.venue,
+      homeTeam: { id: p.homeTeamId, name: p.homeTeamName, shortName: p.homeTeamShortName, code: p.homeTeamCode, logo: p.homeTeamLogo },
+      awayTeam: { id: p.awayTeamId, name: p.awayTeamName, shortName: p.awayTeamShortName, code: p.awayTeamCode, logo: p.awayTeamLogo },
+    },
+  }));
+}
+
 // Get user's predictions for a gameweek in a league
 router.get("/:leagueId/gameweek/:gameweekId", requireAuth, async (req, res) => {
   const { user } = req as AuthenticatedRequest;
@@ -121,6 +161,60 @@ router.get("/:leagueId/gameweek/:gameweekId", requireAuth, async (req, res) => {
     res.json(formattedPredictions);
   } catch (err) {
     console.error("Failed to fetch predictions:", err);
+    res.status(500).json({ error: "Failed to fetch predictions" });
+  }
+});
+
+// View ANOTHER member's predictions for a gameweek. Gated: unless it's your own,
+// a league with hidePredictions=true keeps picks hidden until the deadline
+// passes. After the deadline everyone's are always visible.
+router.get("/:leagueId/gameweek/:gameweekId/user/:userId", requireAuth, async (req, res) => {
+  const { user } = req as AuthenticatedRequest;
+  const { leagueId, gameweekId, userId } = req.params;
+  if (!leagueId || !gameweekId || !userId) {
+    res.status(400).json({ error: "Missing parameters" });
+    return;
+  }
+
+  try {
+    const caller = await queryOne(
+      `SELECT id FROM league_member WHERE "leagueId" = $1 AND "userId" = $2`,
+      [leagueId, user.id]
+    );
+    if (!caller) {
+      res.status(403).json({ error: "You are not a member of this league" });
+      return;
+    }
+
+    const target = await queryOne(
+      `SELECT id FROM league_member WHERE "leagueId" = $1 AND "userId" = $2`,
+      [leagueId, userId]
+    );
+    if (!target) {
+      res.status(404).json({ error: "That player isn't in this league" });
+      return;
+    }
+
+    if (userId !== user.id) {
+      const league = await queryOne<{ hidePredictions: boolean }>(
+        `SELECT "hidePredictions" FROM league WHERE id = $1`,
+        [leagueId]
+      );
+      const gw = await queryOne<{ deadline: string }>(
+        `SELECT deadline FROM gameweek WHERE id = $1`,
+        [gameweekId]
+      );
+      const deadlinePassed = gw ? new Date(gw.deadline) <= new Date() : false;
+      if (league?.hidePredictions && !deadlinePassed) {
+        res.status(403).json({ error: "hidden", locked: true });
+        return;
+      }
+    }
+
+    const predictions = await fetchGameweekPredictions(String(userId), String(leagueId), String(gameweekId));
+    res.json(predictions);
+  } catch (err) {
+    console.error("Failed to fetch player predictions:", err);
     res.status(500).json({ error: "Failed to fetch predictions" });
   }
 });

@@ -6,7 +6,8 @@ import { brand } from "@/constants/brand";
 import { spacing, layout, fontFamily } from "@/constants/theme";
 
 type FieldProps = TextInputProps & {
-  label: string;
+  /** Optional inline micro-label. Omit when a SectionTitle already labels it. */
+  label?: string;
   error?: string;
   secureToggle?: boolean;
 };
@@ -21,7 +22,7 @@ export function Field({ label, error, secureToggle, secureTextEntry, ...rest }: 
 
   return (
     <View style={styles.field}>
-      <Text style={styles.microLabel}>{label}</Text>
+      {label ? <Text style={styles.microLabel}>{label}</Text> : null}
       <View
         style={[
           styles.rule,
