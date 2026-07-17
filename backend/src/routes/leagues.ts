@@ -2,7 +2,7 @@ import { Router } from "express";
 import { queryAll, queryOne, query } from "../db.js";
 import { requireAuth } from "../middleware/auth.js";
 import type { AuthenticatedRequest } from "../middleware/auth.js";
-import { isAdmin } from "../lib/admin.js";
+import { isAdmin, isLeagueAdmin } from "../lib/admin.js";
 import { getPrizePoolPayload, validatePrizePoolInput } from "../lib/prizePool.js";
 import crypto from "crypto";
 
@@ -184,9 +184,9 @@ router.patch("/:leagueId", requireAuth, async (req, res) => {
   const { leagueId } = req.params;
   const { name } = req.body;
 
-  // Only admin can update leagues
-  if (!isAdmin(user.email)) {
-    res.status(403).json({ error: "Only the admin can update leagues" });
+  // Global admin or this league's own admin can update it.
+  if (!isAdmin(user.email) && !(await isLeagueAdmin(user.id, String(leagueId)))) {
+    res.status(403).json({ error: "Only a league admin can update this league" });
     return;
   }
 
@@ -223,9 +223,9 @@ router.get("/:leagueId/members", requireAuth, async (req, res) => {
   const { user } = req as AuthenticatedRequest;
   const { leagueId } = req.params;
 
-  // Only admin can view member list
-  if (!isAdmin(user.email)) {
-    res.status(403).json({ error: "Only the admin can view members" });
+  // Global admin or this league's own admin can view the roster.
+  if (!isAdmin(user.email) && !(await isLeagueAdmin(user.id, String(leagueId)))) {
+    res.status(403).json({ error: "Only a league admin can view members" });
     return;
   }
 
@@ -268,9 +268,9 @@ router.delete("/:leagueId/members/:userId", requireAuth, async (req, res) => {
   const { user } = req as AuthenticatedRequest;
   const { leagueId, userId } = req.params;
 
-  // Only admin can kick members
-  if (!isAdmin(user.email)) {
-    res.status(403).json({ error: "Only the admin can remove members" });
+  // Global admin or this league's own admin can remove members.
+  if (!isAdmin(user.email) && !(await isLeagueAdmin(user.id, String(leagueId)))) {
+    res.status(403).json({ error: "Only a league admin can remove members" });
     return;
   }
 
@@ -325,8 +325,8 @@ router.get("/:leagueId/prize-pool", requireAuth, async (req, res) => {
 router.put("/:leagueId/prize-pool", requireAuth, async (req, res) => {
   const { user } = req as AuthenticatedRequest;
   const { leagueId } = req.params;
-  if (!isAdmin(user.email)) {
-    res.status(403).json({ error: "Only the admin can set the prize pool" });
+  if (!isAdmin(user.email) && !(await isLeagueAdmin(user.id, String(leagueId)))) {
+    res.status(403).json({ error: "Only a league admin can set the prize pool" });
     return;
   }
   const parsed = validatePrizePoolInput(req.body);
@@ -385,8 +385,8 @@ router.put("/:leagueId/prize-pool", requireAuth, async (req, res) => {
 router.delete("/:leagueId/prize-pool", requireAuth, async (req, res) => {
   const { user } = req as AuthenticatedRequest;
   const { leagueId } = req.params;
-  if (!isAdmin(user.email)) {
-    res.status(403).json({ error: "Only the admin can remove the prize pool" });
+  if (!isAdmin(user.email) && !(await isLeagueAdmin(user.id, String(leagueId)))) {
+    res.status(403).json({ error: "Only a league admin can remove the prize pool" });
     return;
   }
   try {

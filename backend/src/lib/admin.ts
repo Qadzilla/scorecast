@@ -1,5 +1,6 @@
 import type { Request, Response, NextFunction } from "express";
 import type { AuthenticatedRequest } from "../middleware/auth.js";
+import { queryOne } from "../db.js";
 
 // Single source of truth for "who is an admin".
 //
@@ -19,6 +20,17 @@ function adminEmailList(): string[] {
 export function isAdmin(email: string | null | undefined): boolean {
   if (!email) return false;
   return adminEmailList().includes(email.toLowerCase());
+}
+
+// Per-league admin (AD1): the user's role in THIS league is 'admin' (i.e. they
+// created it). League-scoped actions gate on `isAdmin(email) || isLeagueAdmin(...)`
+// so a league's own creator manages it, with the global admin as an override.
+export async function isLeagueAdmin(userId: string, leagueId: string): Promise<boolean> {
+  const row = await queryOne(
+    `SELECT 1 AS ok FROM league_member WHERE "leagueId" = $1 AND "userId" = $2 AND role = 'admin'`,
+    [leagueId, userId]
+  );
+  return !!row;
 }
 
 // Express middleware — 403s non-admins. Assumes requireAuth ran first.
