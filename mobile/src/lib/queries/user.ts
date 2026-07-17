@@ -19,6 +19,8 @@ export interface Me {
   emailVerified: boolean;
   favoriteTeamId: string | null;
   isAdmin: boolean;
+  // True for the global admin OR a user holding an unused one-time grant (AD2).
+  canCreateLeague: boolean;
 }
 
 // Current user's profile + server-computed isAdmin. Admin UI (create league,

@@ -45,7 +45,8 @@ export function useJoinLeague() {
   });
 }
 
-// Admin-only (server enforces via ADMIN_EMAILS). Returns the flat league object.
+// Global admin or a user with an unused one-time grant (server enforces).
+// Invalidate ["me"] too so canCreateLeague flips off once a grant is consumed.
 export function useCreateLeague() {
   const qc = useQueryClient();
   return useMutation({
@@ -54,7 +55,10 @@ export function useCreateLeague() {
         method: "POST",
         body: JSON.stringify({ name: input.name.trim(), type: input.type }),
       }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: leagueKeys.all }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: leagueKeys.all });
+      qc.invalidateQueries({ queryKey: ["me"] });
+    },
   });
 }
 

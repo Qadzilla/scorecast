@@ -89,7 +89,7 @@ export default function LeaguesHomeScreen() {
         <View style={styles.section}>
           <SectionTitle
             label="Your leagues"
-            action={me.data?.isAdmin ? "Create" : undefined}
+            action={me.data?.canCreateLeague ? "Create" : undefined}
             onAction={() => router.push("/league/create")}
           />
           {leagues.isLoading ? (

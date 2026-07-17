@@ -27,14 +27,14 @@ export default function CreateLeagueScreen() {
   const poolValidation = poolEnabled ? validatePrizePoolForm(poolForm) : null;
   const poolError = poolValidation && "error" in poolValidation ? poolValidation.error : null;
 
-  // Server enforces admin too; this just hides the UI from non-admins who
-  // reach the route directly.
-  if (me.data && !me.data.isAdmin) {
+  // Server enforces this too; this just hides the UI from users who reach the
+  // route without permission (not the global admin and no unused grant).
+  if (me.data && !me.data.canCreateLeague) {
     return (
       <SafeAreaView style={styles.safe}>
         <ScreenHeader title="Create league" />
         <View style={styles.body}>
-          <Banner kind="info" message="Only league admins can create leagues." />
+          <Banner kind="info" message="You don't have permission to create a league." />
         </View>
       </SafeAreaView>
     );
