@@ -15,6 +15,7 @@ import { StickyActionBar } from "@/components/StickyActionBar";
 import { CountdownCard } from "@/components/CountdownCard";
 import { MatchRow } from "@/components/MatchRow";
 import { LeaderboardRow } from "@/components/LeaderboardRow";
+import { PrizePoolCard } from "@/components/PrizePoolCard";
 import { PredictionRow } from "@/components/PredictionRow";
 import { PointsBadge } from "@/components/PointsBadge";
 import { TeamCrest } from "@/components/TeamCrest";
@@ -24,11 +25,12 @@ import { EmptyState } from "@/components/EmptyState";
 import { Skeleton, SkeletonLines } from "@/components/Skeleton";
 import { Sheet } from "@/components/Sheet";
 import { useSession } from "@/lib/auth";
-import { useLeagues, useCurrentGameweek, useGameweek, useLeaderboard, usePredictions } from "@/lib/queries";
+import { useLeagues, useCurrentGameweek, useGameweek, useLeaderboard, usePredictions, usePrizePool } from "@/lib/queries";
 import { upcomingDeadline } from "@/types/leagues";
 import { isPredictionWindowOpen } from "@/types/fixtures";
 import { outcomeFromPoints, type UserPrediction } from "@/types/predictions";
 import { haptics } from "@/utils/haptics";
+import { formatMoney } from "@/utils/money";
 import { colors, spacing, layout, radius, competition, fontFamily } from "@/constants/theme";
 
 type Pane = "predict" | "table";
@@ -148,6 +150,7 @@ export default function LeagueDetailScreen() {
 
         {pane === "table" && (
           <TablePane
+            leagueId={league.id}
             loading={board.isLoading}
             error={board.isError}
             entries={board.data?.entries}
@@ -277,6 +280,7 @@ function PredictOrFixtures({
 }
 
 function TablePane({
+  leagueId,
   loading,
   error,
   entries,
@@ -285,6 +289,7 @@ function TablePane({
   competitionKey,
   onPlayer,
 }: {
+  leagueId: string;
   loading: boolean;
   error: boolean;
   entries?: { rank: number; userId: string; username: string; totalPoints: number; teamLogo: string | null }[];
@@ -293,6 +298,18 @@ function TablePane({
   competitionKey: "premier_league" | "champions_league";
   onPlayer: (e: { userId: string; username: string; teamLogo: string | null }) => void;
 }) {
+  const prizePool = usePrizePool(leagueId);
+  const pool = prizePool.data ?? null;
+
+  // Map each paid position's occupant → its formatted prize, for the row badge.
+  const prizeByUser: Record<string, string> = {};
+  if (pool) {
+    (["first", "second", "third", "secondLast"] as const).forEach((k) => {
+      const p = pool.payouts[k];
+      if (p) prizeByUser[p.userId] = formatMoney(p.amountMinor, pool.currency);
+    });
+  }
+
   if (loading) {
     return (
       <Card>
@@ -306,31 +323,40 @@ function TablePane({
   }
   if (error) return <Banner kind="error" message="Couldn't load the table." />;
   if (!entries || entries.length === 0) {
-    return <EmptyState icon="podium-outline" title="No standings yet" subtitle="Standings appear once predictions are scored." />;
+    return (
+      <View style={{ gap: spacing.md }}>
+        {pool ? <PrizePoolCard pool={pool} /> : null}
+        <EmptyState icon="podium-outline" title="No standings yet" subtitle="Standings appear once predictions are scored." />
+      </View>
+    );
   }
   return (
-    <Card padded={false}>
-      <View style={styles.tableHead}>
-        <Text style={[styles.colLabel, styles.colRank]}>#</Text>
-        <Text style={[styles.colLabel, styles.colPlayer]}>Player</Text>
-        <Text style={[styles.colLabel, styles.colPts]}>Pts</Text>
-      </View>
-      {entries.map((e, i) => (
-        <Animated.View key={e.userId} entering={FadeInDown.duration(220).delay(i * 30)} style={i > 0 ? styles.rowDivider : undefined}>
-          <Pressable onPress={() => onPlayer(e)} style={({ pressed }) => pressed && styles.rowPressed}>
-            <LeaderboardRow
-              rank={e.rank}
-              username={e.username}
-              points={e.totalPoints}
-              teamLogo={e.teamLogo}
-              isCurrentUser={e.userId === userId}
-              isChampion={isSeasonComplete && e.rank === 1}
-              competitionKey={competitionKey}
-            />
-          </Pressable>
-        </Animated.View>
-      ))}
-    </Card>
+    <View style={{ gap: spacing.md }}>
+      {pool ? <PrizePoolCard pool={pool} /> : null}
+      <Card padded={false}>
+        <View style={styles.tableHead}>
+          <Text style={[styles.colLabel, styles.colRank]}>#</Text>
+          <Text style={[styles.colLabel, styles.colPlayer]}>Player</Text>
+          <Text style={[styles.colLabel, styles.colPts]}>Pts</Text>
+        </View>
+        {entries.map((e, i) => (
+          <Animated.View key={e.userId} entering={FadeInDown.duration(220).delay(i * 30)} style={i > 0 ? styles.rowDivider : undefined}>
+            <Pressable onPress={() => onPlayer(e)} style={({ pressed }) => pressed && styles.rowPressed}>
+              <LeaderboardRow
+                rank={e.rank}
+                username={e.username}
+                points={e.totalPoints}
+                teamLogo={e.teamLogo}
+                isCurrentUser={e.userId === userId}
+                isChampion={isSeasonComplete && e.rank === 1}
+                competitionKey={competitionKey}
+                prizeLabel={prizeByUser[e.userId]}
+              />
+            </Pressable>
+          </Animated.View>
+        ))}
+      </Card>
+    </View>
   );
 }
 

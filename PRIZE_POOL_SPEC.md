@@ -139,6 +139,7 @@ Order: **PP1a → PP1b → PP1c/PP1d → PP1e.** PP1a is the contract; everythin
 **Shipped:**
 - **PP1a** (2026-07-17) — `012_prize_pool` migration; `src/lib/prizePool.ts` (payout split with dust-to-1st, N<5 renormalisation, lazy freeze at first-deadline-after-creation, input validation); GET/PUT/DELETE `/api/leagues/:leagueId/prize-pool` in the leagues router (GET any member; PUT/DELETE admin-only, blocked once frozen). Tests: 7 (payouts+occupants, renorm+dust, validation, freeze+lock, membership/admin gates). Full suite green (173).
 - **PP1b** (2026-07-17) — `src/utils/money.ts` (`formatMoney`/`parseMoneyToMinor`/`minorToMajorString` + currency metadata; GBP/USD 2dp prefixed, JOD 3dp suffixed) and `src/lib/queries/prizePool.ts` (`usePrizePool` read hook + `useSetPrizePool`/`useDeletePrizePool` admin mutations, mirroring the PP1a payload). Barrel-exported.
+- **PP1c + PP1d** (2026-07-17) — `PrizePoolCard` (total pot, `entry × players`, four position payouts, Provisional/Final state) renders at the top of the Table pane (and above the empty state) whenever the league has a pool. `LeaderboardRow` gains a `prizeLabel` money pill; `TablePane` fetches `usePrizePool` and maps each paid position's occupant (`payouts.{first,second,third,secondLast}.userId`) to its formatted amount on that player's row.
 
 ---
 

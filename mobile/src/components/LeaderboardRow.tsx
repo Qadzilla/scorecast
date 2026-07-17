@@ -12,6 +12,7 @@ type LeaderboardRowProps = {
   isCurrentUser?: boolean;
   isChampion?: boolean; // season complete, rank 1
   competitionKey?: CompetitionKey;
+  prizeLabel?: string; // formatted money for a paid position (PP1d)
 };
 
 // LeaderboardRow — rank · club crest · username (+"You") · points (spec §3).
@@ -25,6 +26,7 @@ export function LeaderboardRow({
   isCurrentUser,
   isChampion,
   competitionKey = "premier_league",
+  prizeLabel,
 }: LeaderboardRowProps) {
   const comp = competition[competitionKey];
   const topThree = rank <= 3;
@@ -49,6 +51,12 @@ export function LeaderboardRow({
       {isCurrentUser ? (
         <View style={styles.youChip}>
           <Text style={styles.youText}>You</Text>
+        </View>
+      ) : null}
+
+      {prizeLabel ? (
+        <View style={styles.prizePill}>
+          <Text style={styles.prizeText} tabular>{prizeLabel}</Text>
         </View>
       ) : null}
 
@@ -84,4 +92,11 @@ const styles = StyleSheet.create({
     color: colors.accent,
   },
   points: { fontSize: 16, width: 44, textAlign: "right", color: colors.textPrimary },
+  prizePill: {
+    backgroundColor: colors.accentTint,
+    borderRadius: radius.sm,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 2,
+  },
+  prizeText: { fontFamily: fontFamily.semibold, fontSize: 12, color: colors.accent },
 });
