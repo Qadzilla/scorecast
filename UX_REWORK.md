@@ -206,6 +206,7 @@ Suggested order: **UXR1 → UXR3 → UXR2 → UXR4 → UXR7 → UXR5 → UXR6.**
 
 **Shipped:**
 - **UXR1** (2026-07-17) — `CountdownCard` takes `onPress`/`actionLabel`; Home `DeadlineCard` routes an open deadline → predict (1 tap), a closed one → standings, with a league-picker `Sheet` when a competition has >1 league (resolves Q1: direct-if-1, sheet-if-many). Home is now 1 tap to predict.
+- **UXR3** (2026-07-17) — league detail collapsed to `Predict · Table` (Fixtures folded into the Predict pane via `PredictOrFixtures`: your picks once predicted, else the fixtures list). Contextual default pane — Predict while the window's open, Table once closed, set once on load and locked by a manual tap. Resolves Q2 direction: the pushed predict screen stays the editor; this pane summarizes + links to it. (Sticky CTA is still UXR2.)
 
 ---
 

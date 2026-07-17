@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { View, StyleSheet, ScrollView } from "react-native";
 import Animated, { FadeInDown, FadeIn } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -30,7 +30,7 @@ import { outcomeFromPoints, type UserPrediction } from "@/types/predictions";
 import { haptics } from "@/utils/haptics";
 import { colors, spacing, layout, radius, competition, fontFamily } from "@/constants/theme";
 
-type Pane = "fixtures" | "predictions" | "table";
+type Pane = "predict" | "table";
 
 export default function LeagueDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -40,6 +40,7 @@ export default function LeagueDetailScreen() {
   const league = leagues.data?.find((l) => l.id === id);
 
   const [pane, setPane] = useState<Pane>("table");
+  const paneInitialized = useRef(false);
   const [infoOpen, setInfoOpen] = useState(false);
   const [copied, setCopied] = useState(false);
 
@@ -49,6 +50,20 @@ export default function LeagueDetailScreen() {
 
   const compColor = league ? competition[league.type].main : colors.plPurple;
   const deadlineOpen = current.data ? isPredictionWindowOpen(current.data.deadline) : false;
+
+  // UXR3 contextual default: land on Predict while the window is open, Table
+  // once it's closed. Set once when the gameweek resolves; a manual segment tap
+  // locks the choice so a later refetch can't yank the pane out from under you.
+  useEffect(() => {
+    if (paneInitialized.current || !current.data) return;
+    paneInitialized.current = true;
+    setPane(isPredictionWindowOpen(current.data.deadline) ? "predict" : "table");
+  }, [current.data]);
+
+  const changePane = (p: Pane) => {
+    paneInitialized.current = true;
+    setPane(p);
+  };
 
   const copyCode = async () => {
     if (!league) return;
@@ -103,26 +118,18 @@ export default function LeagueDetailScreen() {
       <View style={styles.segmentWrap}>
         <SegmentedControl
           segments={[
+            { key: "predict", label: "Predict" },
             { key: "table", label: "Table" },
-            { key: "fixtures", label: "Fixtures" },
-            { key: "predictions", label: "Predictions" },
           ]}
           value={pane}
-          onChange={setPane}
+          onChange={changePane}
           activeColor={colors.textPrimary}
         />
       </View>
 
       <ScrollView contentContainerStyle={styles.content}>
         <Animated.View key={pane} entering={FadeIn.duration(220)} style={{ gap: spacing.md }}>
-        {pane === "fixtures" && (
-          <FixturesPane
-            loading={current.isLoading || gameweek.isLoading}
-            matchdays={gameweek.data?.matchdays}
-          />
-        )}
-
-        {pane === "predictions" && (
+        {pane === "predict" && (
           <View style={{ gap: spacing.lg }}>
             {current.isLoading ? (
               <CountdownCard competitionKey={league.type} deadline={new Date().toISOString()} state="loading" />
@@ -150,10 +157,12 @@ export default function LeagueDetailScreen() {
                 })
               }
             />
-            <View style={{ gap: spacing.sm }}>
-              <SectionTitle label="Your predictions" />
-              <PredictionsList leagueId={league.id} gameweekId={current.data?.id} />
-            </View>
+            <PredictOrFixtures
+              leagueId={league.id}
+              gameweekId={current.data?.id}
+              matchdays={gameweek.data?.matchdays}
+              loading={current.isLoading || gameweek.isLoading}
+            />
           </View>
         )}
 
@@ -236,25 +245,38 @@ function FixturesPane({
   );
 }
 
-function PredictionsList({ leagueId, gameweekId }: { leagueId: string; gameweekId?: string }) {
+// The Predict pane's lower half: once you've predicted, your picks (with points
+// once scored); before that, the gameweek's fixtures so you can see what's
+// coming. This is where the old standalone Fixtures tab folds in (UXR3).
+function PredictOrFixtures({
+  leagueId,
+  gameweekId,
+  matchdays,
+  loading,
+}: {
+  leagueId: string;
+  gameweekId?: string;
+  matchdays?: { id: string; date: string; matches: Parameters<typeof MatchRow>[0]["match"][] }[];
+  loading: boolean;
+}) {
   const preds = usePredictions(leagueId, gameweekId);
-  if (preds.isLoading) return <SkeletonLines count={3} />;
-  if (!preds.data || preds.data.length === 0) {
+  if (loading || preds.isLoading) return <SkeletonLines count={4} />;
+  if (preds.data && preds.data.length > 0) {
     return (
-      <Text variant="caption" color="textTertiary" center>
-        You haven't predicted this gameweek yet.
-      </Text>
+      <View style={{ gap: spacing.sm }}>
+        <SectionTitle label="Your predictions" />
+        <Card padded={false} style={styles.predCard}>
+          {preds.data.map((p: UserPrediction, i) => (
+            <Animated.View key={p.id} entering={FadeInDown.duration(240).delay(i * 40)}>
+              <PredictionRow p={p} first={i === 0} />
+            </Animated.View>
+          ))}
+        </Card>
+      </View>
     );
   }
-  return (
-    <Card padded={false} style={styles.predCard}>
-      {preds.data.map((p: UserPrediction, i) => (
-        <Animated.View key={p.id} entering={FadeInDown.duration(240).delay(i * 40)}>
-          <PredictionRow p={p} first={i === 0} />
-        </Animated.View>
-      ))}
-    </Card>
-  );
+  // Not predicted yet — show the fixtures as a preview of what to predict.
+  return <FixturesPane loading={false} matchdays={matchdays} />;
 }
 
 function TablePane({
