@@ -117,16 +117,48 @@ describe("view player predictions + hide gate", () => {
     await predict(league, a.id, matchIds, true);
 
     // a sees only b's visible pick — the hidden one is filtered, nothing locks
-    // the whole gameweek
+    // the whole gameweek. hasHidden flags that b did hide at least one pick.
     const others = await request(app).get(url(league, gameweekId, b.id)).set("Cookie", a.cookie);
     expect(others.status).toBe(200);
-    expect(others.body.length).toBe(1);
-    expect(others.body[0].matchId).toBe(m1);
+    expect(others.body.predictions.length).toBe(1);
+    expect(others.body.predictions[0].matchId).toBe(m1);
+    expect(others.body.hasHidden).toBe(true);
 
     // own picks are always visible to yourself, hidden or not
     const own = await request(app).get(url(league, gameweekId, a.id)).set("Cookie", a.cookie);
     expect(own.status).toBe(200);
-    expect(own.body.length).toBe(2);
+    expect(own.body.predictions.length).toBe(2);
+    expect(own.body.hasHidden).toBe(false);
+  });
+
+  it("all picks hidden before deadline: empty list, hasHidden true", async () => {
+    const a = await signUpVerified("aa");
+    const b = await signUpVerified("ab");
+    const { gameweekId, matchIds } = await seedGameweek("10 hours");
+    const league = await makeLeague();
+    await addMember(league, a.id);
+    await addMember(league, b.id);
+    await predict(league, b.id, matchIds, true); // b hid everything
+
+    const res = await request(app).get(url(league, gameweekId, b.id)).set("Cookie", a.cookie);
+    expect(res.status).toBe(200);
+    expect(res.body.predictions.length).toBe(0);
+    expect(res.body.hasHidden).toBe(true); // → "kept their picks hidden"
+  });
+
+  it("no predictions at all: empty list, hasHidden false", async () => {
+    const a = await signUpVerified("za");
+    const b = await signUpVerified("zb");
+    const { gameweekId } = await seedGameweek("10 hours");
+    const league = await makeLeague();
+    await addMember(league, a.id);
+    await addMember(league, b.id);
+    // b never predicts
+
+    const res = await request(app).get(url(league, gameweekId, b.id)).set("Cookie", a.cookie);
+    expect(res.status).toBe(200);
+    expect(res.body.predictions.length).toBe(0);
+    expect(res.body.hasHidden).toBe(false); // → "hasn't predicted"
   });
 
   it("hidden picks, deadline passed: others visible", async () => {
@@ -140,7 +172,8 @@ describe("view player predictions + hide gate", () => {
 
     const res = await request(app).get(url(league, gameweekId, b.id)).set("Cookie", a.cookie);
     expect(res.status).toBe(200);
-    expect(res.body.length).toBe(2);
+    expect(res.body.predictions.length).toBe(2);
+    expect(res.body.hasHidden).toBe(false); // deadline passed → nothing gated
   });
 
   it("visible submission: others visible before deadline", async () => {
@@ -154,7 +187,8 @@ describe("view player predictions + hide gate", () => {
 
     const res = await request(app).get(url(league, gameweekId, b.id)).set("Cookie", a.cookie);
     expect(res.status).toBe(200);
-    expect(res.body.length).toBe(2);
+    expect(res.body.predictions.length).toBe(2);
+    expect(res.body.hasHidden).toBe(false);
   });
 
   it("non-member caller is blocked", async () => {

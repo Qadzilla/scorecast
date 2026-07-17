@@ -210,12 +210,15 @@ router.get("/:leagueId/gameweek/:gameweekId/user/:userId", requireAuth, async (r
     }
 
     let predictions = await fetchGameweekPredictions(String(userId), String(leagueId), String(gameweekId));
-    // Drop the player's hidden picks for other viewers until the deadline. Per
-    // pick — visible picks still show; nothing locks the whole gameweek.
-    if (userId !== user.id && !deadlinePassed) {
+    // Before the deadline, drop another player's hidden picks (per pick — visible
+    // ones still show). `hasHidden` lets the client tell "hid their picks" apart
+    // from "hasn't predicted" when the visible list comes back empty.
+    const gatingOthers = userId !== user.id && !deadlinePassed;
+    const hasHidden = gatingOthers && predictions.some((p) => p.hidden);
+    if (gatingOthers) {
       predictions = predictions.filter((p) => !p.hidden);
     }
-    res.json(predictions);
+    res.json({ predictions, hasHidden });
   } catch (err) {
     console.error("Failed to fetch player predictions:", err);
     res.status(500).json({ error: "Failed to fetch predictions" });

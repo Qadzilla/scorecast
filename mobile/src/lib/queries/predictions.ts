@@ -18,14 +18,21 @@ export function usePredictions(leagueId: string, gameweekId: string | undefined)
   });
 }
 
+export interface PlayerPredictions {
+  predictions: UserPrediction[];
+  // True when picks were hidden from this viewer (predicted-but-hidden) — lets
+  // the UI say "hid their picks" vs "hasn't predicted" when the list is empty.
+  hasHidden: boolean;
+}
+
 // Another player's predictions for a gameweek. The server filters out any picks
-// they hid until the deadline passes (per pick), so this may return fewer rows
-// than they actually made — or none if they hid everything.
+// they hid until the deadline passes (per pick), so `predictions` may be shorter
+// than what they made — or empty. `hasHidden` distinguishes hidden from none.
 export function usePlayerPredictions(leagueId: string, gameweekId: string | undefined, userId: string) {
   return useQuery({
     queryKey: ["player-predictions", leagueId, gameweekId ?? "none", userId],
     queryFn: () =>
-      apiFetch<UserPrediction[]>(`/api/predictions/${leagueId}/gameweek/${gameweekId}/user/${userId}`),
+      apiFetch<PlayerPredictions>(`/api/predictions/${leagueId}/gameweek/${gameweekId}/user/${userId}`),
     enabled: !!gameweekId,
     retry: false,
     staleTime: 60 * 1000,

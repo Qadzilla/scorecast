@@ -23,7 +23,8 @@ export default function PlayerPredictionsScreen() {
 
   const preds = usePlayerPredictions(leagueId, gameweekId, userId);
 
-  const settled = preds.data?.filter((p) => p.points != null) ?? [];
+  const list = preds.data?.predictions ?? [];
+  const settled = list.filter((p) => p.points != null);
   const gwPoints = settled.reduce((s, p) => s + (p.points ?? 0), 0);
 
   return (
@@ -49,19 +50,29 @@ export default function PlayerPredictionsScreen() {
           <View style={{ paddingTop: spacing.md }}><SkeletonLines count={4} /></View>
         ) : preds.isError ? (
           <Banner kind="error" message="Couldn't load these predictions." />
-        ) : !preds.data || preds.data.length === 0 ? (
-          <View style={styles.locked}>
-            <Ionicons name="eye-off-outline" size={26} color={colors.textTertiary} />
-            <Text variant="heading" center style={{ marginTop: spacing.sm }}>Nothing to show yet</Text>
-            <Text variant="caption" color="textSecondary" center>
-              {username} hasn't predicted this gameweek, or kept their picks hidden until the deadline.
-            </Text>
-          </View>
+        ) : list.length === 0 ? (
+          preds.data?.hasHidden ? (
+            <View style={styles.locked}>
+              <Ionicons name="eye-off-outline" size={26} color={colors.textTertiary} />
+              <Text variant="heading" center style={{ marginTop: spacing.sm }}>Predictions hidden</Text>
+              <Text variant="caption" color="textSecondary" center>
+                {username} kept their picks hidden until the deadline.
+              </Text>
+            </View>
+          ) : (
+            <View style={styles.locked}>
+              <Ionicons name="remove-circle-outline" size={26} color={colors.textTertiary} />
+              <Text variant="heading" center style={{ marginTop: spacing.sm }}>No predictions</Text>
+              <Text variant="caption" color="textSecondary" center>
+                {username} hasn't predicted this gameweek.
+              </Text>
+            </View>
+          )
         ) : (
           <View style={styles.section}>
             <SectionTitle label="Predictions" />
             <Card padded={false}>
-              {preds.data.map((p, i) => (
+              {list.map((p, i) => (
                 <Animated.View key={p.id} entering={FadeInDown.duration(240).delay(i * 40)}>
                   <PredictionRow p={p} first={i === 0} />
                 </Animated.View>
