@@ -3,6 +3,7 @@ import { queryAll, queryOne, query } from "../db.js";
 import { requireAuth } from "../middleware/auth.js";
 import type { AuthenticatedRequest } from "../middleware/auth.js";
 import { isAdmin } from "../lib/admin.js";
+import { getPrizePoolPayload, validatePrizePoolInput } from "../lib/prizePool.js";
 import crypto from "crypto";
 
 const router = Router();
@@ -294,6 +295,118 @@ router.delete("/:leagueId/members/:userId", requireAuth, async (req, res) => {
   } catch (err) {
     console.error("Failed to remove member:", err);
     res.status(500).json({ error: "Failed to remove member" });
+  }
+});
+
+// ── Prize pool (display-only) ────────────────────────────────────────────────
+
+// Get a league's prize pool + computed payouts (any member). null when none.
+router.get("/:leagueId/prize-pool", requireAuth, async (req, res) => {
+  const { user } = req as AuthenticatedRequest;
+  const { leagueId } = req.params;
+  try {
+    const member = await queryOne(
+      `SELECT id FROM league_member WHERE "leagueId" = $1 AND "userId" = $2`,
+      [leagueId, user.id]
+    );
+    if (!member) {
+      res.status(403).json({ error: "You are not a member of this league" });
+      return;
+    }
+    const payload = await getPrizePoolPayload(String(leagueId));
+    res.json(payload);
+  } catch (err) {
+    console.error("Failed to fetch prize pool:", err);
+    res.status(500).json({ error: "Failed to fetch prize pool" });
+  }
+});
+
+// Create/update the prize pool (admin only, blocked once the pool has frozen).
+router.put("/:leagueId/prize-pool", requireAuth, async (req, res) => {
+  const { user } = req as AuthenticatedRequest;
+  const { leagueId } = req.params;
+  if (!isAdmin(user.email)) {
+    res.status(403).json({ error: "Only the admin can set the prize pool" });
+    return;
+  }
+  const parsed = validatePrizePoolInput(req.body);
+  if ("error" in parsed) {
+    res.status(400).json({ error: parsed.error });
+    return;
+  }
+  try {
+    const league = await queryOne(`SELECT id FROM league WHERE id = $1`, [leagueId]);
+    if (!league) {
+      res.status(404).json({ error: "League not found" });
+      return;
+    }
+    const existing = await queryOne<{ frozen: boolean }>(
+      `SELECT frozen FROM prize_pool WHERE "leagueId" = $1`,
+      [leagueId]
+    );
+    if (existing?.frozen) {
+      res.status(400).json({ error: "The prize pool is locked — the league has already started" });
+      return;
+    }
+    const now = new Date().toISOString();
+    await query(
+      `INSERT INTO prize_pool
+         (id, "leagueId", currency, "entryFeeMinor", "pctFirst", "pctSecond", "pctThird", "pctSecondLast", "createdAt", "updatedAt")
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $9)
+       ON CONFLICT ("leagueId") DO UPDATE SET
+         currency = EXCLUDED.currency,
+         "entryFeeMinor" = EXCLUDED."entryFeeMinor",
+         "pctFirst" = EXCLUDED."pctFirst",
+         "pctSecond" = EXCLUDED."pctSecond",
+         "pctThird" = EXCLUDED."pctThird",
+         "pctSecondLast" = EXCLUDED."pctSecondLast",
+         "updatedAt" = EXCLUDED."updatedAt"`,
+      [
+        crypto.randomUUID(),
+        leagueId,
+        parsed.currency,
+        parsed.entryFeeMinor,
+        parsed.pctFirst,
+        parsed.pctSecond,
+        parsed.pctThird,
+        parsed.pctSecondLast,
+        now,
+      ]
+    );
+    const payload = await getPrizePoolPayload(String(leagueId));
+    res.json(payload);
+  } catch (err) {
+    console.error("Failed to save prize pool:", err);
+    res.status(500).json({ error: "Failed to save prize pool" });
+  }
+});
+
+// Remove the prize pool (admin only, blocked once frozen).
+router.delete("/:leagueId/prize-pool", requireAuth, async (req, res) => {
+  const { user } = req as AuthenticatedRequest;
+  const { leagueId } = req.params;
+  if (!isAdmin(user.email)) {
+    res.status(403).json({ error: "Only the admin can remove the prize pool" });
+    return;
+  }
+  try {
+    const existing = await queryOne<{ frozen: boolean }>(
+      `SELECT frozen FROM prize_pool WHERE "leagueId" = $1`,
+      [leagueId]
+    );
+    if (!existing) {
+      res.status(404).json({ error: "No prize pool to remove" });
+      return;
+    }
+    if (existing.frozen) {
+      res.status(400).json({ error: "The prize pool is locked — the league has already started" });
+      return;
+    }
+    await query(`DELETE FROM prize_pool WHERE "leagueId" = $1`, [leagueId]);
+    res.json({ success: true });
+  } catch (err) {
+    console.error("Failed to delete prize pool:", err);
+    res.status(500).json({ error: "Failed to delete prize pool" });
   }
 });
 

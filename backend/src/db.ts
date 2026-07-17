@@ -11,6 +11,7 @@ import { up as pushTokensMigration } from "./db/migrations/008_push_tokens.js";
 import { up as notificationPrefMigration } from "./db/migrations/009_notification_pref.js";
 import { up as pushLogMigration } from "./db/migrations/010_push_log.js";
 import { up as predictionHiddenMigration } from "./db/migrations/011_prediction_hidden.js";
+import { up as prizePoolMigration } from "./db/migrations/012_prize_pool.js";
 
 const { Pool } = pg;
 
@@ -147,6 +148,7 @@ export async function runMigrations(): Promise<void> {
     await notificationPrefMigration(client);
     await pushLogMigration(client);
     await predictionHiddenMigration(client);
+    await prizePoolMigration(client);
   } finally {
     client.release();
   }

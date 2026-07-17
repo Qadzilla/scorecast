@@ -136,6 +136,9 @@ All under the existing leagues router; admin checks reuse `isAdmin`.
 
 Order: **PP1a → PP1b → PP1c/PP1d → PP1e.** PP1a is the contract; everything else consumes it.
 
+**Shipped:**
+- **PP1a** (2026-07-17) — `012_prize_pool` migration; `src/lib/prizePool.ts` (payout split with dust-to-1st, N<5 renormalisation, lazy freeze at first-deadline-after-creation, input validation); GET/PUT/DELETE `/api/leagues/:leagueId/prize-pool` in the leagues router (GET any member; PUT/DELETE admin-only, blocked once frozen). Tests: 7 (payouts+occupants, renorm+dust, validation, freeze+lock, membership/admin gates). Full suite green (173).
+
 ---
 
 ## 8. Deferred / open
