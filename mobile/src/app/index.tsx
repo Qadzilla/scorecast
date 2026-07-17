@@ -48,7 +48,8 @@ export default function Welcome() {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: NAVY, alignItems: "center", justifyContent: "center" },
-  halfLine: { position: "absolute", top: 0, bottom: 0, left: "50%", marginLeft: -1, width: 2, backgroundColor: LINE },
+  // Horizontal halfway line through the center circle.
+  halfLine: { position: "absolute", left: 0, right: 0, top: "50%", marginTop: -1, height: 2, backgroundColor: LINE },
   circle: {
     width: 200,
     height: 200,
@@ -58,7 +59,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  monogram: { fontFamily: fontFamily.extrabold, fontSize: 60, letterSpacing: -1, color: ON },
+  // Explicit lineHeight is required — the shared Text primitive defaults to the
+  // body line-height (~22), which would clip a 56px glyph.
+  monogram: { fontFamily: fontFamily.extrabold, fontSize: 56, lineHeight: 68, letterSpacing: 1, color: ON, textAlign: "center" },
   hint: {
     position: "absolute",
     bottom: 64,
