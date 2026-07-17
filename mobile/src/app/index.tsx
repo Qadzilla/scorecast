@@ -62,6 +62,6 @@ const styles = StyleSheet.create({
   },
   mark: { width: 160, height: 120 },
   footer: { position: "absolute", bottom: 56, left: 0, right: 0, alignItems: "center", gap: 8 },
-  wordmark: { fontFamily: fontFamily.extrabold, fontSize: 12, letterSpacing: 0.5, color: ON },
+  wordmark: { fontFamily: fontFamily.extrabold, fontSize: 24, lineHeight: 30, letterSpacing: 0.3, color: ON },
   hint: { fontFamily: fontFamily.mono, fontSize: 12, letterSpacing: 1, textTransform: "uppercase", color: ON },
 });
