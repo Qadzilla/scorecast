@@ -27,12 +27,13 @@ export function PrizePoolCard({ pool }: { pool: PrizePool }) {
       <View style={styles.payouts}>
         <PayoutRow medal="gold" label="1st" payout={pool.payouts.first} currency={pool.currency} />
         <PayoutRow medal="silver" label="2nd" payout={pool.payouts.second} currency={pool.currency} />
-        <PayoutRow medal="bronze" label="3rd" payout={pool.payouts.third} currency={pool.currency} />
+        <PayoutRow medal="bronze" label="3rd" payout={pool.payouts.third} currency={pool.currency} moneyBack={pool.thirdMoneyBack} />
         <PayoutRow
           medal="orange"
           label="2nd last"
           payout={pool.payouts.secondLast}
           currency={pool.currency}
+          moneyBack
           lockedNote="Unlocks at 5 players"
         />
       </View>
@@ -45,18 +46,23 @@ function PayoutRow({
   label,
   payout,
   currency,
+  moneyBack,
   lockedNote,
 }: {
   medal: Medal;
   label: string;
   payout: PrizePayout | null;
   currency: PrizePool["currency"];
+  moneyBack?: boolean;
   lockedNote?: string;
 }) {
   return (
     <View style={styles.payoutRow}>
       <View style={[styles.medalDot, { backgroundColor: medalColors[medal] }]} />
-      <Text style={styles.payoutLabel}>{label}</Text>
+      <View style={styles.payoutLabelWrap}>
+        <Text style={styles.payoutLabel}>{label}</Text>
+        {moneyBack ? <Text style={styles.moneyBackNote}>money back</Text> : null}
+      </View>
       <Text style={[styles.payoutAmount, !payout && styles.payoutMuted]} tabular>
         {payout ? formatMoney(payout.amountMinor, currency) : lockedNote ?? "—"}
       </Text>
@@ -75,7 +81,9 @@ const styles = StyleSheet.create({
   },
   payoutRow: { flexDirection: "row", alignItems: "center", gap: spacing.sm, paddingVertical: spacing.sm },
   medalDot: { width: 10, height: 10, borderRadius: 5 },
+  payoutLabelWrap: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
   payoutLabel: { fontFamily: fontFamily.semibold, fontSize: 14, color: colors.textPrimary },
+  moneyBackNote: { fontFamily: fontFamily.mono, fontSize: 10, letterSpacing: 0.3, textTransform: "uppercase", color: colors.textTertiary },
   payoutAmount: { marginLeft: "auto", fontFamily: fontFamily.bold, fontSize: 15, color: colors.textPrimary },
   payoutMuted: { fontFamily: fontFamily.regular, fontSize: 12, color: colors.textTertiary },
 });

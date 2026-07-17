@@ -12,7 +12,7 @@ interface PrizePoolRow {
   pctFirst: number;
   pctSecond: number;
   pctThird: number;
-  pctSecondLast: number;
+  thirdMoneyBack: boolean;
   frozen: boolean;
   frozenAt: string | null;
   frozenMemberCount: number | null;
@@ -20,31 +20,55 @@ interface PrizePoolRow {
   createdAt: string;
 }
 
-// Split the pool across the active positions in integer minor units, handing the
-// rounding remainder ("dust") to 1st so the payouts sum EXACTLY to the pool.
-// A position is active only if that rank exists (and 2nd-last only at N >= 5); an
-// inactive position's weight is excluded from the denominator (renormalisation).
-function splitPool(
+// Per-position payouts (integer minor units), summing EXACTLY to the pool.
+//  - Money-back positions — 2nd-last always, 3rd when `thirdMoneyBack` — each take
+//    the entry fee off the top.
+//  - The remainder is split among the percentage positions (1st, 2nd, and 3rd when
+//    it is a %) by weight; rounding dust goes to 1st.
+// A position is active only if that rank exists (2nd-last only at N >= 5); an
+// inactive percentage weight is excluded from the denominator (renormalisation).
+function computeAmounts(
   poolMinor: number,
-  weights: Record<PositionKey, number>,
+  entryFeeMinor: number,
+  weights: { first: number; second: number; third: number },
+  thirdMoneyBack: boolean,
   n: number
 ): Partial<Record<PositionKey, number>> {
-  const active: { key: PositionKey; w: number }[] = [];
-  if (n >= 1) active.push({ key: "first", w: weights.first });
-  if (n >= 2) active.push({ key: "second", w: weights.second });
-  if (n >= 3) active.push({ key: "third", w: weights.third });
-  if (n >= 5) active.push({ key: "secondLast", w: weights.secondLast });
+  const activeFirst = n >= 1;
+  const activeSecond = n >= 2;
+  const activeThird = n >= 3;
+  const activeSecondLast = n >= 5;
 
-  const wsum = active.reduce((s, a) => s + a.w, 0);
   const amounts: Partial<Record<PositionKey, number>> = {};
+
+  // Money-back positions each take the entry fee off the top.
+  let moneyBackCount = 0;
+  if (activeSecondLast) {
+    amounts.secondLast = entryFeeMinor;
+    moneyBackCount++;
+  }
+  if (activeThird && thirdMoneyBack) {
+    amounts.third = entryFeeMinor;
+    moneyBackCount++;
+  }
+  const moneyBackTotal = Math.min(poolMinor, entryFeeMinor * moneyBackCount);
+
+  // The rest is split among the percentage positions.
+  const remainder = Math.max(0, poolMinor - moneyBackTotal);
+  const pctPositions: { key: PositionKey; w: number }[] = [];
+  if (activeFirst) pctPositions.push({ key: "first", w: weights.first });
+  if (activeSecond) pctPositions.push({ key: "second", w: weights.second });
+  if (activeThird && !thirdMoneyBack) pctPositions.push({ key: "third", w: weights.third });
+
+  const wsum = pctPositions.reduce((s, p) => s + p.w, 0);
   let assigned = 0;
-  for (const a of active) {
-    const amt = wsum > 0 ? Math.floor((poolMinor * a.w) / wsum) : 0;
-    amounts[a.key] = amt;
+  for (const p of pctPositions) {
+    const amt = wsum > 0 ? Math.floor((remainder * p.w) / wsum) : 0;
+    amounts[p.key] = amt;
     assigned += amt;
   }
-  if (active.length > 0) {
-    amounts.first = (amounts.first ?? 0) + (poolMinor - assigned);
+  if (pctPositions.length > 0) {
+    amounts.first = (amounts.first ?? 0) + (remainder - assigned);
   }
   return amounts;
 }
@@ -108,7 +132,9 @@ async function maybeFreeze(leagueId: string, pool: PrizePoolRow): Promise<void> 
 export interface PrizePoolPayload {
   currency: Currency;
   entryFeeMinor: number;
-  pct: Record<PositionKey, number>;
+  pct: { first: number; second: number; third: number };
+  // 2nd-last is always money-back; 3rd is money-back when this is true.
+  thirdMoneyBack: boolean;
   frozen: boolean;
   poolMinor: number;
   memberCount: number;
@@ -119,7 +145,7 @@ export interface PrizePoolPayload {
 // amounts and their current occupants. Returns null when the league has no pool.
 export async function getPrizePoolPayload(leagueId: string): Promise<PrizePoolPayload | null> {
   const pool = await queryOne<PrizePoolRow>(
-    `SELECT id, currency, "entryFeeMinor", "pctFirst", "pctSecond", "pctThird", "pctSecondLast",
+    `SELECT id, currency, "entryFeeMinor", "pctFirst", "pctSecond", "pctThird", "thirdMoneyBack",
             frozen, "frozenAt", "frozenMemberCount", "frozenPoolMinor", "createdAt"
        FROM prize_pool WHERE "leagueId" = $1`,
     [leagueId]
@@ -132,13 +158,8 @@ export async function getPrizePoolPayload(leagueId: string): Promise<PrizePoolPa
   const n = ordered.length;
   const poolMinor = pool.frozen ? pool.frozenPoolMinor ?? 0 : pool.entryFeeMinor * n;
 
-  const weights: Record<PositionKey, number> = {
-    first: pool.pctFirst,
-    second: pool.pctSecond,
-    third: pool.pctThird,
-    secondLast: pool.pctSecondLast,
-  };
-  const amounts = splitPool(poolMinor, weights, n);
+  const pct = { first: pool.pctFirst, second: pool.pctSecond, third: pool.pctThird };
+  const amounts = computeAmounts(poolMinor, pool.entryFeeMinor, pct, pool.thirdMoneyBack, n);
 
   const payoutAt = (key: PositionKey, idx: number) => {
     const amt = amounts[key];
@@ -149,7 +170,8 @@ export async function getPrizePoolPayload(leagueId: string): Promise<PrizePoolPa
   return {
     currency: pool.currency,
     entryFeeMinor: pool.entryFeeMinor,
-    pct: weights,
+    pct,
+    thirdMoneyBack: pool.thirdMoneyBack,
     frozen: pool.frozen,
     poolMinor,
     memberCount: n,
@@ -168,15 +190,17 @@ export interface ValidatedPrizePool {
   pctFirst: number;
   pctSecond: number;
   pctThird: number;
-  pctSecondLast: number;
+  thirdMoneyBack: boolean;
 }
 
-// Validate an admin's prize-pool input. Returns the normalised row values, or an
-// { error } message for a 400.
+// Validate an admin's prize-pool input. 2nd-last is always money-back (no %). The
+// percentage positions must sum to 100: 1st+2nd+3rd, or 1st+2nd when 3rd is
+// money-back. Returns the normalised row values, or an { error } for a 400.
 export function validatePrizePoolInput(body: unknown): ValidatedPrizePool | { error: string } {
   const b = (body ?? {}) as Record<string, unknown>;
   const currency = b.currency as Currency;
   const entryFeeMinor = b.entryFeeMinor as number;
+  const thirdMoneyBack = b.thirdMoneyBack === true;
   const pct = (b.pct ?? {}) as Record<string, unknown>;
 
   if (!CURRENCIES.includes(currency)) return { error: "currency must be GBP, USD, or JOD" };
@@ -185,14 +209,18 @@ export function validatePrizePoolInput(body: unknown): ValidatedPrizePool | { er
   }
   const first = pct.first as number;
   const second = pct.second as number;
-  const third = pct.third as number;
-  const secondLast = pct.secondLast as number;
-  for (const [k, v] of [["first", first], ["second", second], ["third", third], ["secondLast", secondLast]] as const) {
+  const third = (thirdMoneyBack ? 0 : pct.third) as number;
+  for (const [k, v] of [["first", first], ["second", second], ["third", third]] as const) {
     if (!Number.isInteger(v) || v < 0 || v > 100) return { error: `pct.${k} must be an integer 0-100` };
   }
-  if (first + second + third + secondLast !== 100) return { error: "percentages must sum to 100" };
-  if (!(first >= second && second >= third && third >= secondLast)) {
-    return { error: "percentages must be non-increasing (1st ≥ 2nd ≥ 3rd ≥ 2nd-last)" };
+
+  if (thirdMoneyBack) {
+    if (first + second !== 100) return { error: "1st + 2nd must total 100%" };
+    if (!(first >= second)) return { error: "1st must pay at least as much as 2nd" };
+  } else {
+    if (first + second + third !== 100) return { error: "1st + 2nd + 3rd must total 100%" };
+    if (!(first >= second && second >= third)) return { error: "percentages must be non-increasing (1st ≥ 2nd ≥ 3rd)" };
   }
-  return { currency, entryFeeMinor, pctFirst: first, pctSecond: second, pctThird: third, pctSecondLast: secondLast };
+
+  return { currency, entryFeeMinor, pctFirst: first, pctSecond: second, pctThird: third, thirdMoneyBack };
 }

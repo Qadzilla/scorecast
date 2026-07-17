@@ -108,7 +108,7 @@ export default function ManageLeagueScreen() {
               <Text variant="bodyMedium">{formatMoney(pool.poolMinor, pool.currency)}</Text>
             </View>
             <Text variant="caption" color="textTertiary" style={{ marginTop: spacing.xs }}>
-              1st {pool.pct.first}% · 2nd {pool.pct.second}% · 3rd {pool.pct.third}% · 2nd-last {pool.pct.secondLast}%
+              1st {pool.pct.first}% · 2nd {pool.pct.second}% · {pool.thirdMoneyBack ? "3rd money back" : `3rd ${pool.pct.third}%`} · 2nd-last money back
             </Text>
             <Banner kind="info" message="Locked — the league has started, so the pool can't change." />
           </Card>

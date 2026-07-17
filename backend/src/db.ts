@@ -13,6 +13,7 @@ import { up as pushLogMigration } from "./db/migrations/010_push_log.js";
 import { up as predictionHiddenMigration } from "./db/migrations/011_prediction_hidden.js";
 import { up as prizePoolMigration } from "./db/migrations/012_prize_pool.js";
 import { up as leagueCreationGrantMigration } from "./db/migrations/013_league_creation_grant.js";
+import { up as prizeThirdMoneyBackMigration } from "./db/migrations/014_prize_third_moneyback.js";
 
 const { Pool } = pg;
 
@@ -151,6 +152,7 @@ export async function runMigrations(): Promise<void> {
     await predictionHiddenMigration(client);
     await prizePoolMigration(client);
     await leagueCreationGrantMigration(client);
+    await prizeThirdMoneyBackMigration(client);
   } finally {
     client.release();
   }

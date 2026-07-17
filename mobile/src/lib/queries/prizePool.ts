@@ -11,14 +11,16 @@ export interface PrizePct {
   first: number;
   second: number;
   third: number;
-  secondLast: number;
 }
 
-// Mirrors the backend PrizePoolPayload (PP1a). Amounts are integer minor units.
+// Mirrors the backend PrizePoolPayload. Amounts are integer minor units.
+// 2nd-last is always "money back" (the entry fee); 3rd is money-back when
+// `thirdMoneyBack`. The percentages (1st/2nd/3rd-if-%) split what remains.
 export interface PrizePool {
   currency: Currency;
   entryFeeMinor: number;
   pct: PrizePct;
+  thirdMoneyBack: boolean;
   frozen: boolean;
   poolMinor: number;
   memberCount: number;
@@ -47,6 +49,7 @@ export interface PrizePoolInput {
   currency: Currency;
   entryFeeMinor: number;
   pct: PrizePct;
+  thirdMoneyBack: boolean;
 }
 
 // leagueId travels in the mutate payload (not bound to the hook) so create — which

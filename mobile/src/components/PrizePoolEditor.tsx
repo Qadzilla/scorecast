@@ -13,10 +13,11 @@ export interface PrizePoolFormState {
   currency: Currency;
   fee: string;
   pct: PrizePct;
+  thirdMoneyBack: boolean;
 }
 
 export function defaultPrizePoolForm(): PrizePoolFormState {
-  return { currency: "GBP", fee: "", pct: { first: 50, second: 25, third: 15, secondLast: 10 } };
+  return { currency: "GBP", fee: "", pct: { first: 60, second: 25, third: 15 }, thirdMoneyBack: false };
 }
 
 // Seed the form from a saved pool (for the Manage screen).
@@ -25,28 +26,26 @@ export function prizePoolToForm(pool: PrizePool): PrizePoolFormState {
     currency: pool.currency,
     fee: minorToMajorString(pool.entryFeeMinor, pool.currency),
     pct: { ...pool.pct },
+    thirdMoneyBack: pool.thirdMoneyBack,
   };
 }
 
-// Validate → the API input, or a human message. Mirrors the server's rules.
+// Validate → the API input, or a human message. Mirrors the server's rules:
+// 2nd-last is always money-back; the percentages must total 100 (1st+2nd+3rd, or
+// 1st+2nd when 3rd is money-back), non-increasing.
 export function validatePrizePoolForm(s: PrizePoolFormState): { input: PrizePoolInput } | { error: string } {
   const entryFeeMinor = parseMoneyToMinor(s.fee, s.currency);
   if (entryFeeMinor === null || entryFeeMinor <= 0) return { error: "Enter a valid entry fee." };
-  const { first, second, third, secondLast } = s.pct;
-  const sum = first + second + third + secondLast;
-  if (sum !== 100) return { error: `Split must total 100% (currently ${sum}%).` };
-  if (!(first >= second && second >= third && third >= secondLast)) {
-    return { error: "Each place must pay at least as much as the next." };
+  const { first, second, third } = s.pct;
+  if (s.thirdMoneyBack) {
+    if (first + second !== 100) return { error: `1st + 2nd must total 100% (currently ${first + second}%).` };
+    if (first < second) return { error: "1st must pay at least as much as 2nd." };
+  } else {
+    if (first + second + third !== 100) return { error: `Split must total 100% (currently ${first + second + third}%).` };
+    if (!(first >= second && second >= third)) return { error: "Each place must pay at least as much as the next." };
   }
-  return { input: { currency: s.currency, entryFeeMinor, pct: s.pct } };
+  return { input: { currency: s.currency, entryFeeMinor, pct: s.pct, thirdMoneyBack: s.thirdMoneyBack } };
 }
-
-const POSITIONS: { key: keyof PrizePct; label: string }[] = [
-  { key: "first", label: "1st" },
-  { key: "second", label: "2nd" },
-  { key: "third", label: "3rd" },
-  { key: "secondLast", label: "2nd last" },
-];
 
 export function PrizePoolEditor({
   value,
@@ -58,7 +57,14 @@ export function PrizePoolEditor({
   const [showSplit, setShowSplit] = useState(false);
   const set = (patch: Partial<PrizePoolFormState>) => onChange({ ...value, ...patch });
   const setPct = (key: keyof PrizePct, n: number) => set({ pct: { ...value.pct, [key]: n } });
-  const sum = value.pct.first + value.pct.second + value.pct.third + value.pct.secondLast;
+
+  // Which positions are percentages (get an editable box).
+  const pctPositions: { key: keyof PrizePct; label: string }[] = [
+    { key: "first", label: "1st" },
+    { key: "second", label: "2nd" },
+    ...(value.thirdMoneyBack ? [] : [{ key: "third" as const, label: "3rd" }]),
+  ];
+  const sum = value.pct.first + value.pct.second + (value.thirdMoneyBack ? 0 : value.pct.third);
 
   return (
     <View style={{ gap: spacing.md }}>
@@ -79,6 +85,19 @@ export function PrizePoolEditor({
         placeholder="5"
       />
 
+      {/* 3rd place: percentage vs money-back */}
+      <View style={{ gap: spacing.sm }}>
+        <Text variant="caption" color="textSecondary">3rd place</Text>
+        <SegmentedControl
+          segments={[
+            { key: "pct", label: "Percentage" },
+            { key: "moneyback", label: "Money back" },
+          ]}
+          value={value.thirdMoneyBack ? "moneyback" : "pct"}
+          onChange={(k) => set({ thirdMoneyBack: k === "moneyback" })}
+        />
+      </View>
+
       <Pressable onPress={() => setShowSplit((s) => !s)} style={styles.disclosure}>
         <Text variant="bodyMedium" style={{ color: colors.accent }}>Customize split</Text>
         <Ionicons name={showSplit ? "chevron-up" : "chevron-down"} size={16} color={colors.accent} />
@@ -87,7 +106,7 @@ export function PrizePoolEditor({
       {showSplit ? (
         <View style={{ gap: spacing.sm }}>
           <View style={styles.pctRow}>
-            {POSITIONS.map((p) => (
+            {pctPositions.map((p) => (
               <View key={p.key} style={styles.pctCell}>
                 <Text style={styles.pctLabel}>{p.label}</Text>
                 <View style={styles.pctInputWrap}>
@@ -109,12 +128,13 @@ export function PrizePoolEditor({
         </View>
       ) : (
         <Text variant="caption" color="textTertiary">
-          1st {value.pct.first}% · 2nd {value.pct.second}% · 3rd {value.pct.third}% · 2nd-last {value.pct.secondLast}%
+          1st {value.pct.first}% · 2nd {value.pct.second}% ·{" "}
+          {value.thirdMoneyBack ? "3rd money back" : `3rd ${value.pct.third}%`}
         </Text>
       )}
 
       <Text variant="caption" color="textTertiary">
-        Pays 1st, 2nd, 3rd, and 2nd-last (unlocks at 5 players). The pool locks when the first deadline passes.
+        2nd-last always gets their entry fee back (unlocks at 5 players). The pool locks when the first deadline passes.
       </Text>
     </View>
   );

@@ -356,7 +356,7 @@ router.put("/:leagueId/prize-pool", requireAuth, async (req, res) => {
     const now = new Date().toISOString();
     await query(
       `INSERT INTO prize_pool
-         (id, "leagueId", currency, "entryFeeMinor", "pctFirst", "pctSecond", "pctThird", "pctSecondLast", "createdAt", "updatedAt")
+         (id, "leagueId", currency, "entryFeeMinor", "pctFirst", "pctSecond", "pctThird", "thirdMoneyBack", "createdAt", "updatedAt")
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $9)
        ON CONFLICT ("leagueId") DO UPDATE SET
          currency = EXCLUDED.currency,
@@ -364,7 +364,7 @@ router.put("/:leagueId/prize-pool", requireAuth, async (req, res) => {
          "pctFirst" = EXCLUDED."pctFirst",
          "pctSecond" = EXCLUDED."pctSecond",
          "pctThird" = EXCLUDED."pctThird",
-         "pctSecondLast" = EXCLUDED."pctSecondLast",
+         "thirdMoneyBack" = EXCLUDED."thirdMoneyBack",
          "updatedAt" = EXCLUDED."updatedAt"`,
       [
         crypto.randomUUID(),
@@ -374,7 +374,7 @@ router.put("/:leagueId/prize-pool", requireAuth, async (req, res) => {
         parsed.pctFirst,
         parsed.pctSecond,
         parsed.pctThird,
-        parsed.pctSecondLast,
+        parsed.thirdMoneyBack,
         now,
       ]
     );

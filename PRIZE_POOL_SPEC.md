@@ -8,6 +8,16 @@ Intent in one line: **the admin sets a per-head entry fee + currency; the app sh
 
 ---
 
+## 0. Payout model change (2026-07-17) — supersedes the split below
+
+The four-percentage split was replaced with **money-back + percentages**:
+- **2nd-last** → always **money back** (entry fee); not a percentage (still unlocks at N≥5).
+- **3rd** → admin toggle: **percentage** or **money back**.
+- **1st / 2nd** → always percentages.
+- Money-back winners take their entry fee off the top; the **remainder** `R = pool − entryFee×(money-back winners)` splits among the percentage positions (1st, 2nd, +3rd if %), weights total 100, dust to 1st.
+
+Data: migration `014_prize_third_moneyback` drops `pctSecondLast`, adds `thirdMoneyBack`. `pct` is now `{first, second, third}`; payload/editor/card carry `thirdMoneyBack` and render a "money back" note on 2nd-last (always) and 3rd (when toggled). Caveat: 3rd-as-% in a small pool can dip below 2nd-last's money-back. Everything else below (freeze, eligibility, dust, currency, API/UI wiring) is unchanged.
+
 ## 1. Decisions (locked)
 
 | # | Decision |
