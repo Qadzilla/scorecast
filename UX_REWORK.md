@@ -210,6 +210,12 @@ Suggested order: **UXR1 → UXR3 → UXR2 → UXR4 → UXR7 → UXR5 → UXR6.**
 - **UXR2** (2026-07-17) — new `StickyActionBar` component (absorbs its own bottom safe-area inset); league detail pins a "Make predictions" / "View predictions" CTA to the bottom, visible from both panes. Inline pane button removed; SafeAreaView drops the bottom edge and the ScrollView flexes so the bar sits flush at the screen bottom. NOTE: `predict.tsx` still uses its own submit bar — folding it onto `StickyActionBar` is a deferred cleanup, not required for UXR2.
 - **UXR4** (2026-07-17) — Home "Next deadlines" → **"This week"**, now personalised to the competitions the user actually plays (fixed PL→UCL order; section hidden when they have no leagues). New `useGameweekPredictionStatus` hook (via `useQueries`, sharing `usePredictions` cache keys) drives a per-competition status line on the `CountdownCard`: "Not predicted yet" / "N of M leagues predicted" / "All M leagues predicted ✓" while the window's open. Answers "what do I still need to do this week." (Leagues list left as the secondary section; finer focal-weight tuning is UXR5.)
 - **UXR5** (2026-07-17) — focal rule codified in each post-login screen's header comment (Home, league detail, predict, account), so future edits don't re-flatten the hierarchy. One weight fix applied: Home greeting 30→26 so the navy "This week" cards (32px countdown) are the unrivaled hero. Deliberately light on visual churn — the depth work (UXR1–4) already resolved most of the "uniform / no focal point" feeling, and pixel-level weight tuning is best done with the app rendering in front of us rather than blind. Remaining focal polish folds into UXR6 (account) and any on-device pass.
+- **UXR6** (2026-07-17) — Account navy hero replaced with a compact profile row (crest + name + @handle; dropped the leagues stat tile, which duplicates Home). Removes the over-weighted brand block from a low-frequency settings screen; the setting groups below now read as peers. Cleaned up newly-unused `brand`/`radius`/`DIM`/`useLeagues`.
+
+**Effectively covered:**
+- **UXR7** — one-tap routing was resolved inside UXR1 (direct-if-1-league, picker `Sheet` if many). No separate "primary league" heuristic added; the sheet is the disambiguation. Reopen only if users ask for a remembered default.
+
+**Status: UXR1–6 shipped; UXR7 covered by UXR1. Rework complete pending an on-device focal/visual tuning pass with real renders.**
 
 ---
 

@@ -20,7 +20,6 @@ import {
   useSetFavoriteTeam,
   useUpdateUsername,
   useDeleteAccount,
-  useLeagues,
   useNotificationPrefs,
   useUpdateNotificationPrefs,
   type NotificationPrefs,
@@ -28,10 +27,7 @@ import {
 import { ApiError } from "@/lib/api";
 import { unregisterPush } from "@/lib/notifications";
 import { haptics } from "@/utils/haptics";
-import { brand } from "@/constants/brand";
-import { colors, spacing, layout, radius, competition, fontFamily } from "@/constants/theme";
-
-const DIM = "#8ba0b6";
+import { colors, spacing, layout, competition, fontFamily } from "@/constants/theme";
 
 // Account (settings). FOCAL (UXR5): the profile identity row. The setting groups
 // below are secondary utilities of equal, quiet weight — none should out-shout
@@ -40,7 +36,6 @@ export default function AccountScreen() {
   const qc = useQueryClient();
   const me = useMe();
   const fav = useFavoriteTeam();
-  const leagues = useLeagues();
   const updateUsername = useUpdateUsername();
   const deleteAccount = useDeleteAccount();
 
@@ -110,10 +105,10 @@ export default function AccountScreen() {
   return (
     <SafeAreaView style={styles.safe} edges={["top"]}>
       <ScrollView contentContainerStyle={styles.content}>
-        {/* Navy profile hero */}
-        <Animated.View entering={FadeInDown.duration(300)} style={styles.hero}>
+        {/* Compact profile identity (UXR6 — was a heavy navy hero) */}
+        <Animated.View entering={FadeInDown.duration(300)} style={styles.profile}>
           {team ? (
-            <TeamCrest name={team.name} code={team.code} logo={team.logo} size={52} />
+            <TeamCrest name={team.name} code={team.code} logo={team.logo} size={44} />
           ) : (
             <View style={styles.avatar}>
               <Text style={styles.avatarText}>
@@ -121,17 +116,13 @@ export default function AccountScreen() {
               </Text>
             </View>
           )}
-          <View style={styles.heroText}>
+          <View style={styles.profileText}>
             {me.isLoading ? (
-              <Skeleton width={130} height={20} />
+              <Skeleton width={130} height={18} />
             ) : (
-              <Text style={styles.heroName} numberOfLines={1}>{me.data?.name ?? "You"}</Text>
+              <Text style={styles.profileName} numberOfLines={1}>{me.data?.name ?? "You"}</Text>
             )}
-            {me.data?.username ? <Text style={styles.heroHandle}>@{me.data.username}</Text> : null}
-          </View>
-          <View style={styles.heroStat}>
-            <Text style={styles.heroStatNum} tabular>{leagues.data?.length ?? 0}</Text>
-            <Text style={styles.heroStatLabel}>Leagues</Text>
+            {me.data?.username ? <Text style={styles.profileHandle}>@{me.data.username}</Text> : null}
           </View>
         </Animated.View>
 
@@ -255,24 +246,12 @@ function TeamPickerGrid({ onClose }: { onClose: () => void }) {
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.bg },
   content: { padding: layout.gutter, paddingBottom: spacing.xxxl, gap: spacing.xl },
-  hero: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: spacing.lg,
-    backgroundColor: brand.navy,
-    borderRadius: radius.md,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "#2c4056",
-    padding: layout.cardPadding,
-  },
-  avatar: { width: 52, height: 52, borderRadius: 26, backgroundColor: colors.accent, alignItems: "center", justifyContent: "center" },
-  avatarText: { fontFamily: fontFamily.bold, fontSize: 20, color: colors.textOnBrand },
-  heroText: { flex: 1, gap: 2 },
-  heroName: { fontFamily: fontFamily.bold, fontSize: 19, color: colors.textOnBrand },
-  heroHandle: { fontFamily: fontFamily.regular, fontSize: 14, color: DIM },
-  heroStat: { alignItems: "flex-end" },
-  heroStatNum: { fontFamily: fontFamily.extrabold, fontSize: 22, color: colors.textOnBrand },
-  heroStatLabel: { fontFamily: fontFamily.semibold, fontSize: 10, letterSpacing: 0.6, textTransform: "uppercase", color: DIM },
+  profile: { flexDirection: "row", alignItems: "center", gap: spacing.md, paddingVertical: spacing.xs },
+  avatar: { width: 44, height: 44, borderRadius: 22, backgroundColor: colors.accent, alignItems: "center", justifyContent: "center" },
+  avatarText: { fontFamily: fontFamily.bold, fontSize: 18, color: colors.textOnBrand },
+  profileText: { flex: 1, gap: 2 },
+  profileName: { fontFamily: fontFamily.bold, fontSize: 18, color: colors.textPrimary },
+  profileHandle: { fontFamily: fontFamily.regular, fontSize: 14, color: colors.textSecondary },
   section: { gap: spacing.md },
   rowBetween: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
   teamRow: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
