@@ -215,8 +215,18 @@ function LeagueRow({
 }) {
   const board = useLeaderboard(league.id);
   const me = board.data?.entries.find((e) => e.userId === userId);
-  const medal: Medal | null =
-    me && me.rank <= 3 ? (me.rank === 1 ? "gold" : me.rank === 2 ? "silver" : "bronze") : null;
+  const n = league.memberCount;
+  const medal: Medal | null = !me
+    ? null
+    : me.rank === 1
+      ? "gold"
+      : me.rank === 2
+        ? "silver"
+        : me.rank === 3
+          ? "bronze"
+          : n >= 5 && me.rank === n - 1
+            ? "orange" // 2nd-last, mirroring the prize-pool rule
+            : null;
 
   return (
     <Pressable onPress={onPress} style={({ pressed }) => [styles.row, !first && styles.rowDivider, pressed && styles.rowPressed]}>
@@ -232,8 +242,8 @@ function LeagueRow({
         ) : me ? (
           <>
             {medal ? (
-              <View style={[styles.rankPill, { backgroundColor: medalColors[medal] }]}>
-                <Text style={styles.rankPillText} tabular>{formatRank(me.rank)}</Text>
+              <View style={[styles.rankCircle, { backgroundColor: medalColors[medal] }]}>
+                <Text style={styles.rankCircleText} tabular>{me.rank}</Text>
               </View>
             ) : (
               <Text variant="numeral" tabular style={{ color: colors.textPrimary, fontSize: 18 }}>{formatRank(me.rank)}</Text>
@@ -280,9 +290,9 @@ const styles = StyleSheet.create({
   rowDivider: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border },
   rowPressed: { backgroundColor: colors.surfaceAlt },
   rowInfo: { flex: 1, gap: 3 },
-  standing: { alignItems: "flex-end", minWidth: 52, gap: 2 },
-  rankPill: { borderRadius: radius.sm, paddingHorizontal: spacing.sm, paddingVertical: 2 },
-  rankPillText: { fontFamily: fontFamily.bold, fontSize: 15, color: colors.textPrimary },
+  standing: { alignItems: "center", minWidth: 52, gap: 3 },
+  rankCircle: { width: 26, height: 26, borderRadius: 13, alignItems: "center", justifyContent: "center" },
+  rankCircleText: { fontFamily: fontFamily.bold, fontSize: 13, color: colors.textPrimary },
   pickRow: {
     flexDirection: "row",
     alignItems: "center",
