@@ -1,7 +1,7 @@
-// Currency handling for the prize pool. Amounts are integer MINOR units
-// (pence/cents/fils) everywhere; formatting is the only place we go to major
-// units. GBP/USD are 2dp and symbol-prefixed; JOD is 3dp (1000 fils) and
-// suffixed ("20.000 JD").
+// Currency handling for the prize pool. Amounts are integer MINOR units (the
+// 1/100 subunit) everywhere; formatting is the only place we go to major units.
+// All three currencies use 2dp: GBP/USD symbol-prefixed, JOD suffixed as "JD"
+// (a dinar is technically 1000 fils, but we display it to 2dp like the others).
 
 export type Currency = "GBP" | "USD" | "JOD";
 
@@ -10,7 +10,7 @@ export const CURRENCIES: Currency[] = ["GBP", "USD", "JOD"];
 const CONFIG: Record<Currency, { decimals: number; symbol: string; suffix: boolean; label: string }> = {
   GBP: { decimals: 2, symbol: "£", suffix: false, label: "British Pound" },
   USD: { decimals: 2, symbol: "$", suffix: false, label: "US Dollar" },
-  JOD: { decimals: 3, symbol: "JD", suffix: true, label: "Jordanian Dinar" },
+  JOD: { decimals: 2, symbol: "JD", suffix: true, label: "Jordanian Dinar" },
 };
 
 export function minorPerUnit(currency: Currency): number {
