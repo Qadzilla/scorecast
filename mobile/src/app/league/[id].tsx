@@ -11,6 +11,7 @@ import { Text } from "@/components/Text";
 import { Card } from "@/components/Card";
 import { SectionTitle } from "@/components/SectionTitle";
 import { SegmentedControl } from "@/components/SegmentedControl";
+import { StickyActionBar } from "@/components/StickyActionBar";
 import { CountdownCard } from "@/components/CountdownCard";
 import { MatchRow } from "@/components/MatchRow";
 import { LeaderboardRow } from "@/components/LeaderboardRow";
@@ -94,7 +95,7 @@ export default function LeagueDetailScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.safe}>
+    <SafeAreaView style={styles.safe} edges={["top", "left", "right"]}>
       <ScreenHeader
         title={league.name}
         right={
@@ -127,7 +128,7 @@ export default function LeagueDetailScreen() {
         />
       </View>
 
-      <ScrollView contentContainerStyle={styles.content}>
+      <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
         <Animated.View key={pane} entering={FadeIn.duration(220)} style={{ gap: spacing.md }}>
         {pane === "predict" && (
           <View style={{ gap: spacing.lg }}>
@@ -145,18 +146,6 @@ export default function LeagueDetailScreen() {
                 );
               })()
             )}
-            <Button
-              label={deadlineOpen ? "Make / edit predictions" : "View predictions"}
-              variant="brand"
-              competitionKey={league.type}
-              disabled={!current.data}
-              onPress={() =>
-                router.push({
-                  pathname: "/league/predict",
-                  params: { leagueId: league.id, gameweekId: current.data?.id ?? "" },
-                })
-              }
-            />
             <PredictOrFixtures
               leagueId={league.id}
               gameweekId={current.data?.id}
@@ -191,6 +180,21 @@ export default function LeagueDetailScreen() {
         )}
         </Animated.View>
       </ScrollView>
+
+      <StickyActionBar>
+        <Button
+          label={deadlineOpen ? "Make predictions" : "View predictions"}
+          variant="brand"
+          competitionKey={league.type}
+          disabled={!current.data}
+          onPress={() =>
+            router.push({
+              pathname: "/league/predict",
+              params: { leagueId: league.id, gameweekId: current.data?.id ?? "" },
+            })
+          }
+        />
+      </StickyActionBar>
 
       <Sheet visible={infoOpen} onClose={() => setInfoOpen(false)} title="League info">
         <Text variant="caption" color="textSecondary">Invite code</Text>
@@ -339,6 +343,7 @@ function TablePane({
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.bg },
+  scroll: { flex: 1 },
   pad: { padding: layout.gutter, gap: spacing.md },
   headerActions: { flexDirection: "row", alignItems: "center", gap: spacing.md },
   segmentWrap: { paddingHorizontal: layout.gutter, paddingBottom: spacing.md },
