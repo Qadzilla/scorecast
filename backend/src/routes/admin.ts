@@ -10,7 +10,7 @@ import {
   updateMatchResults,
 } from "../services/footballData.js";
 import { scorePredictionsForMatch } from "./predictions.js";
-import { queryAll, queryOne, query } from "../db.js";
+import { queryAll, queryOne, query, withTransaction } from "../db.js";
 
 const router = Router();
 
@@ -274,6 +274,49 @@ router.delete("/grants/:id", requireAuth, requireAdmin, async (req, res) => {
   } catch (err: any) {
     console.error("Failed to revoke grant:", err);
     res.status(500).json({ error: err.message || "Failed to revoke grant" });
+  }
+});
+
+// ── Leagues overview (AD6) ───────────────────────────────────────────────────
+
+// Every league with its creator + member count.
+router.get("/leagues", requireAuth, requireAdmin, async (_req, res) => {
+  try {
+    const rows = await queryAll(
+      `SELECT l.id, l.name, l.type, l."inviteCode", l."createdBy", l."createdAt",
+              u.username AS "creatorUsername", u.email AS "creatorEmail",
+              (SELECT COUNT(*) FROM league_member WHERE "leagueId" = l.id) AS "memberCount"
+         FROM league l
+         LEFT JOIN "user" u ON u.id = l."createdBy"
+        ORDER BY l."createdAt" DESC
+        LIMIT 500`
+    );
+    res.json(rows);
+  } catch (err: any) {
+    console.error("Failed to list leagues:", err);
+    res.status(500).json({ error: err.message || "Failed to list leagues" });
+  }
+});
+
+// Delete a league (super-admin only). Explicit child deletes in a transaction.
+router.delete("/leagues/:id", requireAuth, requireAdmin, async (req, res) => {
+  const { id } = req.params;
+  try {
+    const league = await queryOne(`SELECT id FROM league WHERE id = $1`, [id]);
+    if (!league) {
+      res.status(404).json({ error: "League not found" });
+      return;
+    }
+    await withTransaction(async (client) => {
+      await client.query(`DELETE FROM prediction WHERE "leagueId" = $1`, [id]);
+      await client.query(`DELETE FROM league_member WHERE "leagueId" = $1`, [id]);
+      await client.query(`DELETE FROM prize_pool WHERE "leagueId" = $1`, [id]);
+      await client.query(`DELETE FROM league WHERE id = $1`, [id]);
+    });
+    res.json({ success: true });
+  } catch (err: any) {
+    console.error("Failed to delete league:", err);
+    res.status(500).json({ error: err.message || "Failed to delete league" });
   }
 });
 

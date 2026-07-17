@@ -58,3 +58,6 @@ Future (`AD7+`): remove-user, app stats, reassign ownership.
 - **AD3** (2026-07-17) — `Me.canCreateLeague`; home "Create" action + `create.tsx` guard now gate on `canCreateLeague` (not `isAdmin`); `useCreateLeague` invalidates `["me"]` so the button vanishes once a grant is spent.
 - **AD4** (2026-07-17) — `lib/queries/admin.ts` (`useAdminUsers`/`useAdminGrants`/`useGrantLeagueCreation`/`useRevokeGrant`, barrel-exported). Account "Admin" row (isAdmin-only) → `/admin`. New `admin/` route group: `_layout.tsx`, `index.tsx` hub (→ grants / leagues), placeholder `grants.tsx`/`leagues.tsx` (AD5/AD6). Registered in the root Stack.
 - **AD5** (2026-07-17) — `admin/grants.tsx`: user search (`useAdminUsers`) with an "Allow 1" button per result (or a "Pending" pill if they already hold a grant), plus a Grants list showing Pending / Used·league with revoke (Alert confirm) on pending ones.
+- **AD6** (2026-07-17) — backend `GET /admin/leagues` (creator + member count) and `DELETE /admin/leagues/:id` (super-admin only, explicit child deletes in a transaction); `useAdminLeagues`/`useDeleteLeagueAdmin`; `admin/leagues.tsx` lists every league with delete (confirm). `admin-leagues.test.ts` (3 tests); full suite 182 green.
+
+**Status: AD1–AD6 shipped. Backend (AD1/AD2/AD6) needs a deploy. Future: AD7+ (remove-user, stats, reassign ownership).**
