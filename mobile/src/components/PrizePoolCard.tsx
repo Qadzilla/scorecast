@@ -29,7 +29,7 @@ export function PrizePoolCard({ pool }: { pool: PrizePool }) {
         <PayoutRow medal="silver" label="2nd" payout={pool.payouts.second} currency={pool.currency} />
         <PayoutRow medal="bronze" label="3rd" payout={pool.payouts.third} currency={pool.currency} />
         <PayoutRow
-          medal="yellow"
+          medal="orange"
           label="2nd last"
           payout={pool.payouts.secondLast}
           currency={pool.currency}

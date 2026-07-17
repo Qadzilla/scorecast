@@ -32,7 +32,7 @@ export function LeaderboardRow({
 }: LeaderboardRowProps) {
   const comp = competition[competitionKey];
   const medal: Medal | null =
-    rank === 1 ? "gold" : rank === 2 ? "silver" : rank === 3 ? "bronze" : isSecondLast ? "yellow" : null;
+    rank === 1 ? "gold" : rank === 2 ? "silver" : rank === 3 ? "bronze" : isSecondLast ? "orange" : null;
 
   return (
     <View style={[styles.row, isCurrentUser && { backgroundColor: comp.tint }]}>
