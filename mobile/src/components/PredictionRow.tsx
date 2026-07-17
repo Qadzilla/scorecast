@@ -13,7 +13,9 @@ export function PredictionRow({ p, first }: { p: UserPrediction; first?: boolean
     <View style={[styles.row, !first && styles.divider]}>
       <TeamCrest name={p.match.homeTeam.name} code={p.match.homeTeam.code} logo={p.match.homeTeam.logo} size={36} />
       <View style={styles.chip}>
-        <Text variant="heading" color="textOnBrand" tabular>{p.predictedHome}–{p.predictedAway}</Text>
+        <Text variant="heading" color="textOnBrand" tabular>{p.predictedHome}</Text>
+        <Text variant="heading" color="textOnBrand" style={styles.dash}>–</Text>
+        <Text variant="heading" color="textOnBrand" tabular>{p.predictedAway}</Text>
       </View>
       <TeamCrest name={p.match.awayTeam.name} code={p.match.awayTeam.code} logo={p.match.awayTeam.logo} size={36} />
       {settled ? (
@@ -41,7 +43,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     paddingVertical: 4,
     minWidth: 56,
+    flexDirection: "row",
     alignItems: "center",
+    justifyContent: "center",
   },
+  // Even breathing room on both sides of the dash — a touch more on the left so
+  // the fatter digits (0/2/3…) don't crowd it.
+  dash: { marginLeft: 5, marginRight: 4, opacity: 0.7 },
   badge: { position: "absolute", right: layout.cardPadding, top: 0, bottom: 0, justifyContent: "center" },
 });
