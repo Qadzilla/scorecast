@@ -1,9 +1,11 @@
 import { useEffect } from "react";
-import { StyleSheet, Pressable, Image, Text, View } from "react-native";
+import { StyleSheet, Pressable, Image, Text } from "react-native";
 import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import Animated, {
   FadeIn,
+  ReduceMotion,
+  Easing,
   useSharedValue,
   useAnimatedStyle,
   withRepeat,
@@ -12,10 +14,13 @@ import Animated, {
 import { useSession } from "@/lib/auth";
 import { fontFamily } from "@/constants/theme";
 
-// Welcome gate — the real S:C mark (same asset as the native splash) on the
-// pitch center circle. Tap anywhere to continue: dashboard if signed in, login
-// if not. The root layout's gate skips this screen so it never auto-redirects
-// before the tap.
+// Welcome gate — the real S:C mark (same asset as the native splash) settling
+// onto the pitch center circle. Tap anywhere to continue: dashboard if signed
+// in, login if not. The root layout's gate skips this screen so it never
+// auto-redirects before the tap.
+//
+// Entrances force `reduceMotion: Never` so the screen animates in even with the
+// OS "Reduce Motion" setting on (otherwise it just hard-cuts from the splash).
 const NAVY = "#1d2d3d";
 const ON = "#eef6ff"; // off-white
 const LINE = "rgba(238,246,255,0.28)"; // blueprint pitch line
@@ -24,10 +29,17 @@ export default function Welcome() {
   const router = useRouter();
   const { data: session } = useSession();
 
+  const scale = useSharedValue(0.82);
+  const opacity = useSharedValue(0);
   const hint = useSharedValue(0.4);
+
   useEffect(() => {
-    hint.value = withRepeat(withTiming(1, { duration: 1100 }), -1, true);
-  }, [hint]);
+    opacity.value = withTiming(1, { duration: 500, reduceMotion: ReduceMotion.Never });
+    scale.value = withTiming(1, { duration: 650, easing: Easing.out(Easing.back(1.4)), reduceMotion: ReduceMotion.Never });
+    hint.value = withRepeat(withTiming(1, { duration: 1100, reduceMotion: ReduceMotion.Never }), -1, true);
+  }, [opacity, scale, hint]);
+
+  const badgeStyle = useAnimatedStyle(() => ({ opacity: opacity.value, transform: [{ scale: scale.value }] }));
   const hintStyle = useAnimatedStyle(() => ({ opacity: hint.value }));
 
   const onContinue = () => router.replace(session ? "/(tabs)" : "/(auth)/login");
@@ -35,15 +47,22 @@ export default function Welcome() {
   return (
     <Pressable style={styles.root} onPress={onContinue} accessibilityRole="button" accessibilityLabel="Continue">
       <StatusBar style="light" />
-      {/* horizontal halfway line through the center circle */}
-      <Animated.View style={styles.halfLine} pointerEvents="none" />
-      <Animated.View entering={FadeIn.duration(600)} style={styles.circle}>
+      <Animated.View
+        entering={FadeIn.duration(500).reduceMotion(ReduceMotion.Never)}
+        style={styles.halfLine}
+        pointerEvents="none"
+      />
+      <Animated.View style={[styles.circle, badgeStyle]}>
         <Image source={require("../../assets/images/sc-mark.png")} style={styles.mark} resizeMode="contain" />
       </Animated.View>
-      <View style={styles.footer} pointerEvents="none">
+      <Animated.View
+        entering={FadeIn.duration(500).delay(400).reduceMotion(ReduceMotion.Never)}
+        style={styles.footer}
+        pointerEvents="none"
+      >
         <Text style={styles.wordmark}>ScoreCast</Text>
         <Animated.Text style={[styles.hint, hintStyle]}>Tap to continue</Animated.Text>
-      </View>
+      </Animated.View>
     </Pressable>
   );
 }
