@@ -75,6 +75,9 @@ function RootNavigator({ fontsReady }: { fontsReady: boolean }) {
     const root = segments[0];
     const inAuth = root === "(auth)";
     const onTeamSelect = root === "team-select";
+    // Welcome/index (empty segments) is a manual tap-gate — never auto-redirect
+    // from it, or a signed-in user would be bounced past it before they tap.
+    if (!root) return;
 
     if (!session) {
       if (root === "(tabs)" || onTeamSelect) router.replace("/(auth)/login");
