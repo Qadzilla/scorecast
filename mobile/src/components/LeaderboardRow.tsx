@@ -2,6 +2,7 @@ import { View, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { Text } from "./Text";
 import { TeamCrest } from "./TeamCrest";
+import { medalColors, type Medal } from "@/constants/medals";
 import { colors, spacing, radius, competition, fontFamily, type CompetitionKey } from "@/constants/theme";
 
 type LeaderboardRowProps = {
@@ -12,12 +13,13 @@ type LeaderboardRowProps = {
   isCurrentUser?: boolean;
   isChampion?: boolean; // season complete, rank 1
   competitionKey?: CompetitionKey;
-  prizeLabel?: string; // formatted money for a paid position (PP1d)
+  isSecondLast?: boolean; // paid 2nd-last position (yellow medal) — pool only
 };
 
 // LeaderboardRow — rank · club crest · username (+"You") · points (spec §3).
-// Top-3 ranks take the competition color; own row gets a tinted background;
-// champion gets a gold trophy. The avatar is the player's favorite-team crest.
+// Paid positions get a medal-colored rank circle: gold/silver/bronze for the
+// podium, yellow for 2nd-last. Own row gets a tinted background; a season
+// champion keeps the trophy. The avatar is the player's favorite-team crest.
 export function LeaderboardRow({
   rank,
   username,
@@ -26,18 +28,23 @@ export function LeaderboardRow({
   isCurrentUser,
   isChampion,
   competitionKey = "premier_league",
-  prizeLabel,
+  isSecondLast,
 }: LeaderboardRowProps) {
   const comp = competition[competitionKey];
-  const topThree = rank <= 3;
+  const medal: Medal | null =
+    rank === 1 ? "gold" : rank === 2 ? "silver" : rank === 3 ? "bronze" : isSecondLast ? "yellow" : null;
 
   return (
     <View style={[styles.row, isCurrentUser && { backgroundColor: comp.tint }]}>
       <View style={styles.rankCell}>
         {isChampion ? (
-          <Ionicons name="trophy" size={16} color={colors.warning} />
+          <Ionicons name="trophy" size={16} color={medalColors.gold} />
+        ) : medal ? (
+          <View style={[styles.medalCircle, { backgroundColor: medalColors[medal] }]}>
+            <Text style={styles.medalRank} tabular>{rank}</Text>
+          </View>
         ) : (
-          <Text variant="numeral" tabular style={{ fontSize: 15, color: topThree ? comp.main : colors.textSecondary }}>
+          <Text variant="numeral" tabular style={{ fontSize: 15, color: colors.textSecondary }}>
             {rank}
           </Text>
         )}
@@ -51,12 +58,6 @@ export function LeaderboardRow({
       {isCurrentUser ? (
         <View style={styles.youChip}>
           <Text style={styles.youText}>You</Text>
-        </View>
-      ) : null}
-
-      {prizeLabel ? (
-        <View style={styles.prizePill}>
-          <Text style={styles.prizeText} tabular>{prizeLabel}</Text>
         </View>
       ) : null}
 
@@ -76,7 +77,8 @@ const styles = StyleSheet.create({
     gap: spacing.md,
   },
   rankCell: { width: 28, alignItems: "center" },
-  avatar: { width: 30, height: 30, borderRadius: radius.sm, alignItems: "center", justifyContent: "center" },
+  medalCircle: { width: 26, height: 26, borderRadius: 13, alignItems: "center", justifyContent: "center" },
+  medalRank: { fontFamily: fontFamily.bold, fontSize: 13, color: colors.textPrimary },
   name: { flex: 1 },
   youChip: {
     backgroundColor: colors.accentTint,
@@ -92,11 +94,4 @@ const styles = StyleSheet.create({
     color: colors.accent,
   },
   points: { fontSize: 16, width: 44, textAlign: "right", color: colors.textPrimary },
-  prizePill: {
-    backgroundColor: colors.accentTint,
-    borderRadius: radius.sm,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 2,
-  },
-  prizeText: { fontFamily: fontFamily.semibold, fontSize: 12, color: colors.accent },
 });

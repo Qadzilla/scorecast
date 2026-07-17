@@ -30,7 +30,6 @@ import { upcomingDeadline } from "@/types/leagues";
 import { isPredictionWindowOpen } from "@/types/fixtures";
 import { outcomeFromPoints, type UserPrediction } from "@/types/predictions";
 import { haptics } from "@/utils/haptics";
-import { formatMoney } from "@/utils/money";
 import { colors, spacing, layout, radius, competition, fontFamily } from "@/constants/theme";
 
 type Pane = "predict" | "table";
@@ -301,14 +300,9 @@ function TablePane({
   const prizePool = usePrizePool(leagueId);
   const pool = prizePool.data ?? null;
 
-  // Map each paid position's occupant → its formatted prize, for the row badge.
-  const prizeByUser: Record<string, string> = {};
-  if (pool) {
-    (["first", "second", "third", "secondLast"] as const).forEach((k) => {
-      const p = pool.payouts[k];
-      if (p) prizeByUser[p.userId] = formatMoney(p.amountMinor, pool.currency);
-    });
-  }
+  // The paid 2nd-last occupant gets the yellow medal; the podium (1/2/3) is by
+  // rank inside the row. Null when there's no pool or fewer than 5 players.
+  const secondLastUserId = pool?.payouts.secondLast?.userId ?? null;
 
   if (loading) {
     return (
@@ -350,7 +344,7 @@ function TablePane({
                 isCurrentUser={e.userId === userId}
                 isChampion={isSeasonComplete && e.rank === 1}
                 competitionKey={competitionKey}
-                prizeLabel={prizeByUser[e.userId]}
+                isSecondLast={!!secondLastUserId && e.userId === secondLastUserId}
               />
             </Pressable>
           </Animated.View>
