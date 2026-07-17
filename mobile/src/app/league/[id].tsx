@@ -33,6 +33,10 @@ import { colors, spacing, layout, radius, competition, fontFamily } from "@/cons
 
 type Pane = "predict" | "table";
 
+// League detail. FOCAL (UXR5): the countdown hero (Predict pane) / the standings
+// card (Table pane) is the one hero per pane; the sticky "Make predictions" bar
+// is the single persistent action. Everything else in a pane stays light — no
+// second element should compete with the pane's hero.
 export default function LeagueDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();

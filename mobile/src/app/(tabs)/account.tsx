@@ -33,6 +33,9 @@ import { colors, spacing, layout, radius, competition, fontFamily } from "@/cons
 
 const DIM = "#8ba0b6";
 
+// Account (settings). FOCAL (UXR5): the profile identity row. The setting groups
+// below are secondary utilities of equal, quiet weight — none should out-shout
+// the others. Hero de-weight is tracked separately in UXR6.
 export default function AccountScreen() {
   const qc = useQueryClient();
   const me = useMe();

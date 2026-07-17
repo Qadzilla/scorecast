@@ -21,6 +21,9 @@ import { colors, spacing, layout, fontFamily } from "@/constants/theme";
 
 type Entry = { home: string; away: string };
 
+// Predict. FOCAL (UXR5): the score-entry rows and the sticky submit bar (the
+// action). Day headers, the hide toggle, and the entered-count are chrome —
+// keep them quiet so the inputs lead.
 export default function PredictScreen() {
   const { leagueId, gameweekId } = useLocalSearchParams<{ leagueId: string; gameweekId: string }>();
   const router = useRouter();

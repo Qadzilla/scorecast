@@ -20,6 +20,10 @@ import { isPredictionWindowOpen } from "@/types/fixtures";
 import { formatRank } from "@/types/predictions";
 import { colors, spacing, layout, radius, competition, fontFamily, type CompetitionKey } from "@/constants/theme";
 
+// Home. FOCAL (UXR5): the "This week" block — actionable countdown + predicted/
+// total status + Predict CTA — is the one dominant region. The greeting and the
+// "Your leagues" list are secondary; don't let either grow to rival the navy
+// This-week cards.
 export default function LeaguesHomeScreen() {
   const router = useRouter();
   const qc = useQueryClient();
@@ -243,7 +247,7 @@ const styles = StyleSheet.create({
   header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
   headerText: { gap: 2 },
   eyebrow: { fontFamily: fontFamily.mono, fontSize: 11, letterSpacing: 0.5, textTransform: "uppercase", color: colors.textTertiary },
-  name: { fontFamily: fontFamily.extrabold, fontSize: 30, lineHeight: 36, letterSpacing: -0.6, color: colors.textPrimary },
+  name: { fontFamily: fontFamily.extrabold, fontSize: 26, lineHeight: 32, letterSpacing: -0.5, color: colors.textPrimary },
   section: { gap: spacing.md },
   deadlines: { gap: spacing.md },
   dot: { width: 7, height: 7, borderRadius: 4 },
