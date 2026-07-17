@@ -51,10 +51,15 @@ export function useGameweekPredictionStatus(leagueIds: string[], gameweekId: str
       staleTime: 60 * 1000,
     })),
   });
+  const predictedByLeague: Record<string, boolean> = {};
+  leagueIds.forEach((id, i) => {
+    predictedByLeague[id] = (results[i]?.data?.length ?? 0) > 0;
+  });
   return {
     total: leagueIds.length,
     predicted: results.filter((r) => (r.data?.length ?? 0) > 0).length,
     isLoading: results.some((r) => r.isLoading),
+    predictedByLeague,
   };
 }
 

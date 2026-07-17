@@ -21,6 +21,9 @@ import { medalColors, type Medal } from "@/constants/medals";
 import { formatRank } from "@/types/predictions";
 import { colors, spacing, layout, radius, competition, fontFamily, type CompetitionKey } from "@/constants/theme";
 
+const PREDICTED = "#2E9E5B"; // green dot — this gameweek is predicted
+const NOT_PREDICTED = colors.danger; // red dot — still needs picks
+
 // Home. FOCAL (UXR5): the "This week" block — actionable countdown + predicted/
 // total status + Predict CTA — is the one dominant region. The greeting and the
 // "Your leagues" list are secondary; don't let either grow to rival the navy
@@ -188,10 +191,22 @@ function DeadlineCard({ competitionKey }: { competitionKey: CompetitionKey }) {
             }}
             style={({ pressed }) => [styles.pickRow, i > 0 && styles.pickRowDivider, pressed && styles.rowPressed]}
           >
+            {open ? (
+              <View
+                style={[
+                  styles.pickDot,
+                  { backgroundColor: status.isLoading ? colors.border : status.predictedByLeague[l.id] ? PREDICTED : NOT_PREDICTED },
+                ]}
+              />
+            ) : null}
             <View style={{ flex: 1 }}>
               <Text variant="bodyMedium" numberOfLines={1}>{l.name}</Text>
               <Text variant="caption" color="textTertiary">
-                {competition[l.type].label} · {l.memberCount} {l.memberCount === 1 ? "member" : "members"}
+                {open
+                  ? status.predictedByLeague[l.id]
+                    ? "Predicted"
+                    : "Not predicted yet"
+                  : `${competition[l.type].label} · ${l.memberCount} ${l.memberCount === 1 ? "member" : "members"}`}
               </Text>
             </View>
             <Ionicons name="chevron-forward" size={18} color={colors.textTertiary} />
@@ -300,4 +315,5 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.md,
   },
   pickRowDivider: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border },
+  pickDot: { width: 10, height: 10, borderRadius: 5 },
 });
