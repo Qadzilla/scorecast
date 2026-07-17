@@ -12,9 +12,11 @@ import { SectionTitle } from "@/components/SectionTitle";
 import { EmptyState } from "@/components/EmptyState";
 import { Skeleton } from "@/components/Skeleton";
 import { TeamCrest } from "@/components/TeamCrest";
+import { Sheet } from "@/components/Sheet";
 import { useSession } from "@/lib/auth";
 import { useLeagues, useCurrentGameweek, useFavoriteTeam, useLeaderboard, useMe } from "@/lib/queries";
 import { upcomingDeadline, type League } from "@/types/leagues";
+import { isPredictionWindowOpen } from "@/types/fixtures";
 import { formatRank } from "@/types/predictions";
 import { colors, spacing, layout, radius, competition, fontFamily, type CompetitionKey } from "@/constants/theme";
 
@@ -115,7 +117,11 @@ export default function LeaguesHomeScreen() {
 }
 
 function DeadlineCard({ competitionKey }: { competitionKey: CompetitionKey }) {
+  const router = useRouter();
   const gw = useCurrentGameweek(competitionKey);
+  const leagues = useLeagues();
+  const [pickerOpen, setPickerOpen] = useState(false);
+
   if (gw.isLoading) {
     return <CountdownCard competitionKey={competitionKey} deadline={new Date().toISOString()} state="loading" />;
   }
@@ -132,7 +138,52 @@ function DeadlineCard({ competitionKey }: { competitionKey: CompetitionKey }) {
       </View>
     );
   }
-  return <CountdownCard competitionKey={competitionKey} deadline={upcoming.deadline} gameweekName={upcoming.label} />;
+
+  // UXR1: the countdown is the front door. Open window → predict; closed → the
+  // league's standings. gw.data is defined here (upcoming is non-null).
+  const open = gw.data ? isPredictionWindowOpen(gw.data.deadline) : false;
+  const myLeagues = (leagues.data ?? []).filter((l) => l.type === competitionKey);
+  const act = (leagueId: string) =>
+    open
+      ? router.push({ pathname: "/league/predict", params: { leagueId, gameweekId: gw.data?.id ?? "" } })
+      : router.push({ pathname: "/league/[id]", params: { id: leagueId } });
+  const onPress =
+    myLeagues.length === 0
+      ? undefined // no league in this competition yet → nothing to route to
+      : () => (myLeagues.length === 1 ? act(myLeagues[0]!.id) : setPickerOpen(true));
+  const actionLabel = onPress ? (open ? "Predict now" : "View standings") : undefined;
+
+  return (
+    <>
+      <CountdownCard
+        competitionKey={competitionKey}
+        deadline={upcoming.deadline}
+        gameweekName={upcoming.label}
+        onPress={onPress}
+        actionLabel={actionLabel}
+      />
+      <Sheet visible={pickerOpen} onClose={() => setPickerOpen(false)} title={open ? "Predict for…" : "Open league"}>
+        {myLeagues.map((l, i) => (
+          <Pressable
+            key={l.id}
+            onPress={() => {
+              setPickerOpen(false);
+              act(l.id);
+            }}
+            style={({ pressed }) => [styles.pickRow, i > 0 && styles.pickRowDivider, pressed && styles.rowPressed]}
+          >
+            <View style={{ flex: 1 }}>
+              <Text variant="bodyMedium" numberOfLines={1}>{l.name}</Text>
+              <Text variant="caption" color="textTertiary">
+                {competition[l.type].label} · {l.memberCount} {l.memberCount === 1 ? "member" : "members"}
+              </Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color={colors.textTertiary} />
+          </Pressable>
+        ))}
+      </Sheet>
+    </>
+  );
 }
 
 function LeagueRow({
@@ -207,4 +258,11 @@ const styles = StyleSheet.create({
   rowPressed: { backgroundColor: colors.surfaceAlt },
   rowInfo: { flex: 1, gap: 3 },
   standing: { alignItems: "flex-end", minWidth: 52 },
+  pickRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.md,
+    paddingVertical: spacing.md,
+  },
+  pickRowDivider: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border },
 });

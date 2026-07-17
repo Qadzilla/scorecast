@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { View, StyleSheet } from "react-native";
+import { View, StyleSheet, Pressable } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { Text } from "./Text";
 import { getTimeRemaining } from "@/types/fixtures";
 import { colors, spacing, radius, layout, competition, fontFamily, type CompetitionKey } from "@/constants/theme";
@@ -9,6 +10,11 @@ type CountdownCardProps = {
   deadline: string; // ISO
   gameweekName?: string;
   state?: "loading" | "live";
+  /** When set, the whole card becomes a button (UXR1) — the countdown is the
+   *  front door to predicting, not a dead-end. */
+  onPress?: () => void;
+  /** Footer affordance shown when the card is a button, e.g. "Predict now". */
+  actionLabel?: string;
 };
 
 // Dark-navy hero — a piece of the app icon dropped into the light UI. Off-white
@@ -20,7 +26,7 @@ const ON = colors.textOnBrand; // off-white
 const DIM = "#8ba0b6"; // muted light (units, gw name)
 const ACCENT = colors.neon; // bright line-blue
 
-export function CountdownCard({ competitionKey, deadline, gameweekName, state }: CountdownCardProps) {
+export function CountdownCard({ competitionKey, deadline, gameweekName, state, onPress, actionLabel }: CountdownCardProps) {
   const comp = competition[competitionKey];
   const [remaining, setRemaining] = useState(() => getTimeRemaining(deadline));
 
@@ -53,8 +59,8 @@ export function CountdownCard({ competitionKey, deadline, gameweekName, state }:
   const dotColor = state === "live" ? colors.accent : passed ? DIM : urgentColor ?? ACCENT;
   const digitColor = urgentColor ?? ON;
 
-  return (
-    <View style={styles.card}>
+  const inner = (
+    <>
       <View style={styles.head}>
         <View style={[styles.dot, { backgroundColor: dotColor }]} />
         <Text style={styles.label}>{comp.label}</Text>
@@ -76,8 +82,28 @@ export function CountdownCard({ competitionKey, deadline, gameweekName, state }:
           <TimeGroup value={remaining.seconds} unit="sec" color={digitColor} />
         </View>
       )}
-    </View>
+
+      {onPress && actionLabel ? (
+        <View style={styles.action}>
+          <Text style={styles.actionText}>{actionLabel}</Text>
+          <Ionicons name="chevron-forward" size={15} color={ACCENT} />
+        </View>
+      ) : null}
+    </>
   );
+
+  if (onPress) {
+    return (
+      <Pressable
+        onPress={onPress}
+        style={({ pressed }) => [styles.card, pressed && styles.pressed]}
+        accessibilityRole="button"
+      >
+        {inner}
+      </Pressable>
+    );
+  }
+  return <View style={styles.card}>{inner}</View>;
 }
 
 function TimeGroup({ value, unit, color }: { value: number; unit: string; color: string }) {
@@ -101,6 +127,18 @@ const styles = StyleSheet.create({
     borderColor: NAVY_BORDER,
     padding: layout.cardPadding,
   },
+  pressed: { opacity: 0.9 },
+  action: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "flex-end",
+    gap: 3,
+    marginTop: spacing.md,
+    paddingTop: spacing.sm,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: NAVY_BORDER,
+  },
+  actionText: { fontFamily: fontFamily.mono, fontSize: 12, letterSpacing: 0.3, textTransform: "uppercase", color: ACCENT },
   head: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
   dot: { width: 7, height: 7, borderRadius: 4 },
   label: { fontFamily: fontFamily.mono, fontSize: 11, letterSpacing: 0.5, textTransform: "uppercase", color: ON },

@@ -204,6 +204,9 @@ Ordered; each independently shippable. Style everything with existing tokens (no
 
 Suggested order: **UXR1 → UXR3 → UXR2 → UXR4 → UXR7 → UXR5 → UXR6.** (UXR1/UXR3 deliver the biggest depth win fastest; UXR5/UXR6 are polish.)
 
+**Shipped:**
+- **UXR1** (2026-07-17) — `CountdownCard` takes `onPress`/`actionLabel`; Home `DeadlineCard` routes an open deadline → predict (1 tap), a closed one → standings, with a league-picker `Sheet` when a competition has >1 league (resolves Q1: direct-if-1, sheet-if-many). Home is now 1 tap to predict.
+
 ---
 
 ## 8. Explicitly NOT changing
