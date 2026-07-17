@@ -1,7 +1,7 @@
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { View, StyleSheet, ScrollView } from "react-native";
 import Animated, { FadeInDown, FadeIn } from "react-native-reanimated";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { Pressable } from "react-native";
@@ -33,10 +33,10 @@ import { colors, spacing, layout, radius, competition, fontFamily } from "@/cons
 
 type Pane = "predict" | "table";
 
-// League detail. FOCAL (UXR5): the countdown hero (Predict pane) / the standings
-// card (Table pane) is the one hero per pane; the sticky "Make predictions" bar
-// is the single persistent action. Everything else in a pane stays light — no
-// second element should compete with the pane's hero.
+// League detail. Lands on the Table — a player cares most about where they
+// stand. FOCAL (UXR5): the standings card (Table pane) / the countdown hero
+// (Predict pane) is the one hero per pane; the "Make predictions" bar is pinned
+// only on the Predict pane so the Table stays clean.
 export default function LeagueDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
@@ -44,8 +44,9 @@ export default function LeagueDetailScreen() {
   const leagues = useLeagues();
   const league = leagues.data?.find((l) => l.id === id);
 
+  // Table is the landing pane — a player's standing is what they care about most.
   const [pane, setPane] = useState<Pane>("table");
-  const paneInitialized = useRef(false);
+  const insets = useSafeAreaInsets();
   const [infoOpen, setInfoOpen] = useState(false);
   const [copied, setCopied] = useState(false);
 
@@ -55,20 +56,6 @@ export default function LeagueDetailScreen() {
 
   const compColor = league ? competition[league.type].main : colors.plPurple;
   const deadlineOpen = current.data ? isPredictionWindowOpen(current.data.deadline) : false;
-
-  // UXR3 contextual default: land on Predict while the window is open, Table
-  // once it's closed. Set once when the gameweek resolves; a manual segment tap
-  // locks the choice so a later refetch can't yank the pane out from under you.
-  useEffect(() => {
-    if (paneInitialized.current || !current.data) return;
-    paneInitialized.current = true;
-    setPane(isPredictionWindowOpen(current.data.deadline) ? "predict" : "table");
-  }, [current.data]);
-
-  const changePane = (p: Pane) => {
-    paneInitialized.current = true;
-    setPane(p);
-  };
 
   const copyCode = async () => {
     if (!league) return;
@@ -123,16 +110,16 @@ export default function LeagueDetailScreen() {
       <View style={styles.segmentWrap}>
         <SegmentedControl
           segments={[
-            { key: "predict", label: "Predict" },
             { key: "table", label: "Table" },
+            { key: "predict", label: "Predict" },
           ]}
           value={pane}
-          onChange={changePane}
+          onChange={setPane}
           activeColor={colors.textPrimary}
         />
       </View>
 
-      <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
+      <ScrollView style={styles.scroll} contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + spacing.xl }]}>
         <Animated.View key={pane} entering={FadeIn.duration(220)} style={{ gap: spacing.md }}>
         {pane === "predict" && (
           <View style={{ gap: spacing.lg }}>
@@ -185,20 +172,22 @@ export default function LeagueDetailScreen() {
         </Animated.View>
       </ScrollView>
 
-      <StickyActionBar>
-        <Button
-          label={deadlineOpen ? "Make predictions" : "View predictions"}
-          variant="brand"
-          competitionKey={league.type}
-          disabled={!current.data}
-          onPress={() =>
-            router.push({
-              pathname: "/league/predict",
-              params: { leagueId: league.id, gameweekId: current.data?.id ?? "" },
-            })
-          }
-        />
-      </StickyActionBar>
+      {pane === "predict" ? (
+        <StickyActionBar>
+          <Button
+            label={deadlineOpen ? "Make predictions" : "View predictions"}
+            variant="brand"
+            competitionKey={league.type}
+            disabled={!current.data}
+            onPress={() =>
+              router.push({
+                pathname: "/league/predict",
+                params: { leagueId: league.id, gameweekId: current.data?.id ?? "" },
+              })
+            }
+          />
+        </StickyActionBar>
+      ) : null}
 
       <Sheet visible={infoOpen} onClose={() => setInfoOpen(false)} title="League info">
         <Text variant="caption" color="textSecondary">Invite code</Text>

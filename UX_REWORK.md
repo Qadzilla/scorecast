@@ -217,6 +217,10 @@ Suggested order: **UXR1 → UXR3 → UXR2 → UXR4 → UXR7 → UXR5 → UXR6.**
 
 **Status: UXR1–6 shipped; UXR7 covered by UXR1. Rework complete pending an on-device focal/visual tuning pass with real renders.**
 
+**Post-rework adjustments (2026-07-17, user-directed):**
+- League detail now **lands on Table** always (a player cares most about where they stand), not the deadline-contextual Predict default from UXR3. Contextual-default effect removed; segments reordered to `Table · Predict`.
+- The sticky "Make predictions" bar (UXR2) now shows **only on the Predict pane** — the Table stays clean. Predict is still reachable from the Table via the segment (and from Home in 1 tap via UXR1). ScrollView content absorbs the bottom safe-area inset so Table content clears the home indicator when the bar is absent.
+
 ---
 
 ## 8. Explicitly NOT changing
