@@ -7,3 +7,4 @@ export * from "./leaderboard";
 export * from "./predictions";
 export * from "./notifications";
 export * from "./prizePool";
+export * from "./admin";

@@ -103,6 +103,7 @@ function RootNavigator({ fontsReady }: { fontsReady: boolean }) {
       <Stack.Screen name="(tabs)" />
       <Stack.Screen name="team-select" />
       <Stack.Screen name="league" />
+      <Stack.Screen name="admin" />
       <Stack.Screen name="gallery" options={{ presentation: "modal" }} />
       <Stack.Screen name="debug" options={{ presentation: "modal" }} />
     </Stack>

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { View, StyleSheet, ScrollView, Pressable, Alert, Switch, useWindowDimensions } from "react-native";
 import Animated, { FadeInDown } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useQueryClient } from "@tanstack/react-query";
 import { Text } from "@/components/Text";
@@ -34,6 +35,7 @@ import { colors, spacing, layout, competition, fontFamily } from "@/constants/th
 // the others. Hero de-weight is tracked separately in UXR6.
 export default function AccountScreen() {
   const qc = useQueryClient();
+  const router = useRouter();
   const me = useMe();
   const fav = useFavoriteTeam();
   const updateUsername = useUpdateUsername();
@@ -168,6 +170,22 @@ export default function AccountScreen() {
             <InfoRow label="Verified" value={me.data?.emailVerified ? "Yes" : "No"} last />
           </Card>
         </Animated.View>
+
+        {/* Admin (global admin only) */}
+        {me.data?.isAdmin ? (
+          <Animated.View entering={FadeInDown.duration(300).delay(200)} style={styles.section}>
+            <SectionTitle label="Admin" />
+            <Card onPress={() => router.push("/admin")}>
+              <View style={styles.rowBetween}>
+                <View style={styles.teamRow}>
+                  <Ionicons name="shield-checkmark-outline" size={20} color={colors.textPrimary} />
+                  <Text variant="bodyMedium">Admin dashboard</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={16} color={colors.accent} />
+              </View>
+            </Card>
+          </Animated.View>
+        ) : null}
 
         {/* Notifications */}
         <Animated.View entering={FadeInDown.duration(300).delay(220)} style={styles.section}>
