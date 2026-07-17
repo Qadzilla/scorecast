@@ -49,27 +49,29 @@ export interface PrizePoolInput {
   pct: PrizePct;
 }
 
-// Admin-only. Server validates sum=100, non-increasing, and blocks once frozen.
-export function useSetPrizePool(leagueId: string) {
+// leagueId travels in the mutate payload (not bound to the hook) so create — which
+// only learns the id after the league exists — can set a pool for the new league.
+// Admin-only; server validates sum=100, non-increasing, and blocks once frozen.
+export function useSetPrizePool() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (input: PrizePoolInput) =>
+    mutationFn: ({ leagueId, ...input }: PrizePoolInput & { leagueId: string }) =>
       apiFetch<PrizePool>(`/api/leagues/${leagueId}/prize-pool`, {
         method: "PUT",
         body: JSON.stringify(input),
       }),
-    onSuccess: (data) => {
-      qc.setQueryData(prizePoolKeys.byLeague(leagueId), data);
+    onSuccess: (data, variables) => {
+      qc.setQueryData(prizePoolKeys.byLeague(variables.leagueId), data);
     },
   });
 }
 
-export function useDeletePrizePool(leagueId: string) {
+export function useDeletePrizePool() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: () =>
+    mutationFn: (leagueId: string) =>
       apiFetch<{ success: boolean }>(`/api/leagues/${leagueId}/prize-pool`, { method: "DELETE" }),
-    onSuccess: () => {
+    onSuccess: (_data, leagueId) => {
       qc.setQueryData(prizePoolKeys.byLeague(leagueId), null);
     },
   });
