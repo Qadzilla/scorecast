@@ -17,6 +17,7 @@ import { useSession } from "@/lib/auth";
 import { useLeagues, useCurrentGameweek, useFavoriteTeam, useLeaderboard, useMe, useGameweekPredictionStatus } from "@/lib/queries";
 import { upcomingDeadline, type League } from "@/types/leagues";
 import { isPredictionWindowOpen } from "@/types/fixtures";
+import { medalColors, type Medal } from "@/constants/medals";
 import { formatRank } from "@/types/predictions";
 import { colors, spacing, layout, radius, competition, fontFamily, type CompetitionKey } from "@/constants/theme";
 
@@ -214,6 +215,8 @@ function LeagueRow({
 }) {
   const board = useLeaderboard(league.id);
   const me = board.data?.entries.find((e) => e.userId === userId);
+  const medal: Medal | null =
+    me && me.rank <= 3 ? (me.rank === 1 ? "gold" : me.rank === 2 ? "silver" : "bronze") : null;
 
   return (
     <Pressable onPress={onPress} style={({ pressed }) => [styles.row, !first && styles.rowDivider, pressed && styles.rowPressed]}>
@@ -228,7 +231,13 @@ function LeagueRow({
           <Skeleton width={40} height={24} />
         ) : me ? (
           <>
-            <Text variant="numeral" tabular style={{ color: colors.textPrimary, fontSize: 18 }}>{formatRank(me.rank)}</Text>
+            {medal ? (
+              <View style={[styles.rankPill, { backgroundColor: medalColors[medal] }]}>
+                <Text style={styles.rankPillText} tabular>{formatRank(me.rank)}</Text>
+              </View>
+            ) : (
+              <Text variant="numeral" tabular style={{ color: colors.textPrimary, fontSize: 18 }}>{formatRank(me.rank)}</Text>
+            )}
             <Text variant="caption" color="textTertiary" tabular>{me.totalPoints} pts</Text>
           </>
         ) : (
@@ -271,7 +280,9 @@ const styles = StyleSheet.create({
   rowDivider: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border },
   rowPressed: { backgroundColor: colors.surfaceAlt },
   rowInfo: { flex: 1, gap: 3 },
-  standing: { alignItems: "flex-end", minWidth: 52 },
+  standing: { alignItems: "flex-end", minWidth: 52, gap: 2 },
+  rankPill: { borderRadius: radius.sm, paddingHorizontal: spacing.sm, paddingVertical: 2 },
+  rankPillText: { fontFamily: fontFamily.bold, fontSize: 15, color: colors.textPrimary },
   pickRow: {
     flexDirection: "row",
     alignItems: "center",
