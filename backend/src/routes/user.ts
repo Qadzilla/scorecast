@@ -3,6 +3,7 @@ import { queryAll, queryOne, query, withTransaction } from "../db.js";
 import { requireAuth } from "../middleware/auth.js";
 import type { AuthenticatedRequest } from "../middleware/auth.js";
 import { isAdmin } from "../lib/admin.js";
+import { hasUnusedGrant } from "../lib/grants.js";
 
 const router = Router();
 
@@ -35,7 +36,9 @@ router.get("/me", requireAuth, async (req, res) => {
       return;
     }
 
-    res.json({ ...user, isAdmin: isAdmin(user.email) });
+    const admin = isAdmin(user.email);
+    const canCreateLeague = admin || (await hasUnusedGrant(user.id));
+    res.json({ ...user, isAdmin: admin, canCreateLeague });
   } catch (err) {
     console.error("Failed to fetch current user:", err);
     res.status(500).json({ error: "Failed to fetch current user" });

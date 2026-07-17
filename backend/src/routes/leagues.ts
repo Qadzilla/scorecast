@@ -1,8 +1,9 @@
 import { Router } from "express";
-import { queryAll, queryOne, query } from "../db.js";
+import { queryAll, queryOne, query, withTransaction } from "../db.js";
 import { requireAuth } from "../middleware/auth.js";
 import type { AuthenticatedRequest } from "../middleware/auth.js";
 import { isAdmin, isLeagueAdmin } from "../lib/admin.js";
+import { hasUnusedGrant, consumeGrant } from "../lib/grants.js";
 import { getPrizePoolPayload, validatePrizePoolInput } from "../lib/prizePool.js";
 import crypto from "crypto";
 
@@ -22,9 +23,12 @@ router.post("/", requireAuth, async (req, res) => {
   const { user } = req as AuthenticatedRequest;
   const { name, description, type } = req.body;
 
-  // Only admin can create leagues
-  if (!isAdmin(user.email)) {
-    res.status(403).json({ error: "Only the admin can create leagues" });
+  // The global admin can always create; anyone else needs a one-time grant (AD2),
+  // which is consumed below when the league is created.
+  const admin = isAdmin(user.email);
+  const granted = admin ? false : await hasUnusedGrant(user.id);
+  if (!admin && !granted) {
+    res.status(403).json({ error: "You don't have permission to create a league" });
     return;
   }
 
@@ -53,20 +57,21 @@ router.post("/", requireAuth, async (req, res) => {
   const now = new Date().toISOString();
 
   try {
-    // Create the league
-    await query(
-      `INSERT INTO league (id, name, description, type, "inviteCode", "createdBy", "createdAt", "updatedAt")
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
-      [leagueId, name.trim(), description?.trim() || null, type, inviteCode, user.id, now, now]
-    );
-
-    // Add creator as admin member
-    const memberId = crypto.randomUUID();
-    await query(
-      `INSERT INTO league_member (id, "leagueId", "userId", role, "joinedAt")
-      VALUES ($1, $2, $3, $4, $5)`,
-      [memberId, leagueId, user.id, "admin", now]
-    );
+    // Create the league + creator-as-admin + consume the grant atomically, so a
+    // grantee can never end up with a league but an unspent grant (or vice versa).
+    await withTransaction(async (client) => {
+      await client.query(
+        `INSERT INTO league (id, name, description, type, "inviteCode", "createdBy", "createdAt", "updatedAt")
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+        [leagueId, name.trim(), description?.trim() || null, type, inviteCode, user.id, now, now]
+      );
+      await client.query(
+        `INSERT INTO league_member (id, "leagueId", "userId", role, "joinedAt")
+        VALUES ($1, $2, $3, $4, $5)`,
+        [crypto.randomUUID(), leagueId, user.id, "admin", now]
+      );
+      if (granted) await consumeGrant(client, user.id, leagueId);
+    });
 
     res.status(201).json({
       id: leagueId,

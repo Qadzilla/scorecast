@@ -112,7 +112,7 @@ describe("Leagues API", () => {
         .set("Content-Type", "application/json");
 
       expect(response.status).toBe(403);
-      expect(response.body.error).toBe("Only the admin can create leagues");
+      expect(response.body.error).toBe("You don't have permission to create a league");
     });
 
     it("should reject league creation without authentication", async () => {

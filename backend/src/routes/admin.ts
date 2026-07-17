@@ -1,5 +1,7 @@
 import { Router } from "express";
+import crypto from "crypto";
 import { requireAuth } from "../middleware/auth.js";
+import type { AuthenticatedRequest } from "../middleware/auth.js";
 import { requireAdmin } from "../lib/admin.js";
 import {
   syncCompetition,
@@ -8,7 +10,7 @@ import {
   updateMatchResults,
 } from "../services/footballData.js";
 import { scorePredictionsForMatch } from "./predictions.js";
-import { queryAll, queryOne } from "../db.js";
+import { queryAll, queryOne, query } from "../db.js";
 
 const router = Router();
 
@@ -168,6 +170,110 @@ router.get("/status", requireAuth, requireAdmin, async (req, res) => {
   } catch (err: any) {
     console.error("Failed to get status:", err);
     res.status(500).json({ error: err.message || "Failed to get status" });
+  }
+});
+
+// ── League-creation grants (AD2) ─────────────────────────────────────────────
+
+// Search users to grant (by username / email / name). Min 2 chars.
+router.get("/users", requireAuth, requireAdmin, async (req, res) => {
+  const q = String(req.query.q ?? "").trim().toLowerCase();
+  if (q.length < 2) {
+    res.json([]);
+    return;
+  }
+  try {
+    const like = `%${q}%`;
+    const rows = await queryAll(
+      `SELECT u.id, u.username, u.email, u."firstName", u."lastName",
+              EXISTS(SELECT 1 FROM league_creation_grant g WHERE g."userId" = u.id AND g.used = false) AS "hasPendingGrant"
+         FROM "user" u
+        WHERE lower(u.username) LIKE $1 OR lower(u.email) LIKE $1 OR lower(u.name) LIKE $1
+        ORDER BY u.username NULLS LAST
+        LIMIT 25`,
+      [like]
+    );
+    res.json(rows);
+  } catch (err: any) {
+    console.error("Failed to search users:", err);
+    res.status(500).json({ error: err.message || "Failed to search users" });
+  }
+});
+
+// List all grants (pending + used), newest first.
+router.get("/grants", requireAuth, requireAdmin, async (_req, res) => {
+  try {
+    const rows = await queryAll(
+      `SELECT g.id, g."userId", g.used, g."usedLeagueId", g."createdAt", g."usedAt",
+              u.username, u.email, l.name AS "leagueName"
+         FROM league_creation_grant g
+         JOIN "user" u ON u.id = g."userId"
+         LEFT JOIN league l ON l.id = g."usedLeagueId"
+        ORDER BY g."createdAt" DESC
+        LIMIT 200`
+    );
+    res.json(rows);
+  } catch (err: any) {
+    console.error("Failed to list grants:", err);
+    res.status(500).json({ error: err.message || "Failed to list grants" });
+  }
+});
+
+// Grant a user one league creation (at most one pending per user).
+router.post("/grants", requireAuth, requireAdmin, async (req, res) => {
+  const { user } = req as AuthenticatedRequest;
+  const { userId } = req.body;
+  if (!userId || typeof userId !== "string") {
+    res.status(400).json({ error: "userId is required" });
+    return;
+  }
+  try {
+    const target = await queryOne(`SELECT id FROM "user" WHERE id = $1`, [userId]);
+    if (!target) {
+      res.status(404).json({ error: "User not found" });
+      return;
+    }
+    const existing = await queryOne(
+      `SELECT id FROM league_creation_grant WHERE "userId" = $1 AND used = false`,
+      [userId]
+    );
+    if (existing) {
+      res.status(409).json({ error: "That user already has a pending grant" });
+      return;
+    }
+    const id = crypto.randomUUID();
+    await query(
+      `INSERT INTO league_creation_grant (id, "userId", "grantedBy") VALUES ($1, $2, $3)`,
+      [id, userId, user.id]
+    );
+    res.status(201).json({ success: true, id });
+  } catch (err: any) {
+    console.error("Failed to grant creation:", err);
+    res.status(500).json({ error: err.message || "Failed to grant creation" });
+  }
+});
+
+// Revoke a pending (unused) grant.
+router.delete("/grants/:id", requireAuth, requireAdmin, async (req, res) => {
+  const { id } = req.params;
+  try {
+    const g = await queryOne<{ used: boolean }>(
+      `SELECT used FROM league_creation_grant WHERE id = $1`,
+      [id]
+    );
+    if (!g) {
+      res.status(404).json({ error: "Grant not found" });
+      return;
+    }
+    if (g.used) {
+      res.status(400).json({ error: "That grant has already been used" });
+      return;
+    }
+    await query(`DELETE FROM league_creation_grant WHERE id = $1`, [id]);
+    res.json({ success: true });
+  } catch (err: any) {
+    console.error("Failed to revoke grant:", err);
+    res.status(500).json({ error: err.message || "Failed to revoke grant" });
   }
 });
 
