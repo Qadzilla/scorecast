@@ -214,7 +214,6 @@ function LeagueRow({
 }) {
   const board = useLeaderboard(league.id);
   const me = board.data?.entries.find((e) => e.userId === userId);
-  const compColor = competition[league.type].main;
 
   return (
     <Pressable onPress={onPress} style={({ pressed }) => [styles.row, !first && styles.rowDivider, pressed && styles.rowPressed]}>
@@ -229,7 +228,7 @@ function LeagueRow({
           <Skeleton width={40} height={24} />
         ) : me ? (
           <>
-            <Text variant="numeral" tabular style={{ color: compColor, fontSize: 18 }}>{formatRank(me.rank)}</Text>
+            <Text variant="numeral" tabular style={{ color: colors.textPrimary, fontSize: 18 }}>{formatRank(me.rank)}</Text>
             <Text variant="caption" color="textTertiary" tabular>{me.totalPoints} pts</Text>
           </>
         ) : (
