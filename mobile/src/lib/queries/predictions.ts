@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueries, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "@/lib/api";
 import type { UserPrediction } from "@/types/predictions";
 
@@ -30,6 +30,25 @@ export function usePlayerPredictions(leagueId: string, gameweekId: string | unde
     retry: false,
     staleTime: 60 * 1000,
   });
+}
+
+// Across a set of leagues, how many has the user predicted for this gameweek
+// (UXR4 "This week" status). One query per league via useQueries, sharing the
+// same cache keys as usePredictions — so visiting a league doesn't refetch.
+export function useGameweekPredictionStatus(leagueIds: string[], gameweekId: string | undefined) {
+  const results = useQueries({
+    queries: leagueIds.map((id) => ({
+      queryKey: predictionKeys.byGameweek(id, gameweekId ?? "none"),
+      queryFn: () => apiFetch<UserPrediction[]>(`/api/predictions/${id}/gameweek/${gameweekId}`),
+      enabled: !!gameweekId,
+      staleTime: 60 * 1000,
+    })),
+  });
+  return {
+    total: leagueIds.length,
+    predicted: results.filter((r) => (r.data?.length ?? 0) > 0).length,
+    isLoading: results.some((r) => r.isLoading),
+  };
 }
 
 export interface PredictionInput {

@@ -14,7 +14,7 @@ import { Skeleton } from "@/components/Skeleton";
 import { TeamCrest } from "@/components/TeamCrest";
 import { Sheet } from "@/components/Sheet";
 import { useSession } from "@/lib/auth";
-import { useLeagues, useCurrentGameweek, useFavoriteTeam, useLeaderboard, useMe } from "@/lib/queries";
+import { useLeagues, useCurrentGameweek, useFavoriteTeam, useLeaderboard, useMe, useGameweekPredictionStatus } from "@/lib/queries";
 import { upcomingDeadline, type League } from "@/types/leagues";
 import { isPredictionWindowOpen } from "@/types/fixtures";
 import { formatRank } from "@/types/predictions";
@@ -33,6 +33,12 @@ export default function LeaguesHomeScreen() {
     (session?.user as { firstName?: string } | undefined)?.firstName ??
     session?.user?.name?.split(" ")[0] ??
     "there";
+
+  // "This week" shows only the competitions the user actually plays (UXR4),
+  // in a fixed order so it doesn't reshuffle as leagues load.
+  const activeComps = (["premier_league", "champions_league"] as const).filter((c) =>
+    (leagues.data ?? []).some((l) => l.type === c)
+  );
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -61,13 +67,16 @@ export default function LeaguesHomeScreen() {
           ) : null}
         </View>
 
-        <View style={styles.section}>
-          <SectionTitle label="Next deadlines" />
-          <View style={styles.deadlines}>
-            <DeadlineCard competitionKey="premier_league" />
-            <DeadlineCard competitionKey="champions_league" />
+        {activeComps.length > 0 ? (
+          <View style={styles.section}>
+            <SectionTitle label="This week" />
+            <View style={styles.deadlines}>
+              {activeComps.map((c) => (
+                <DeadlineCard key={c} competitionKey={c} />
+              ))}
+            </View>
           </View>
-        </View>
+        ) : null}
 
         <View style={styles.section}>
           <SectionTitle
@@ -120,6 +129,8 @@ function DeadlineCard({ competitionKey }: { competitionKey: CompetitionKey }) {
   const router = useRouter();
   const gw = useCurrentGameweek(competitionKey);
   const leagues = useLeagues();
+  const myLeagues = (leagues.data ?? []).filter((l) => l.type === competitionKey);
+  const status = useGameweekPredictionStatus(myLeagues.map((l) => l.id), gw.data?.id);
   const [pickerOpen, setPickerOpen] = useState(false);
 
   if (gw.isLoading) {
@@ -142,7 +153,6 @@ function DeadlineCard({ competitionKey }: { competitionKey: CompetitionKey }) {
   // UXR1: the countdown is the front door. Open window → predict; closed → the
   // league's standings. gw.data is defined here (upcoming is non-null).
   const open = gw.data ? isPredictionWindowOpen(gw.data.deadline) : false;
-  const myLeagues = (leagues.data ?? []).filter((l) => l.type === competitionKey);
   const act = (leagueId: string) =>
     open
       ? router.push({ pathname: "/league/predict", params: { leagueId, gameweekId: gw.data?.id ?? "" } })
@@ -161,6 +171,7 @@ function DeadlineCard({ competitionKey }: { competitionKey: CompetitionKey }) {
         gameweekName={upcoming.label}
         onPress={onPress}
         actionLabel={actionLabel}
+        progress={open && myLeagues.length > 0 ? { predicted: status.predicted, total: status.total } : undefined}
       />
       <Sheet visible={pickerOpen} onClose={() => setPickerOpen(false)} title={open ? "Predict for…" : "Open league"}>
         {myLeagues.map((l, i) => (

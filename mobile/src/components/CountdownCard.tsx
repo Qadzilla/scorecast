@@ -15,7 +15,16 @@ type CountdownCardProps = {
   onPress?: () => void;
   /** Footer affordance shown when the card is a button, e.g. "Predict now". */
   actionLabel?: string;
+  /** "This week" status across the user's leagues (UXR4) — how many of `total`
+   *  leagues they've predicted for this gameweek. Shown while the window's open. */
+  progress?: { predicted: number; total: number };
 };
+
+function progressLabel(predicted: number, total: number): string {
+  if (predicted === 0) return "Not predicted yet";
+  if (predicted >= total) return total === 1 ? "Predicted ✓" : `All ${total} leagues predicted ✓`;
+  return `${predicted} of ${total} leagues predicted`;
+}
 
 // Dark-navy hero — a piece of the app icon dropped into the light UI. Off-white
 // mono digits, a bright-blue competition dot, small-caps mono label. Urgency
@@ -26,7 +35,7 @@ const ON = colors.textOnBrand; // off-white
 const DIM = "#8ba0b6"; // muted light (units, gw name)
 const ACCENT = colors.neon; // bright line-blue
 
-export function CountdownCard({ competitionKey, deadline, gameweekName, state, onPress, actionLabel }: CountdownCardProps) {
+export function CountdownCard({ competitionKey, deadline, gameweekName, state, onPress, actionLabel, progress }: CountdownCardProps) {
   const comp = competition[competitionKey];
   const [remaining, setRemaining] = useState(() => getTimeRemaining(deadline));
 
@@ -82,6 +91,17 @@ export function CountdownCard({ competitionKey, deadline, gameweekName, state, o
           <TimeGroup value={remaining.seconds} unit="sec" color={digitColor} />
         </View>
       )}
+
+      {progress && !passed && state !== "live" ? (
+        <Text
+          style={[
+            styles.progress,
+            { color: progress.predicted >= progress.total ? ACCENT : DIM },
+          ]}
+        >
+          {progressLabel(progress.predicted, progress.total)}
+        </Text>
+      ) : null}
 
       {onPress && actionLabel ? (
         <View style={styles.action}>
@@ -139,6 +159,7 @@ const styles = StyleSheet.create({
     borderTopColor: NAVY_BORDER,
   },
   actionText: { fontFamily: fontFamily.mono, fontSize: 12, letterSpacing: 0.3, textTransform: "uppercase", color: ACCENT },
+  progress: { fontFamily: fontFamily.mono, fontSize: 12, marginTop: spacing.md },
   head: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
   dot: { width: 7, height: 7, borderRadius: 4 },
   label: { fontFamily: fontFamily.mono, fontSize: 11, letterSpacing: 0.5, textTransform: "uppercase", color: ON },
