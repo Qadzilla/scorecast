@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { StyleSheet, Pressable, Image } from "react-native";
+import { StyleSheet, Pressable, Image, Text, View } from "react-native";
 import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import Animated, {
@@ -40,7 +40,10 @@ export default function Welcome() {
       <Animated.View entering={FadeIn.duration(600)} style={styles.circle}>
         <Image source={require("../../assets/images/sc-mark.png")} style={styles.mark} resizeMode="contain" />
       </Animated.View>
-      <Animated.Text style={[styles.hint, hintStyle]}>Tap to continue</Animated.Text>
+      <View style={styles.footer} pointerEvents="none">
+        <Text style={styles.wordmark}>ScoreCast</Text>
+        <Animated.Text style={[styles.hint, hintStyle]}>Tap to continue</Animated.Text>
+      </View>
     </Pressable>
   );
 }
@@ -58,13 +61,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   mark: { width: 160, height: 120 },
-  hint: {
-    position: "absolute",
-    bottom: 64,
-    fontFamily: fontFamily.mono,
-    fontSize: 12,
-    letterSpacing: 1,
-    textTransform: "uppercase",
-    color: ON,
-  },
+  footer: { position: "absolute", bottom: 56, left: 0, right: 0, alignItems: "center", gap: 8 },
+  wordmark: { fontFamily: fontFamily.extrabold, fontSize: 12, letterSpacing: 0.5, color: ON },
+  hint: { fontFamily: fontFamily.mono, fontSize: 12, letterSpacing: 1, textTransform: "uppercase", color: ON },
 });
