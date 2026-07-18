@@ -18,6 +18,7 @@ import { useLeagues, useCurrentGameweek, useFavoriteTeam, useLeaderboard, useMe,
 import { upcomingDeadline, type League } from "@/types/leagues";
 import { isPredictionWindowOpen } from "@/types/fixtures";
 import { medalColors, type Medal } from "@/constants/medals";
+import { PRIZE_POOL_ENABLED } from "@/constants/flags";
 import { formatRank } from "@/types/predictions";
 import { colors, spacing, layout, radius, competition, fontFamily, type CompetitionKey } from "@/constants/theme";
 
@@ -239,7 +240,7 @@ function LeagueRow({
         ? "silver"
         : me.rank === 3
           ? "bronze"
-          : n >= 5 && me.rank === n - 1
+          : PRIZE_POOL_ENABLED && n >= 5 && me.rank === n - 1
             ? "orange" // 2nd-last, mirroring the prize-pool rule
             : null;
 

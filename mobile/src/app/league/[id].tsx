@@ -26,6 +26,7 @@ import { Skeleton, SkeletonLines } from "@/components/Skeleton";
 import { Sheet } from "@/components/Sheet";
 import { useSession } from "@/lib/auth";
 import { useLeagues, useCurrentGameweek, useGameweek, useLeaderboard, usePredictions, usePrizePool } from "@/lib/queries";
+import { PRIZE_POOL_ENABLED } from "@/constants/flags";
 import { upcomingDeadline } from "@/types/leagues";
 import { isPredictionWindowOpen } from "@/types/fixtures";
 import { outcomeFromPoints, type UserPrediction } from "@/types/predictions";
@@ -298,7 +299,7 @@ function TablePane({
   onPlayer: (e: { userId: string; username: string; teamLogo: string | null }) => void;
 }) {
   const prizePool = usePrizePool(leagueId);
-  const pool = prizePool.data ?? null;
+  const pool = PRIZE_POOL_ENABLED ? prizePool.data ?? null : null;
 
   // The paid 2nd-last occupant gets the yellow medal; the podium (1/2/3) is by
   // rank inside the row. Null when there's no pool or fewer than 5 players.

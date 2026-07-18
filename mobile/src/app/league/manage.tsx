@@ -11,6 +11,7 @@ import { Card } from "@/components/Card";
 import { Banner } from "@/components/Banner";
 import { Skeleton } from "@/components/Skeleton";
 import { PrizePoolEditor, defaultPrizePoolForm, validatePrizePoolForm, prizePoolToForm } from "@/components/PrizePoolEditor";
+import { PRIZE_POOL_ENABLED } from "@/constants/flags";
 import { useSession } from "@/lib/auth";
 import {
   useLeagues, useUpdateLeague, useLeagueMembers, useKickMember,
@@ -92,6 +93,8 @@ export default function ManageLeagueScreen() {
         </View>
 
         {/* Prize pool */}
+        {PRIZE_POOL_ENABLED ? (
+        <>
         <Text variant="label" color="textSecondary" style={{ marginTop: spacing.md }}>
           Prize pool
         </Text>
@@ -129,6 +132,8 @@ export default function ManageLeagueScreen() {
             {setPool.isError ? <Banner kind="error" message="Couldn't save the prize pool." /> : null}
           </View>
         )}
+        </>
+        ) : null}
 
         {/* Members */}
         <Text variant="label" color="textSecondary" style={{ marginTop: spacing.md }}>

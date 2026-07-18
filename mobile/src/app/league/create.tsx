@@ -9,6 +9,7 @@ import { SegmentedControl } from "@/components/SegmentedControl";
 import { Button } from "@/components/Button";
 import { Banner } from "@/components/Banner";
 import { PrizePoolEditor, defaultPrizePoolForm, validatePrizePoolForm } from "@/components/PrizePoolEditor";
+import { PRIZE_POOL_ENABLED } from "@/constants/flags";
 import { useMe, useCreateLeague, useSetPrizePool } from "@/lib/queries";
 import { haptics } from "@/utils/haptics";
 import type { CompetitionType } from "@/types/fixtures";
@@ -96,15 +97,19 @@ export default function CreateLeagueScreen() {
             />
           </View>
 
-          <View style={styles.poolHead}>
-            <View style={{ flex: 1 }}>
-              <Text variant="bodyMedium">Prize pool</Text>
-              <Text variant="caption" color="textSecondary">Optional — a per-player entry fee and payouts.</Text>
-            </View>
-            <Switch value={poolEnabled} onValueChange={setPoolEnabled} trackColor={{ true: colors.accent }} />
-          </View>
-          {poolEnabled ? <PrizePoolEditor value={poolForm} onChange={setPoolForm} /> : null}
-          {poolEnabled && poolError ? <Text variant="caption" color="danger">{poolError}</Text> : null}
+          {PRIZE_POOL_ENABLED ? (
+            <>
+              <View style={styles.poolHead}>
+                <View style={{ flex: 1 }}>
+                  <Text variant="bodyMedium">Prize pool</Text>
+                  <Text variant="caption" color="textSecondary">Optional — a per-player entry fee and payouts.</Text>
+                </View>
+                <Switch value={poolEnabled} onValueChange={setPoolEnabled} trackColor={{ true: colors.accent }} />
+              </View>
+              {poolEnabled ? <PrizePoolEditor value={poolForm} onChange={setPoolForm} /> : null}
+              {poolEnabled && poolError ? <Text variant="caption" color="danger">{poolError}</Text> : null}
+            </>
+          ) : null}
 
           {create.isError ? <Banner kind="error" message="Couldn't create the league. Try again." /> : null}
         </ScrollView>
