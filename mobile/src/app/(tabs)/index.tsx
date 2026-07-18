@@ -8,6 +8,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { Text } from "@/components/Text";
 import { Card } from "@/components/Card";
 import { CountdownCard } from "@/components/CountdownCard";
+import { Button } from "@/components/Button";
 import { SectionTitle } from "@/components/SectionTitle";
 import { EmptyState } from "@/components/EmptyState";
 import { Skeleton } from "@/components/Skeleton";
@@ -88,11 +89,7 @@ export default function LeaguesHomeScreen() {
         ) : null}
 
         <View style={styles.section}>
-          <SectionTitle
-            label="Your leagues"
-            action={me.data?.canCreateLeague ? "Create" : undefined}
-            onAction={() => router.push("/league/create")}
-          />
+          <SectionTitle label="Your leagues" />
           {leagues.isLoading ? (
             <Card padded={false}>
               {[0, 1].map((i) => (
@@ -123,11 +120,20 @@ export default function LeaguesHomeScreen() {
                 icon="trophy-outline"
                 title="No leagues yet"
                 subtitle="Join your friends' league with an invite code to start predicting."
-                actionLabel="Join a league"
-                onAction={() => router.push("/league/join")}
               />
             </Card>
           )}
+
+          <View style={styles.leagueActions}>
+            <View style={styles.actionBtn}>
+              <Button label="Join with a code" variant="secondary" onPress={() => router.push("/league/join")} />
+            </View>
+            {me.data?.canCreateLeague ? (
+              <View style={styles.actionBtn}>
+                <Button label="Create" variant="secondary" onPress={() => router.push("/league/create")} />
+              </View>
+            ) : null}
+          </View>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -306,6 +312,8 @@ const styles = StyleSheet.create({
   rowDivider: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border },
   rowPressed: { backgroundColor: colors.surfaceAlt },
   rowInfo: { flex: 1, gap: 3 },
+  leagueActions: { flexDirection: "row", gap: spacing.sm, marginTop: spacing.sm },
+  actionBtn: { flex: 1 },
   standing: { alignItems: "center", minWidth: 52, gap: 3 },
   rankCircle: { width: 26, height: 26, borderRadius: 13, alignItems: "center", justifyContent: "center" },
   rankCircleText: { fontFamily: fontFamily.bold, fontSize: 13, color: colors.textPrimary },
