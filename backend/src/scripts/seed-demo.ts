@@ -165,7 +165,11 @@ async function main() {
   let heroUsername = HERO_USERNAME;
   const taken = await queryOne<{ id: string }>(`SELECT id FROM "user" WHERE username = $1 AND id <> $2`, [heroUsername, hero.id]);
   if (taken) heroUsername = `${HERO_USERNAME}1`;
-  await query(`UPDATE "user" SET name = $1, username = $2 WHERE id = $3`, [HERO_NAME, heroUsername, hero.id]);
+  // name + firstName (home greeting uses firstName) + username, and clear lastName.
+  await query(
+    `UPDATE "user" SET name = $1, "firstName" = $1, "lastName" = '', username = $2 WHERE id = $3`,
+    [HERO_NAME, heroUsername, hero.id]
+  );
 
   const plTeams = await queryAll<{ id: string }>(`SELECT id FROM team WHERE competition = 'premier_league' ORDER BY name`);
   // Create demo players with matched crests.
