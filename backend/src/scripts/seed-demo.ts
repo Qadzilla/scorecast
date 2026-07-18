@@ -99,18 +99,19 @@ async function buildLeague(name: string, competition: string, rows: { userId: st
     return false;
   }
 
-  const nowMs = Date.now();
-  const pastGws = gws.filter((g) => new Date(g.deadline).getTime() < nowMs);
-  const upcomingGw = gws.find((g) => new Date(g.deadline).getTime() >= nowMs);
   const matchesOf = async (gwId: string) =>
     queryAll<{ id: string }>(`SELECT m.id FROM match m JOIN matchday md ON m."matchdayId" = md.id WHERE md."gameweekId" = $1 ORDER BY m."kickoffTime"`, [gwId]);
 
-  const pastMatches: { id: string }[] = [];
-  for (const g of pastGws) pastMatches.push(...(await matchesOf(g.id)));
-  const upMatches = upcomingGw ? await matchesOf(upcomingGw.id) : [];
-  const scoringMatches = pastMatches.length ? pastMatches : upMatches;
-  const upcomingNoPoints = pastMatches.length ? upMatches : [];
-  const S = scoringMatches.length;
+  // All matches across the season, chronological (gws are deadline-ordered), so
+  // points land on the earliest = played matches first (badges), and each row's
+  // exact total is realizable regardless of any single gameweek's size.
+  const pool: { id: string }[] = [];
+  for (const g of gws) pool.push(...(await matchesOf(g.id)));
+  const S = pool.length;
+  if (S === 0) {
+    console.warn(`[demo] ${competition} has no matches — skipping "${name}".`);
+    return false;
+  }
 
   const leagueId = crypto.randomUUID();
   const now = new Date().toISOString();
@@ -124,18 +125,18 @@ async function buildLeague(name: string, competition: string, rows: { userId: st
       [crypto.randomUUID(), leagueId, row.userId, row.userId === adminId ? "admin" : "member", now]
     );
   }
+  // Each member predicts E exacts (3) + C results (1) + a few misses (0), on the
+  // earliest matches → exact total = 3E + C, with a realistic badge mix.
   for (const row of rows) {
-    for (let mi = 0; mi < S; mi++) {
+    const misses = Math.min(3, Math.max(0, S - row.E - row.C));
+    const count = Math.min(S, row.E + row.C + misses);
+    for (let mi = 0; mi < count; mi++) {
       const pts = mi < row.E ? 3 : mi < row.E + row.C ? 1 : 0;
       const { home, away } = randScore();
-      await insertPrediction(row.userId, scoringMatches[mi]!.id, leagueId, home, away, pts);
-    }
-    for (const m of upcomingNoPoints) {
-      const { home, away } = randScore();
-      await insertPrediction(row.userId, m.id, leagueId, home, away, null);
+      await insertPrediction(row.userId, pool[mi]!.id, leagueId, home, away, pts);
     }
   }
-  console.log(`[demo] "${name}" (${competition}): ${rows.length} players · ${S} scored matches each.`);
+  console.log(`[demo] "${name}" (${competition}): ${rows.length} players · ${S} matches in pool · totals ${rows.map((r) => 3 * r.E + r.C).join("/")}.`);
   return true;
 }
 
