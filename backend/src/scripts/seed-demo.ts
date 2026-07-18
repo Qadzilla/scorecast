@@ -36,25 +36,25 @@ const DEMO = [
 ];
 
 // Final tables in rank order. E = exact scores (3 pts), C = correct results (1 pt).
-// "hero" is the logged-in account. Totals: PL 20/18/16/15/13/11/10/7/5 · UCL 11/9/8/6/5/3.
+// "hero" is the logged-in account — 3rd in the PL, 1st in the UCL.
 const SUNDAY: { who: string; E: number; C: number }[] = [
-  { who: "tommyw", E: 6, C: 2 }, // 20
-  { who: "hero", E: 5, C: 3 }, //   18
-  { who: "callum", E: 4, C: 4 }, // 16
-  { who: "femi", E: 4, C: 3 }, //   15
+  { who: "tommyw", E: 6, C: 2 }, //    20
+  { who: "callum", E: 5, C: 3 }, //    18
+  { who: "hero", E: 4, C: 4 }, //      16  ← you, 3rd
+  { who: "femi", E: 4, C: 3 }, //      15
   { who: "devsharma", E: 3, C: 4 }, // 13
-  { who: "marcor", E: 3, C: 2 }, // 11
-  { who: "jakeb", E: 2, C: 4 }, //  10
-  { who: "benc", E: 2, C: 1 }, //    7
-  { who: "ronank", E: 1, C: 2 }, //  5
+  { who: "marcor", E: 3, C: 2 }, //    11
+  { who: "jakeb", E: 2, C: 4 }, //     10
+  { who: "benc", E: 2, C: 1 }, //       7
+  { who: "ronank", E: 1, C: 2 }, //     5
 ];
 const UCL: { who: string; E: number; C: number }[] = [
-  { who: "femi", E: 3, C: 2 }, //   11
-  { who: "hero", E: 2, C: 3 }, //    9
-  { who: "callum", E: 2, C: 2 }, //  8
-  { who: "devsharma", E: 1, C: 3 }, // 6
-  { who: "tommyw", E: 1, C: 2 }, //  5
-  { who: "marcor", E: 1, C: 0 }, //  3
+  { who: "hero", E: 3, C: 3 }, //      12  ← you, 1st
+  { who: "femi", E: 3, C: 1 }, //      10
+  { who: "callum", E: 2, C: 2 }, //     8
+  { who: "devsharma", E: 1, C: 3 }, //  6
+  { who: "tommyw", E: 1, C: 2 }, //     5
+  { who: "marcor", E: 1, C: 0 }, //     3
 ];
 
 const BIAS = [0, 0, 1, 1, 1, 2, 2, 3];
