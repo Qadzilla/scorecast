@@ -9,6 +9,7 @@
     "start": "node dist/index.js",
     "seed": "tsx src/scripts/seed.ts",
     "seed:test-league": "tsx src/scripts/seed-test-league.ts",
+    "seed:demo": "tsx src/scripts/seed-demo.ts",
     "sync": "tsx src/scripts/sync-data.ts",
     "test": "vitest run",
     "test:watch": "vitest"
