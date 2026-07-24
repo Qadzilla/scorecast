@@ -89,7 +89,11 @@ export default function LeaguesHomeScreen() {
         ) : null}
 
         <View style={styles.section}>
-          <SectionTitle label="Your leagues" />
+          <SectionTitle
+            label="Your leagues"
+            action={me.data?.canCreateLeague ? "Create" : undefined}
+            onAction={() => router.push("/league/create")}
+          />
           {leagues.isLoading ? (
             <Card padded={false}>
               {[0, 1].map((i) => (
@@ -124,15 +128,8 @@ export default function LeaguesHomeScreen() {
             </Card>
           )}
 
-          <View style={styles.leagueActions}>
-            <View style={styles.actionBtn}>
-              <Button label="Join with a code" variant="secondary" onPress={() => router.push("/league/join")} />
-            </View>
-            {me.data?.canCreateLeague ? (
-              <View style={styles.actionBtn}>
-                <Button label="Create" variant="secondary" onPress={() => router.push("/league/create")} />
-              </View>
-            ) : null}
+          <View style={styles.joinRow}>
+            <Button label="Join with a code" variant="secondary" onPress={() => router.push("/league/join")} />
           </View>
         </View>
       </ScrollView>
@@ -312,8 +309,7 @@ const styles = StyleSheet.create({
   rowDivider: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border },
   rowPressed: { backgroundColor: colors.surfaceAlt },
   rowInfo: { flex: 1, gap: 3 },
-  leagueActions: { flexDirection: "row", gap: spacing.sm, marginTop: spacing.sm },
-  actionBtn: { flex: 1 },
+  joinRow: { marginTop: spacing.sm },
   standing: { alignItems: "center", minWidth: 52, gap: 3 },
   rankCircle: { width: 26, height: 26, borderRadius: 13, alignItems: "center", justifyContent: "center" },
   rankCircleText: { fontFamily: fontFamily.bold, fontSize: 13, color: colors.textPrimary },
